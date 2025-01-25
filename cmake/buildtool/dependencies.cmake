@@ -1,4 +1,5 @@
 
+require_ninja()
 if(WIN32)
     require_mingw810_32()
 endif()
