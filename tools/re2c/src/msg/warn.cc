@@ -111,8 +111,8 @@ void Warn::nondeterministic_tags(
         } else {
             fprintf(stderr, "tag `%s`", tagname);
         }
-        fprintf(stderr, " %shas %zu%s degree of nondeterminism",
-                incond(cond).c_str(), nver, nver == 2 ? "nd" : nver == 3 ? "rd" : "th");
+        fprintf(stderr, " %shas %lu%s degree of nondeterminism",
+                incond(cond).c_str(), (unsigned long)nver, nver == 2 ? "nd" : nver == 3 ? "rd" : "th");
         msg.warning_end(names[NONDETERMINISTIC_TAGS], e);
     }
 }

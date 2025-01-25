@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.2...3.20)
 
 project(btyacc C)
 
@@ -35,7 +35,7 @@ add_executable(
     mstring.c
     reader.c
     readskel.c
-    skeleton.c
+    #skeleton.c
     symtab.c
     verbose.c
     warshall.c

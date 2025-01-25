@@ -35,8 +35,8 @@
 // stubs
 #define OPEN(fn)   -1
 #define FDOPEN(fd) NULL
-#define CLOSE(fd)  -1
-#define UNLINK(f)  -1
+#define CLOSE(fd)  ((void)-1)
+#define UNLINK(f)  ((void)-1)
 
 #endif
 

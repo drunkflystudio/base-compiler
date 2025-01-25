@@ -276,6 +276,9 @@ re2c_gen_manpage("${re2c_manpage_source}" "${re2c_manpage_c}")
 add_custom_target(docs DEPENDS "${re2c_docs}")
 
 # re2c
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+endif()
 add_executable(re2c ${re2c_sources} "${re2c_help_c}")
 
 # re2d
