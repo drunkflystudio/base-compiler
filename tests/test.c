@@ -18,6 +18,7 @@ int test_lexer(lua_State* L)
     const char* expected = replaceCRLF(L, luaL_checkstring(L, 2));
 
     Compiler* compiler = compilerPushNew(L);
+    pushTestName(L);
 
     UNUSED(compiler);
     UNUSED(fileContents);
