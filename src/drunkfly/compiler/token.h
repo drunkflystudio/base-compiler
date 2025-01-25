@@ -4,6 +4,7 @@
 #include <drunkfly/compiler.h>
 
 #define T_EOF 0
+#include "y.tab.h"
 
 typedef uint32_t uint_value_t;
 typedef unsigned long uint_value_fmt;
@@ -14,6 +15,7 @@ struct Token {
     const char* text;
     const char* name;
     uint_value_t integer;
+    Location location;
     int id;
 };
 
