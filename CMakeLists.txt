@@ -4,3 +4,4 @@ project(Compiler)
 include(ext/common/cmake/common.cmake)
 
 add_subdirectory(src)
+add_subdirectory(tests)

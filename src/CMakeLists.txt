@@ -1,4 +1,8 @@
 
+enable_warnings()
+
+######################################################################################################################
+
 set(src_compiler
     drunkfly/compiler/arena.c
     drunkfly/compiler/arena.h
@@ -18,3 +22,15 @@ add_library(FlyCompilerCore STATIC ${src} ${src_compiler})
 set_target_properties(FlyCompilerCore PROPERTIES FOLDER "Libs")
 target_include_directories(FlyCompilerCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(FlyCompilerCore PUBLIC FlyCommon)
+
+######################################################################################################################
+
+set(src
+    main.c
+    )
+
+source_group("Source Files" FILES ${src})
+add_executable(FlyCompiler ${src})
+set_target_properties(FlyCompiler PROPERTIES FOLDER "Tools")
+target_link_libraries(FlyCompiler PUBLIC FlyCompilerCore)
+add_dependencies(FlyCompiler RunCompilerTests)

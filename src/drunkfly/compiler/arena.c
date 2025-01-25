@@ -1,4 +1,5 @@
 #include <drunkfly/compiler/private.h>
+#include <drunkfly/vm.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -8,7 +9,7 @@ void compilerFreeArenas(Compiler* compiler, CompilerArena* arenas)
 
     for (p = arenas; p; p = prev) {
         prev = p->prev;
-        memFree(compiler->L, p, p->allocatedSize);
+        vmFree(compiler->L, p, p->allocatedSize);
     }
 }
 
@@ -18,7 +19,7 @@ void* compilerTempAlloc(Compiler* compiler, size_t size)
 
     if (size >= COMPILER_ARENA_SIZE / 2) {
         size_t arenaSize = offsetof(CompilerArena, data) + size;
-        p = (CompilerArena*)memAlloc(compiler->L, arenaSize);
+        p = (CompilerArena*)vmAlloc(compiler->L, arenaSize);
         p->allocatedSize = arenaSize;
         p->bytesLeft = 0;
         p->prev = compiler->largeBlocks;
@@ -32,7 +33,7 @@ void* compilerTempAlloc(Compiler* compiler, size_t size)
     }
 
     if (!p) {
-        p = (CompilerArena*)memAlloc(compiler->L, sizeof(CompilerArena));
+        p = (CompilerArena*)vmAlloc(compiler->L, sizeof(CompilerArena));
         p->allocatedSize = sizeof(CompilerArena);
         p->bytesLeft = COMPILER_ARENA_SIZE;
         p->prev = compiler->arenas;
