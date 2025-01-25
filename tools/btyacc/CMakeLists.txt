@@ -42,6 +42,7 @@ add_executable(
     "${bin}/skeleton.c"
 )
 
+set_target_properties(btyacc PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/..")
 target_include_directories(btyacc PRIVATE "${src}")
 
 # ---- Install rules ----
