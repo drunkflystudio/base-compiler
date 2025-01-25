@@ -10,6 +10,11 @@
 #include <string.h>
 #include <errno.h>
 
+extern const char* g_testFileName;
+extern int g_testFailCount;
+
+int test_lexer(lua_State* L);
+
 void beginPrint(lua_State* L);
 void printC(char ch);
 void printS(const char* str);

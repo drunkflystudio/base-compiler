@@ -16,6 +16,10 @@ static void printMessage(VMMSGTYPE type, const char* message)
 static int initTests(lua_State* L)
 {
     g_L = L;
+
+    lua_pushcfunction(L, test_lexer);
+    lua_setglobal(L, "test_lexer");
+
     return 0;
 }
 
