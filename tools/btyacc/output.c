@@ -33,10 +33,10 @@ void output()
     output_stype();
     if (rflag) write_section("tables");
     write_section("header");
-    output_trailing_text();
     write_section("body");
     output_semantic_actions();
     write_section("trailer");
+    output_trailing_text();
 }
 
 
@@ -47,7 +47,7 @@ void output_rule_data()
 
     if (!rflag)
 	fprintf(output_file, "static ");
-    fprintf(output_file, "int %slhs[] = {%42d,", symbol_prefix,
+    fprintf(output_file, "const int %slhs[] = {%42d,", symbol_prefix,
 	    symbol_value[start_symbol]);
 
     j = 10;
@@ -69,7 +69,7 @@ void output_rule_data()
 
     if (!rflag)
 	fprintf(output_file, "static ");
-    fprintf(output_file, "int %slen[] = {%42d,", symbol_prefix, 2);
+    fprintf(output_file, "const int %slen[] = {%42d,", symbol_prefix, 2);
 
     j = 10;
     for (i = 3; i < nrules; i++)
@@ -96,7 +96,7 @@ void output_yydefred()
 
     if (!rflag)
 	fprintf(output_file, "static ");
-    fprintf(output_file, "int %sdefred[] = {%39d,", symbol_prefix,
+    fprintf(output_file, "const int %sdefred[] = {%39d,", symbol_prefix,
 	    (defred[0] ? defred[0] - 2 : 0));
 
     j = 10;
@@ -286,7 +286,7 @@ void goto_actions()
     k = default_goto(start_symbol + 1);
     if (!rflag)
 	fprintf(output_file, "static ");
-    fprintf(output_file, "int %sdgoto[] = {%40d,", symbol_prefix, k);
+    fprintf(output_file, "const int %sdgoto[] = {%40d,", symbol_prefix, k);
     save_column(start_symbol + 1, k);
 
     j = 10;
@@ -608,7 +608,7 @@ void output_base()
 
     if (!rflag)
 	fprintf(output_file, "static ");
-    fprintf(output_file, "int %ssindex[] = {%39d,", symbol_prefix, base[0]);
+    fprintf(output_file, "const int %ssindex[] = {%39d,", symbol_prefix, base[0]);
     j = 10;
     for (i = 1; i < nstates; i++) {
 	if (j >= 10) {
@@ -623,7 +623,7 @@ void output_base()
     fprintf(output_file, "\n};\n");
     if (!rflag)
 	fprintf(output_file, "static ");
-    fprintf(output_file, "int %srindex[] = {%39d,", symbol_prefix, base[nstates]);
+    fprintf(output_file, "const int %srindex[] = {%39d,", symbol_prefix, base[nstates]);
     j = 10;
     for (i = nstates + 1; i < 2*nstates; i++) {
 	if (j >= 10) {
@@ -638,7 +638,7 @@ void output_base()
     fprintf(output_file, "\n};\n");
     if (!rflag)
 	fprintf(output_file, "static ");
-    fprintf(output_file, "int %scindex[] = {%39d,", symbol_prefix, base[2*nstates]);
+    fprintf(output_file, "const int %scindex[] = {%39d,", symbol_prefix, base[2*nstates]);
     j = 10;
     for (i = 2*nstates + 1; i < 3*nstates; i++) {
 	if (j >= 10) {
@@ -654,7 +654,7 @@ void output_base()
     fprintf(output_file, "\n};\n");
     if (!rflag)
 	fprintf(output_file, "static ");
-    fprintf(output_file, "int %sgindex[] = {%39d,", symbol_prefix,
+    fprintf(output_file, "const int %sgindex[] = {%39d,", symbol_prefix,
 	    base[3*nstates]);
     j = 10;
     for (i = 3*nstates + 1; i < nvectors - 1; i++) {
@@ -690,7 +690,7 @@ void output_table()
     fprintf(code_file, "#define YYTABLESIZE %d\n", high);
     if (!rflag)
 	fprintf(output_file, "static ");
-    fprintf(output_file, "int %stable[] = {%40d,", symbol_prefix, table[0]);
+    fprintf(output_file, "const int %stable[] = {%40d,", symbol_prefix, table[0]);
 
     j = 10;
     for (i = 1; i <= high; i++)
@@ -721,7 +721,7 @@ void output_check()
 
     if (!rflag)
 	fprintf(output_file, "static ");
-    fprintf(output_file, "int %scheck[] = {%40d,", symbol_prefix, check[0]);
+    fprintf(output_file, "const int %scheck[] = {%40d,", symbol_prefix, check[0]);
 
     j = 10;
     for (i = 1; i <= high; i++)
@@ -750,7 +750,7 @@ void output_ctable()
 
     if (!rflag)
 	fprintf(output_file, "static ");
-    fprintf(output_file, "int %sctable[] = {%39d,", symbol_prefix, conflicts ?
+    fprintf(output_file, "const int %sctable[] = {%39d,", symbol_prefix, conflicts ?
 	    conflicts[0] : 0);
 
     j = 10;
@@ -782,7 +782,7 @@ void output_astable()
 	++outline;
 	fprintf(output_file, "#ifdef YYDESTRUCT\nstatic ");
     }
-    fprintf(output_file, "int yyastable[] = {%39d,", accessing_symbol ?
+    fprintf(output_file, "const int yyastable[] = {%39d,", accessing_symbol ?
 	    accessing_symbol[0] : 0);
 
     j = 10;
@@ -897,14 +897,18 @@ void output_defines()
 	while ((c = getc(union_file)) != EOF) {
 	  putc(c, defines_file);
 	}
+    /*
 	if (unionized)
 	    fprintf(defines_file, "extern YYSTYPE %slval;\n", symbol_prefix);
+    */
     }
 
     if(dflag) {
+    /*
 	fprintf(defines_file, "#if defined(YYPOSN)\n"
 			      "extern YYPOSN yyposn;\n"
 			      "#endif\n");
+    */
 	fprintf(defines_file, "\n#endif\n");
     }
 }

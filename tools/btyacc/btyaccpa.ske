@@ -35,23 +35,23 @@ typedef int Yshort;
 #endif /* C99 */
 #endif /* C++ */
 
-extern _C_ Yshort yylhs[];
-extern _C_ Yshort yylen[];
-extern _C_ Yshort yydefred[];
-extern _C_ Yshort yydgoto[];
-extern _C_ Yshort yysindex[];
-extern _C_ Yshort yyrindex[];
-extern _C_ Yshort yycindex[];
-extern _C_ Yshort yygindex[];
-extern _C_ Yshort yytable[];
-extern _C_ Yshort yycheck[];
-extern _C_ Yshort yyctable[];
-extern _C_ Yshort yyastable[];
-extern _C_ Yshort yyttable[];
+extern _C_ const Yshort yylhs[];
+extern _C_ const Yshort yylen[];
+extern _C_ const Yshort yydefred[];
+extern _C_ const Yshort yydgoto[];
+extern _C_ const Yshort yysindex[];
+extern _C_ const Yshort yyrindex[];
+extern _C_ const Yshort yycindex[];
+extern _C_ const Yshort yygindex[];
+extern _C_ const Yshort yytable[];
+extern _C_ const Yshort yycheck[];
+extern _C_ const Yshort yyctable[];
+extern _C_ const Yshort yyastable[];
+extern _C_ const Yshort yyttable[];
 
 #if YYDEBUG
-extern _C_ const char *yyname[];
-extern _C_ const char *yyrule[];
+extern _C_ const char * const yyname[];
+extern _C_ const char * const yyrule[];
 #endif
 
 %% header
@@ -104,21 +104,8 @@ extern _C_ const char *yyrule[];
 int yydebug;
 #endif
 
-extern void yyerror(const char *, ...);
-
-int yynerrs;
-
-/* These value/posn are taken from the lexer */
-YYSTYPE yylval;
-#ifdef YYPOSN
-YYPOSN  yyposn;
-#endif /* YYPOSN */
-
-/* These value/posn of the root non-terminal are returned to the caller */
-YYSTYPE yyretlval;
-#ifdef YYPOSN
-YYPOSN  yyretposn;
-#endif /* YYPOSN */
+struct yycontext;
+extern void yyerror(struct yycontext* ctx, int yychar, const YYSTYPE* yylval, const YYPOSN* yyposn);
 
 #define YYABORT  goto yyabort
 #define YYACCEPT goto yyaccept
@@ -147,42 +134,79 @@ struct yyparsestate {
   Yshort        ctry;        /* index in yyctable[] for this conflict */
 };
 
+typedef struct yycontext {
+void* userdata;
+
+int yynerrs;
+
+/* These value/posn are taken from the lexer */
+YYSTYPE yylval;
+#ifdef YYPOSN
+YYPOSN  yyposn;
+#endif /* YYPOSN */
+
+/* These value/posn of the root non-terminal are returned to the caller */
+YYSTYPE yyretlval;
+#ifdef YYPOSN
+YYPOSN  yyretposn;
+#endif /* YYPOSN */
+
 /* Current parser state */
-static struct yyparsestate *yyps=0;
+struct yyparsestate *yyps;
 
 /* yypath!=NULL: do the full parse, starting at *yypath parser state. */
-static struct yyparsestate *yypath=0;
+struct yyparsestate *yypath;
 
 /* Base of the lexical value queue */
-static YYSTYPE *yylvals=0;
+YYSTYPE *yylvals;
 
 /* Current posistion at lexical value queue */
-static YYSTYPE *yylvp=0;
+YYSTYPE *yylvp;
 
 /* End position of lexical value queue */
-static YYSTYPE *yylve=0;
+YYSTYPE *yylve;
 
 /* The last allocated position at the lexical value queue */
-static YYSTYPE *yylvlim=0;
+YYSTYPE *yylvlim;
 
 #ifdef YYPOSN
 /* Base of the lexical position queue */
-static YYPOSN *yylpsns=0;
+YYPOSN *yylpsns;
 
 /* Current posistion at lexical position queue */
-static YYPOSN *yylpp=0;
+YYPOSN *yylpp;
 
 /* End position of lexical position queue */
-static YYPOSN *yylpe=0;
+YYPOSN *yylpe;
 
 /* The last allocated position at the lexical position queue */
-static YYPOSN *yylplim=0;
+YYPOSN *yylplim;
 #endif /* YYPOSN */
 
 /* Current position at lexical token queue */
-static Yshort *yylexp=0;
+Yshort *yylexp;
 
-static Yshort *yylexemes=0;
+Yshort *yylexemes;
+
+} yycontext;
+
+#define yyps (ctx->yyps)
+#define yylvp (ctx->yylvp)
+#define yylvals (ctx->yylvals)
+#define yylval (ctx->yylval)
+#define yylvlim (ctx->yylvlim)
+#define yylexemes (ctx->yylexemes)
+#define yylpsns (ctx->yylpsns)
+#define yylexp (ctx->yylexp)
+#define yylpp (ctx->yylpp)
+#define yylpe (ctx->yylpe)
+#define yyposn (ctx->yyposn)
+#define yylve (ctx->yylve)
+#define yylplim (ctx->yylplim)
+#define yynerrs (ctx->yynerrs)
+#define yypath (ctx->yypath)
+#define yyretlval (ctx->yyretlval)
+#define yyretposn (ctx->yyretposn)
 
 /*
 ** For use in generated program
@@ -198,8 +222,8 @@ static Yshort *yylexemes=0;
 /*
 ** Local prototypes.
 */
-int yyparse(void);
-int yylex(void);
+int yyparse(yycontext* ctx);
+int yylex(yycontext* ctx);
 
 static void YYSCopy(YYSTYPE *to, YYSTYPE *from, ptrdiff_t size) {
   ptrdiff_t i;
@@ -215,7 +239,7 @@ static void YYPCopy(YYPOSN *to, YYPOSN *from, int size) {
 }
 #endif /* YYPOSN */
 
-static int yyexpand() {
+static int yyexpand(yycontext* ctx) {
   ptrdiff_t p = yylvp-yylvals;
   ptrdiff_t s = yylvlim-yylvals;
   s += YYSTACKGROWTH;
@@ -235,10 +259,10 @@ static int yyexpand() {
   delete[] tp;
 #endif /* YYPOSN */
 #else
-  yylexemes = realloc(yylexemes, sizeof(Yshort) * s);
-  yylvals = realloc(yylvals, sizeof(YYSTYPE) * s);
+  yylexemes = realloc(yylexemes, sizeof(Yshort) * (size_t)s);
+  yylvals = realloc(yylvals, sizeof(YYSTYPE) * (size_t)s);
 #ifdef YYPOSN
-  yylpsns = realloc(yylpsns, sizeof(YYPOSN) * s);
+  yylpsns = realloc(yylpsns, sizeof(YYPOSN) * (size_t)s);
 #endif /* YYPOSN */
 #endif
   yylexp = yylexemes + p;
@@ -251,7 +275,7 @@ static int yyexpand() {
   return 0;
 }
 
-static int YYLex1() {
+static int YYLex1(yycontext* ctx) {
   if(yylvp<yylve) {
     yylval = *yylvp++;
 #ifdef YYPOSN
@@ -261,9 +285,9 @@ static int YYLex1() {
   } else {
     if(yyps->save) {
       if(yylvp==yylvlim) {
-	yyexpand();
+	yyexpand(ctx);
       }
-      *yylexp = yylex();
+      *yylexp = yylex(ctx);
       *yylvp++ = yylval;
       yylve++;
 #ifdef YYPOSN
@@ -272,12 +296,12 @@ static int YYLex1() {
 #endif /* YYPOSN */
       return *yylexp++;
     } else {
-      return yylex();
+      return yylex(ctx);
     }
   }
 }
 
-static void YYMoreStack(struct yyparsestate *yyps) {
+static void YYMoreStack(yycontext* ctx) {
   ptrdiff_t p = yyps->ssp - yyps->ss;
 #ifdef __cplusplus
   Yshort  *tss = yyps->ss;
@@ -361,7 +385,7 @@ static void YYFreeState(struct yyparsestate *p) {
 /*
 ** Parser function
 */
-int yyparse() {
+int yyparse(yycontext* ctx) {
   int yym, yyn, yystate, yychar, yynewerrflag;
   struct yyparsestate *yyerrctx = NULL;
 #ifdef YYREDUCEPOSNFUNC
@@ -406,7 +430,7 @@ int yyparse() {
   ** Read one token
   */
   if (yychar < 0) {
-    if ((yychar = YYLex1()) < 0) yychar = 0;
+    if ((yychar = YYLex1(ctx)) < 0) yychar = 0;
 #if YYDEBUG
     if (yydebug) {
       yys = 0;
@@ -462,17 +486,17 @@ int yyparse() {
         printf("\n");
       }
 #endif
-      struct yyparsestate *save = YYNewState(yyps->ssp - yyps->ss);
+      struct yyparsestate *save = YYNewState((size_t)(yyps->ssp - yyps->ss));
       save->save    = yyps->save;
       save->state   = yystate;
       save->errflag = yyps->errflag;
       save->ssp     = save->ss + (yyps->ssp - yyps->ss);
       save->vsp     = save->vs + (yyps->vsp - yyps->vs);
-      memcpy (save->ss, yyps->ss, (yyps->ssp - yyps->ss + 1)*sizeof(Yshort));
+      memcpy (save->ss, yyps->ss, (size_t)(yyps->ssp - yyps->ss + 1)*sizeof(Yshort));
       YYSCopy(save->vs, yyps->vs, (yyps->ssp - yyps->ss + 1));
 #ifdef YYPOSN
       save->psp     = save->ps + (yyps->psp - yyps->ps);
-      YYPCopy(save->ps, yyps->ps, (yyps->ssp - yyps->ss + 1));
+      YYPCopy(save->ps, yyps->ps, (int)(yyps->ssp - yyps->ss + 1));
 #endif /* YYPOSN */
       ctry = yytable[yyn];
       if (yyctable[ctry] == -1) {
@@ -572,7 +596,7 @@ int yyparse() {
     yystate = yytable[yyn];
   yyshift:
     if (yyps->ssp >= yyps->ss + yyps->stacksize - 1) {
-      YYMoreStack(yyps);
+      YYMoreStack(ctx);
     }
     *++(yyps->ssp) = yystate;
     *++(yyps->vsp) = yylval;
@@ -626,31 +650,31 @@ yyerrhandler:
       /* Free old saved error context state */
       if(yyerrctx) YYFreeState(yyerrctx);
       /* Create and fill out new saved error context state */
-      yyerrctx = YYNewState(yyps->ssp - yyps->ss);
+      yyerrctx = YYNewState((size_t)(yyps->ssp - yyps->ss));
       yyerrctx->save = yyps->save;
       yyerrctx->state = yystate;
       yyerrctx->errflag = yyps->errflag;
       yyerrctx->ssp = yyerrctx->ss + (yyps->ssp - yyps->ss);
       yyerrctx->vsp = yyerrctx->vs + (yyps->vsp - yyps->vs);
-      memcpy(yyerrctx->ss, yyps->ss, (yyps->ssp - yyps->ss + 1)*sizeof(Yshort));
+      memcpy(yyerrctx->ss, yyps->ss, (size_t)(yyps->ssp - yyps->ss + 1)*sizeof(Yshort));
       YYSCopy(yyerrctx->vs, yyps->vs, (yyps->ssp - yyps->ss + 1));
 #ifdef YYPOSN
       yyerrctx->psp = yyerrctx->ps + (yyps->psp - yyps->ps);
-      YYPCopy(yyerrctx->ps, yyps->ps, (yyps->ssp - yyps->ss + 1));
+      YYPCopy(yyerrctx->ps, yyps->ps, (int)(yyps->ssp - yyps->ss + 1));
 #endif /* YYPOSN */
       yyerrctx->lexeme = yylvp - yylvals;
     }
     yychar = -1;
     yylexp = yylexemes + save->lexeme;
     yyps->ssp = yyps->ss + (save->ssp - save->ss);
-    memcpy (yyps->ss, save->ss, (yyps->ssp - yyps->ss + 1) * sizeof(Yshort));
+    memcpy (yyps->ss, save->ss, (size_t)(yyps->ssp - yyps->ss + 1) * sizeof(Yshort));
     yylvp = yylvals + save->lexeme;
     yyps->vsp = yyps->vs + (save->vsp - save->vs);
     YYSCopy(yyps->vs, save->vs,  yyps->vsp - yyps->vs + 1);
 #ifdef YYPOSN
     yylpp  = yylpsns + save->lexeme;
     yyps->psp = yyps->ps + (save->psp - save->ps);
-    YYPCopy(yyps->ps, save->ps,  yyps->psp - yyps->ps + 1);
+    YYPCopy(yyps->ps, save->ps, (int)(yyps->psp - yyps->ps + 1));
 #endif /* YYPOSN */
     ctry = ++save->ctry;
     yystate = save->state;
@@ -674,7 +698,7 @@ yyerrhandler:
       yylexp = yylexemes + yyerrctx->lexeme;
       yychar = yylexp[-1];
       yyps->ssp = yyps->ss + (yyerrctx->ssp - yyerrctx->ss);
-      memcpy(yyps->ss, yyerrctx->ss, (yyps->ssp - yyps->ss + 1)*sizeof(Yshort));
+      memcpy(yyps->ss, yyerrctx->ss, (size_t)(yyps->ssp - yyps->ss + 1)*sizeof(Yshort));
       yylvp = yylvals   + yyerrctx->lexeme;
       yylval = yylvp[-1];
       yyps->vsp = yyps->vs + (yyerrctx->vsp - yyerrctx->vs);
@@ -683,7 +707,7 @@ yyerrhandler:
       yylpp  = yylpsns   + yyerrctx->lexeme;
       yyposn = yylpp[-1];
       yyps->psp = yyps->ps + (yyerrctx->psp - yyerrctx->ps);
-      YYPCopy(yyps->ps, yyerrctx->ps,  yyps->psp - yyps->ps + 1);
+      YYPCopy(yyps->ps, yyerrctx->ps, (int)(yyps->psp - yyps->ps + 1));
 #endif /* YYPOSN */
       yystate = yyerrctx->state;
       YYFreeState(yyerrctx);
@@ -692,11 +716,7 @@ yyerrhandler:
     yynewerrflag = 1; 
   }
   if (yynewerrflag) {
-#ifdef YYERROR_DETAILED
-    yyerror_detailed("syntax error", yychar, yylval, yyposn);
-#else
-    yyerror("syntax error");
-#endif
+    yyerror(ctx, yychar, &yylval, &yyposn);
   }
   ++yynerrs;
  yyinrecovery:
@@ -784,7 +804,7 @@ yyreduce:
   }
 #endif
   if (yyps->ssp + 1 - yym >= yyps->ss + yyps->stacksize) {
-    YYMoreStack(yyps);
+    YYMoreStack(ctx);
   }
 
   /* "$$ = $1" default action */
@@ -851,7 +871,7 @@ yyreduce:
     yyretposn = yyps->pos;  /* return value of root position to yyposn */
 #endif /* YYPOSN */
     if (yychar < 0) {
-      if ((yychar = YYLex1()) < 0) {
+      if ((yychar = YYLex1(ctx)) < 0) {
         yychar = 0;
       }
 #if YYDEBUG
@@ -880,7 +900,7 @@ yyreduce:
 	   "%d\n", (int)yydepth, yytrial!=0, *(yyps->ssp), yystate);
 #endif
   if (yyps->ssp >= yyps->ss + yyps->stacksize - 1) {
-    YYMoreStack(yyps);
+    YYMoreStack(ctx);
   }
   *++(yyps->ssp) = yystate;
   *++(yyps->vsp) = yyps->val;
@@ -915,14 +935,14 @@ yyvalid:
   }
   yychar = -1;
   yyps->ssp = yyps->ss + (yypath->ssp - yypath->ss);
-  memcpy (yyps->ss, yypath->ss, (yyps->ssp - yyps->ss + 1) * sizeof(Yshort));
+  memcpy (yyps->ss, yypath->ss, (size_t)(yyps->ssp - yyps->ss + 1) * sizeof(Yshort));
   yylexp = yylexemes + yypath->lexeme;
   yyps->vsp = yyps->vs + (yypath->vsp - yypath->vs);
   YYSCopy(yyps->vs, yypath->vs,  yyps->vsp - yyps->vs + 1);
   yylvp = yylvals + yypath->lexeme;
 #ifdef YYPOSN
   yyps->psp = yyps->ps + (yypath->psp - yypath->ps);
-  YYPCopy(yyps->ps, yypath->ps,  yyps->psp - yyps->ps + 1);
+  YYPCopy(yyps->ps, yypath->ps, (int)(yyps->psp - yyps->ps + 1));
   yylpp = yylpsns + yypath->lexeme;
 #endif /* YYPOSN */
   yystate = yypath->state;

@@ -16,7 +16,7 @@ void FileError(char *fmt, ...);
 void FileError(char *fmt, ...) {
   va_list args;
 
-  fprintf(stderr, "%s:%d: ", input_file->name, input_file->lineno);
+  fprintf(stderr, "%s(%d): ", input_file->name, input_file->lineno);
   va_start(args, fmt);
   vfprintf(stderr, fmt, args);
   va_end(args);
