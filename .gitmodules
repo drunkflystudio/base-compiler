@@ -1,3 +1,0 @@
-[submodule "ext/common"]
-	path = ext/common
-	url = https://github.com/drunkflystudio/base-common
