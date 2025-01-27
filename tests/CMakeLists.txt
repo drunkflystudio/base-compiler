@@ -68,3 +68,4 @@ set_target_properties(CompilerTests PROPERTIES
     )
 
 register_test_runner(CompilerTests t_compil)
+add_dependencies(RunCompilerTests RunBaseTests)
