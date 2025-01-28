@@ -273,7 +273,7 @@ file(GLOB_RECURSE re2c_docs_sources CONFIGURE_DEPENDS
 )
 re2c_gen_help("${re2c_help_source}" "${re2c_help_c}")
 re2c_gen_manpage("${re2c_manpage_source}" "${re2c_manpage_c}")
-add_custom_target(docs DEPENDS "${re2c_docs}")
+#add_custom_target(docs DEPENDS "${re2c_docs}")
 
 # re2c
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
