@@ -281,6 +281,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 endif()
 add_executable(re2c ${re2c_sources} "${re2c_help_c}")
 set_target_properties(re2c PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/..")
+if(XCODE)
+set_target_properties(re2c PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/../Release")
+endif()
 
 # re2d
 if (RE2C_BUILD_RE2D)
