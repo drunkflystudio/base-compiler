@@ -1,5 +1,6 @@
 %{
-#include <compiler/private.h>
+#include <drunkfly/compiler/private.h>
+#include <drunkfly/compiler/token.h>
 
 #ifdef BORLAND
 #pragma option -w-pia
@@ -10,7 +11,7 @@
 #define YYREDUCEPOSNFUNC(ret, terms, term_vals, term_no, stk_pos, yychar, yyposn, extra) \
     yyreduceposn(&(ret), (terms), (term_no))
 
-void yyreduceposn(Location* ret, const Location* inputs, int count);
+void yyreduceposn(CompilerLocation* ret, const CompilerLocation* inputs, int count);
 
 %}
 
@@ -118,7 +119,11 @@ void yyreduceposn(Location* ret, const Location* inputs, int count);
 %token <token> T_ATSIGN
 %token <token> T_KWdo_WITH_LCURLY
 
-%location Location {
+%union {
+    bool flag;
+}
+
+%location CompilerLocation {
     struct Module* module;
     int startLine;
     int startColumn;
@@ -137,7 +142,16 @@ translation_unit
 
 %%
 
-void yyreduceposn(Location* ret, const Location* inputs, int count)
+#ifdef BORLAND
+#pragma option -wpia
+#pragma option -waus
+#pragma option -wrch
+#endif
+
+#undef yylval
+#undef yyposn
+
+void yyreduceposn(CompilerLocation* ret, const CompilerLocation* inputs, int count)
 {
     UNUSED(ret);
     UNUSED(inputs);

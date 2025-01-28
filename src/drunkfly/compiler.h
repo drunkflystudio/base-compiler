@@ -3,8 +3,8 @@
 
 #include <drunkfly/common.h>
 
-STRUCT(Location);
-STRUCT(Token);
+STRUCT(CompilerToken);
+STRUCT(CompilerLocation);
 STRUCT(Compiler);
 
 Compiler* compilerPushNew(lua_State* L);
