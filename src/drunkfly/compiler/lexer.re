@@ -1,52 +1,13 @@
-#include <drunkfly/compiler/private.h>
-#include <drunkfly/compiler/token.h>
+#include <drunkfly/compiler/lexer.h>
+#include <drunkfly/compiler/arena.h>
+#include <assert.h>
+#include <lauxlib.h>
 
-STRUCT(Lexer) {
-    Compiler* compiler;
-    CompilerToken* firstToken;
-    CompilerToken* lastToken;
-    const char* tokenStart;
-    const char* cursor;
-    const char* marker;
-    const char* fileName;
-    int startLine;
-    int startColumn;
-    int curLine;
-    int curColumn;
+enum LexerState
+{
+    NORMAL,
+    MULTILINE_COMMENT
 };
-
-static CompilerToken g_dummyToken;
-
-static void getLocation(Lexer* lexer, CompilerLocation* loc)
-{
-    /* FIXME loc->fileName = lexer->fileName; */
-    loc->startLine = lexer->startLine;
-    loc->startColumn = lexer->startColumn;
-    loc->endLine = lexer->curLine;
-    loc->endColumn = lexer->curColumn - 1;
-}
-
-static CompilerToken* emitToken(Lexer* lexer, int tokenID, const char* name)
-{
-    CompilerToken* token = (CompilerToken*)compilerTempAlloc(lexer->compiler, sizeof(CompilerToken));
-    if (!token)
-        return &g_dummyToken;
-
-    token->next = NULL;
-    token->text = NULL;
-    token->name = name;
-    token->id = tokenID;
-    token->integer = 0;
-    getLocation(lexer, &token->location);
-
-    if (lexer->lastToken)
-        lexer->lastToken->next = token;
-    else
-        lexer->firstToken = token;
-    lexer->lastToken = token;
-
-    return token;
-}
 
 static unsigned int digitToNumber(char ch, bool* error)
 {
@@ -72,319 +33,285 @@ static unsigned int digitToNumber(char ch, bool* error)
     return 0;
 }
 
-CompilerToken* compilerLexer(Compiler* compiler, const char* fileName, const char* fileContents)
+void compilerInitLexer(CompilerLexer* lexer, SourceFile* file, SourceLine* line, const char* text, int state)
 {
-    CompilerLocation loc;
-    Lexer lexer;
-    char ch;
+    lexer->token.location.file = file;
+    lexer->token.location.startLine = line;
+    lexer->token.location.endLine = line;
+    lexer->start = text;
+    lexer->cursor = text;
+    lexer->state = state;
+}
 
-    lexer.compiler = compiler;
-    lexer.firstToken = NULL;
-    lexer.lastToken = NULL;
-    lexer.cursor = fileContents;
-    lexer.fileName = fileName;
-    lexer.startLine = 1;
-    lexer.startColumn = 0;
-    lexer.curLine = 1;
-    lexer.curColumn = 1;
+bool compilerGetToken(Compiler* compiler, lua_State* L, CompilerLexer* lexer)
+{
+    const char* tokenStart;
+    bool emitComment;
 
     #define EMIT(NAME, TEXT) \
-        lexer.curColumn += (int)sizeof(TEXT) - 1; \
-        emitToken(&lexer, T_##NAME, "'" TEXT "'");
+        (lexer->token.id = (short)T_##NAME, \
+         lexer->token.location.endColumn = (int)(lexer->cursor - lexer->start), \
+         lexer->token.name = "'" TEXT "'", \
+         true)
+    #define EMIT_SPECIAL(NAME, TEXT) \
+        (lexer->token.id = (short)T_##NAME, \
+         lexer->token.location.endColumn = (int)(lexer->cursor - lexer->start), \
+         lexer->token.name = TEXT, \
+         true)
     #define EMIT_KEYWORD(NAME) \
-        lexer.curColumn += (int)sizeof(#NAME) - 1; \
-        emitToken(&lexer, KW_##NAME, "'" #NAME "'");
+        (lexer->token.id = (short)KW_##NAME, \
+         lexer->token.location.endColumn = (int)(lexer->cursor - lexer->start), \
+         lexer->token.name = "'" #NAME "'", \
+         true)
 
-    lexer.tokenStart = lexer.cursor;
-    emitToken(&lexer, T_FILE_START, "file start");
+    switch (lexer->state) {
+        default:
+            assert(false);
+            luaL_error(L, "invalid lexer state.");
+            return false;
 
-    for (;;) {
-        lexer.tokenStart = lexer.cursor;
-        lexer.startLine = lexer.curLine;
-        lexer.startColumn = lexer.curColumn;
+        case MULTILINE_COMMENT:
+            emitComment = (*lexer->cursor != 0);
+            lexer->token.integer = 0;
+            lexer->token.text = NULL;
+            lexer->token.location.startColumn = (int)(lexer->cursor - lexer->start);
+          multiline_comment:
+            for (;;) {
+                /* End of line or file */
+                if (*lexer->cursor == 0) {
+                    if (emitComment)
+                        return EMIT_SPECIAL(MULTI_LINE_COMMENT, "comment");
+                    return false;
+                }
 
-        #ifdef __GNUC__
-        #pragma GCC diagnostic ignored "-Wpedantic"
-        #pragma GCC diagnostic ignored "-Wchar-subscripts"
-        #endif
+                /* End of comment */
+                if (lexer->cursor[0] == '*' && lexer->cursor[1] == '/') {
+                    lexer->cursor += 2;
+                    lexer->state = NORMAL;
+                    return EMIT_SPECIAL(MULTI_LINE_COMMENT, "comment");
+                }
 
-        /*!re2c
+                ++lexer->cursor;
+            }
 
-        re2c:yyfill:enable = 0;
-        re2c:define:YYCURSOR = lexer.cursor;
-        re2c:define:YYMARKER = lexer.marker;
-        re2c:define:YYCTYPE = char;
+        case NORMAL:
+        normal:
+            lexer->token.integer = 0;
+            lexer->token.text = NULL;
+            lexer->token.location.startColumn = (int)(lexer->cursor - lexer->start);
+            lexer->token.overflow = false;
+            tokenStart = lexer->cursor;
 
-        "\x00"                      { ++lexer.curColumn;
-                                      emitToken(&lexer, T_EOF, "<end of file>");
-                                      return lexer.firstToken;
-                                    }
+            #ifdef __GNUC__
+            #pragma GCC diagnostic ignored "-Wpedantic"
+            #pragma GCC diagnostic ignored "-Wchar-subscripts"
+            #endif
 
-        "\n" | "\r\n" | "\r"        { ++lexer.curLine; lexer.curColumn = 1; continue; }
-        [ \t\v\f]                   { ++lexer.curColumn; continue; }
+            /*!re2c
 
-        "//"                        { lexer.curColumn += 2;
-                                      for (;;) {
-                                          if (*lexer.cursor == 0)
-                                              break;
-                                          if (*lexer.cursor == '\r' || *lexer.cursor == '\n')
-                                              break;
-                                          ++lexer.cursor;
-                                          ++lexer.curColumn;
-                                      }
-                                      emitToken(&lexer, T_SINGLE_LINE_COMMENT, "single line comment");
-                                      continue;
-                                    }
-        "/*"                        { lexer.curColumn += 2;
-                                      for (;;) {
-                                          if (*lexer.cursor == 0) {
-                                              CompilerToken* token = emitToken(&lexer, T_MULTI_LINE_COMMENT, "multi-line comment");
-                                              // FIXME compilerError(compiler, &token->location, "unterminated comment.");
-                                              break;
-                                          }
-                                          if (*lexer.cursor == '\r') {
-                                              ++lexer.cursor;
-                                              if (*lexer.cursor == '\n')
-                                                  ++lexer.cursor;
-                                              goto newline;
-                                          }
-                                          if (*lexer.cursor == '\n') {
-                                              ++lexer.cursor;
-                                            newline:
-                                              lexer.curColumn = 1;
-                                              ++lexer.curLine;
-                                              continue;
-                                          }
-                                          if (lexer.cursor[0] == '*' && lexer.cursor[1] == '/') {
-                                              lexer.cursor += 2;
-                                              lexer.curColumn += 2;
-                                              emitToken(&lexer, T_MULTI_LINE_COMMENT, "multi-line comment");
-                                              break;
-                                          }
-                                          ++lexer.cursor;
-                                          ++lexer.curColumn;
-                                      }
-                                      continue;
-                                    }
+            re2c:yyfill:enable = 0;
+            re2c:define:YYCURSOR = lexer->cursor;
+            re2c:define:YYCTYPE = char;
 
-        "abstract"                  { EMIT_KEYWORD(abstract); continue; }
-        "bit"                       { EMIT_KEYWORD(bit); continue; }
-        "bool"                      { EMIT_KEYWORD(bool); continue; }
-        "break"                     { EMIT_KEYWORD(break); continue; }
-        "byte"                      { EMIT_KEYWORD(byte); continue; }
-        "case"                      { EMIT_KEYWORD(case); continue; }
-        "catch"                     { EMIT_KEYWORD(catch); continue; }
-        "class"                     { EMIT_KEYWORD(class); continue; }
-        "const"                     { EMIT_KEYWORD(const); continue; }
-        "continue"                  { EMIT_KEYWORD(continue); continue; }
-        "default"                   { EMIT_KEYWORD(default); continue; }
-        "delete"                    { EMIT_KEYWORD(delete); continue; }
-        "do"                        { EMIT_KEYWORD(do); continue; }
-        "else"                      { EMIT_KEYWORD(else); continue; }
-        "enum"                      { EMIT_KEYWORD(enum); continue; }
-        "false"                     { EMIT_KEYWORD(false); continue; }
-        "final"                     { EMIT_KEYWORD(final); continue; }
-        "finally"                   { EMIT_KEYWORD(finally); continue; }
-        "flags"                     { EMIT_KEYWORD(flags); continue; }
-        "for"                       { EMIT_KEYWORD(for); continue; }
-        "friend"                    { EMIT_KEYWORD(friend); continue; }
-        "goto"                      { EMIT_KEYWORD(goto); continue; }
-        "if"                        { EMIT_KEYWORD(if); continue; }
-        "int"                       { EMIT_KEYWORD(int); continue; }
-        "int8"                      { EMIT_KEYWORD(int8); continue; }
-        "int16"                     { EMIT_KEYWORD(int16); continue; }
-        "int32"                     { EMIT_KEYWORD(int32); continue; }
-        "interface"                 { EMIT_KEYWORD(interface); continue; }
-        "new"                       { EMIT_KEYWORD(new); continue; }
-        "null"                      { EMIT_KEYWORD(null); continue; }
-        "object"                    { EMIT_KEYWORD(object); continue; }
-        "override"                  { EMIT_KEYWORD(override); continue; }
-        "private"                   { EMIT_KEYWORD(private); continue; }
-        "protected"                 { EMIT_KEYWORD(protected); continue; }
-        "public"                    { EMIT_KEYWORD(public); continue; }
-        "sbyte"                     { EMIT_KEYWORD(sbyte); continue; }
-        "sizeof"                    { EMIT_KEYWORD(sizeof); continue; }
-        "static"                    { EMIT_KEYWORD(static); continue; }
-        "struct"                    { EMIT_KEYWORD(struct); continue; }
-        "switch"                    { EMIT_KEYWORD(switch); continue; }
-        "throw"                     { EMIT_KEYWORD(throw); continue; }
-        "true"                      { EMIT_KEYWORD(true); continue; }
-        "try"                       { EMIT_KEYWORD(try); continue; }
-        "uint8"                     { EMIT_KEYWORD(uint8); continue; }
-        "uint16"                    { EMIT_KEYWORD(uint16); continue; }
-        "uint32"                    { EMIT_KEYWORD(uint32); continue; }
-        "union"                     { EMIT_KEYWORD(union); continue; }
-        "var"                       { EMIT_KEYWORD(var); continue; }
-        "void"                      { EMIT_KEYWORD(void); continue; }
-        "while"                     { EMIT_KEYWORD(while); continue; }
-        "word"                      { EMIT_KEYWORD(word); continue; }
+            "\x00"                      { return false; }
+            [ \t\v\f]                   { goto normal; }
 
-        "."                         { EMIT(DOT, "."); continue; }
-        ".."                        { EMIT(DOUBLE_DOT, ".."); continue; }
-        "["                         { EMIT(LBRACKET, "["); continue; }
-        "]"                         { EMIT(RBRACKET, "]"); continue; }
-        "++"                        { EMIT(INCR, "++"); continue; }
-        "--"                        { EMIT(DECR, "--"); continue; }
-        ";"                         { EMIT(SEMICOLON, ";"); continue; }
-        "&"                         { EMIT(AMPERSAND, "&"); continue; }
-        "*"                         { EMIT(ASTERISK, "*"); continue; }
-        "+"                         { EMIT(PLUS, "+"); continue; }
-        "-"                         { EMIT(MINUS, "-"); continue; }
-        "~"                         { EMIT(TILDE, "~"); continue; }
-        "!"                         { EMIT(EXCLAMATION, "!"); continue; }
-        "("                         { EMIT(LPAREN, "("); continue; }
-        ")"                         { EMIT(RPAREN, ")"); continue; }
-        "/"                         { EMIT(SLASH, "/"); continue; }
-        "%"                         { EMIT(PERCENT, "%"); continue; }
-        "<<"                        { EMIT(LSHIFT, "<<"); continue; }
-        ">>"                        { EMIT(RSHIFT, ">>"); continue; }
-        "<"                         { EMIT(LESS, "<"); continue; }
-        ">"                         { EMIT(GREATER, ">"); continue; }
-        "<="                        { EMIT(LESS_EQ, "<="); continue; }
-        ">="                        { EMIT(GREATER_EQ, ">="); continue; }
-        "=="                        { EMIT(EQUAL, "=="); continue; }
-        "!="                        { EMIT(NOT_EQUAL, "!="); continue; }
-        "^"                         { EMIT(CARET, "^"); continue; }
-        "|"                         { EMIT(VBAR, "|"); continue; }
-        "&&"                        { EMIT(DOUBLE_AMPERSAND, "&&"); continue; }
-        "||"                        { EMIT(DOUBLE_VBAR, "||"); continue; }
-        "?"                         { EMIT(QUESTION, "?"); continue; }
-        ":"                         { EMIT(COLON, ":"); continue; }
-        "="                         { EMIT(ASSIGN, "="); continue; }
-        "+="                        { EMIT(ADD_ASSIGN, "+="); continue; }
-        "-="                        { EMIT(SUB_ASSIGN, "-="); continue; }
-        "*="                        { EMIT(MUL_ASSIGN, "*="); continue; }
-        "/="                        { EMIT(DIV_ASSIGN, "/="); continue; }
-        "%="                        { EMIT(MOD_ASSIGN, "%="); continue; }
-        "|="                        { EMIT(OR_ASSIGN, "|="); continue; }
-        "&="                        { EMIT(AND_ASSIGN, "&="); continue; }
-        "^="                        { EMIT(XOR_ASSIGN, "^="); continue; }
-        "<<="                       { EMIT(SHL_ASSIGN, "<<="); continue; }
-        ">>="                       { EMIT(SHR_ASSIGN, ">>="); continue; }
-        "{"                         { EMIT(LCURLY, "{"); continue; }
-        "}"                         { EMIT(RCURLY, "}"); continue; }
-        ","                         { EMIT(COMMA, ","); continue; }
-        "@"                         { EMIT(ATSIGN, "@"); continue; }
+            "//"                        { while (*lexer->cursor)
+                                              ++lexer->cursor;
+                                          return EMIT_SPECIAL(SINGLE_LINE_COMMENT, "comment");
+                                        }
+            "/*"                        { lexer->state = MULTILINE_COMMENT;
+                                          emitComment = true;
+                                          goto multiline_comment;
+                                        }
 
-        [a-zA-Z_][a-zA-Z0-9_]*      { size_t len = (size_t)(lexer.cursor - lexer.tokenStart);
-                                      const char* text = compilerTempDupStrN(compiler, lexer.tokenStart, len);
-                                      lexer.curColumn += (int)len;
-                                      emitToken(&lexer, T_IDENTIFIER, "identifier")->text = text;
-                                      continue;
-                                    }
+            "abstract"                  { return EMIT_KEYWORD(abstract); }
+            "bit"                       { return EMIT_KEYWORD(bit); }
+            "bool"                      { return EMIT_KEYWORD(bool); }
+            "break"                     { return EMIT_KEYWORD(break); }
+            "byte"                      { return EMIT_KEYWORD(byte); }
+            "case"                      { return EMIT_KEYWORD(case); }
+            "catch"                     { return EMIT_KEYWORD(catch); }
+            "class"                     { return EMIT_KEYWORD(class); }
+            "const"                     { return EMIT_KEYWORD(const); }
+            "continue"                  { return EMIT_KEYWORD(continue); }
+            "default"                   { return EMIT_KEYWORD(default); }
+            "delete"                    { return EMIT_KEYWORD(delete); }
+            "do"                        { return EMIT_KEYWORD(do); }
+            "else"                      { return EMIT_KEYWORD(else); }
+            "enum"                      { return EMIT_KEYWORD(enum); }
+            "false"                     { return EMIT_KEYWORD(false); }
+            "final"                     { return EMIT_KEYWORD(final); }
+            "finally"                   { return EMIT_KEYWORD(finally); }
+            "flags"                     { return EMIT_KEYWORD(flags); }
+            "for"                       { return EMIT_KEYWORD(for); }
+            "friend"                    { return EMIT_KEYWORD(friend); }
+            "goto"                      { return EMIT_KEYWORD(goto); }
+            "if"                        { return EMIT_KEYWORD(if); }
+            "int"                       { return EMIT_KEYWORD(int); }
+            "int8"                      { return EMIT_KEYWORD(int8); }
+            "int16"                     { return EMIT_KEYWORD(int16); }
+            "int32"                     { return EMIT_KEYWORD(int32); }
+            "interface"                 { return EMIT_KEYWORD(interface); }
+            "new"                       { return EMIT_KEYWORD(new); }
+            "null"                      { return EMIT_KEYWORD(null); }
+            "object"                    { return EMIT_KEYWORD(object); }
+            "override"                  { return EMIT_KEYWORD(override); }
+            "private"                   { return EMIT_KEYWORD(private); }
+            "protected"                 { return EMIT_KEYWORD(protected); }
+            "public"                    { return EMIT_KEYWORD(public); }
+            "sbyte"                     { return EMIT_KEYWORD(sbyte); }
+            "sizeof"                    { return EMIT_KEYWORD(sizeof); }
+            "static"                    { return EMIT_KEYWORD(static); }
+            "struct"                    { return EMIT_KEYWORD(struct); }
+            "switch"                    { return EMIT_KEYWORD(switch); }
+            "throw"                     { return EMIT_KEYWORD(throw); }
+            "true"                      { return EMIT_KEYWORD(true); }
+            "try"                       { return EMIT_KEYWORD(try); }
+            "uint8"                     { return EMIT_KEYWORD(uint8); }
+            "uint16"                    { return EMIT_KEYWORD(uint16); }
+            "uint32"                    { return EMIT_KEYWORD(uint32); }
+            "union"                     { return EMIT_KEYWORD(union); }
+            "var"                       { return EMIT_KEYWORD(var); }
+            "void"                      { return EMIT_KEYWORD(void); }
+            "while"                     { return EMIT_KEYWORD(while); }
+            "word"                      { return EMIT_KEYWORD(word); }
 
-        "0b" [0-9a-zA-Z_]+          { uint_value_t value = 0, old;
-                                      const char* p = lexer.tokenStart + 2;
-                                      int len = (int)(lexer.cursor - lexer.tokenStart);
-                                      bool error = false, overflow = false;
-                                      do {
-                                          unsigned int digit = digitToNumber(*p++, &error);
-                                          if (digit > 1)
-                                              error = true;
-                                          old = value;
-                                          value <<= 1;
-                                          if (value < old)
-                                              overflow = true;
-                                          value |= digit;
-                                      } while (p != lexer.cursor);
-                                      lexer.curColumn += len;
-                                      if (error) {
-                                          getLocation(&lexer, &loc);
-                                          // FIXME compilerError(compiler, &loc, "syntax error in binary constant.");
-                                      } else if (overflow) {
-                                          getLocation(&lexer, &loc);
-                                          // FIXME compilerWarning(compiler, &loc, "overflow while parsing octal constant.");
-                                      }
-                                      emitToken(&lexer, T_INTEGER_LITERAL, "binary constant")->integer = value;
-                                      continue;
-                                    }
+            "."                         { return EMIT(DOT, "."); }
+            ".."                        { return EMIT(DOUBLE_DOT, ".."); }
+            "["                         { return EMIT(LBRACKET, "["); }
+            "]"                         { return EMIT(RBRACKET, "]"); }
+            "++"                        { return EMIT(INCR, "++"); }
+            "--"                        { return EMIT(DECR, "--"); }
+            ";"                         { return EMIT(SEMICOLON, ";"); }
+            "&"                         { return EMIT(AMPERSAND, "&"); }
+            "*"                         { return EMIT(ASTERISK, "*"); }
+            "+"                         { return EMIT(PLUS, "+"); }
+            "-"                         { return EMIT(MINUS, "-"); }
+            "~"                         { return EMIT(TILDE, "~"); }
+            "!"                         { return EMIT(EXCLAMATION, "!"); }
+            "("                         { return EMIT(LPAREN, "("); }
+            ")"                         { return EMIT(RPAREN, ")"); }
+            "/"                         { return EMIT(SLASH, "/"); }
+            "%"                         { return EMIT(PERCENT, "%"); }
+            "<<"                        { return EMIT(LSHIFT, "<<"); }
+            ">>"                        { return EMIT(RSHIFT, ">>"); }
+            "<"                         { return EMIT(LESS, "<"); }
+            ">"                         { return EMIT(GREATER, ">"); }
+            "<="                        { return EMIT(LESS_EQ, "<="); }
+            ">="                        { return EMIT(GREATER_EQ, ">="); }
+            "=="                        { return EMIT(EQUAL, "=="); }
+            "!="                        { return EMIT(NOT_EQUAL, "!="); }
+            "^"                         { return EMIT(CARET, "^"); }
+            "|"                         { return EMIT(VBAR, "|"); }
+            "&&"                        { return EMIT(DOUBLE_AMPERSAND, "&&"); }
+            "||"                        { return EMIT(DOUBLE_VBAR, "||"); }
+            "?"                         { return EMIT(QUESTION, "?"); }
+            ":"                         { return EMIT(COLON, ":"); }
+            "="                         { return EMIT(ASSIGN, "="); }
+            "+="                        { return EMIT(ADD_ASSIGN, "+="); }
+            "-="                        { return EMIT(SUB_ASSIGN, "-="); }
+            "*="                        { return EMIT(MUL_ASSIGN, "*="); }
+            "/="                        { return EMIT(DIV_ASSIGN, "/="); }
+            "%="                        { return EMIT(MOD_ASSIGN, "%="); }
+            "|="                        { return EMIT(OR_ASSIGN, "|="); }
+            "&="                        { return EMIT(AND_ASSIGN, "&="); }
+            "^="                        { return EMIT(XOR_ASSIGN, "^="); }
+            "<<="                       { return EMIT(SHL_ASSIGN, "<<="); }
+            ">>="                       { return EMIT(SHR_ASSIGN, ">>="); }
+            "{"                         { return EMIT(LCURLY, "{"); }
+            "}"                         { return EMIT(RCURLY, "}"); }
+            ","                         { return EMIT(COMMA, ","); }
+            "@"                         { return EMIT(ATSIGN, "@"); }
 
-        "0o" [0-9a-zA-Z_]+          { uint_value_t value = 0, old;
-                                      const char* p = lexer.tokenStart + 2;
-                                      int len = (int)(lexer.cursor - lexer.tokenStart);
-                                      bool error = false, overflow = false;
-                                      do {
-                                          unsigned int digit = digitToNumber(*p++, &error);
-                                          if (digit > 7)
-                                              error = true;
-                                          old = value;
-                                          value <<= 3;
-                                          if (value < old)
-                                              overflow = true;
-                                          value |= digit;
-                                      } while (p != lexer.cursor);
-                                      lexer.curColumn += len;
-                                      if (error) {
-                                          getLocation(&lexer, &loc);
-                                          // FIXME compilerError(compiler, &loc, "syntax error in octal constant.");
-                                      } else if (overflow) {
-                                          getLocation(&lexer, &loc);
-                                          // FIXME compilerWarning(compiler, &loc, "overflow while parsing octal constant.");
-                                      }
-                                      emitToken(&lexer, T_INTEGER_LITERAL, "octal constant")->integer = value;
-                                      continue;
-                                    }
+            [a-zA-Z_][a-zA-Z0-9_]*      { size_t len = (size_t)(lexer->cursor - tokenStart);
+                                          lexer->token.text = compilerTempDupStrN(compiler, tokenStart, len);
+                                          return EMIT_SPECIAL(IDENTIFIER, "identifier");
+                                        }
 
-        "0x" [0-9a-zA-Z_]+          { uint_value_t value = 0, old;
-                                      const char* p = lexer.tokenStart + 2;
-                                      int len = (int)(lexer.cursor - lexer.tokenStart);
-                                      bool error = false, overflow = false;
-                                      do {
-                                          old = value;
-                                          value <<= 4;
-                                          if (value < old)
-                                              overflow = true;
-                                          value |= digitToNumber(*p++, &error);
-                                      } while (p != lexer.cursor);
-                                      lexer.curColumn += len;
-                                      if (error) {
-                                          getLocation(&lexer, &loc);
-                                          // FIXME compilerError(compiler, &loc, "syntax error in hexadecimal constant.");
-                                      } else if (overflow) {
-                                          getLocation(&lexer, &loc);
-                                          // FIXME compilerWarning(compiler, &loc, "overflow while parsing octal constant.");
-                                      }
-                                      emitToken(&lexer, T_INTEGER_LITERAL, "hexadecimal constant")->integer = value;
-                                      continue;
-                                    }
+            "0b" [0-9a-zA-Z_]+          { uint_value_t value = 0, old;
+                                          const char* p = tokenStart + 2;
+                                          bool error = false, overflow = false;
+                                          do {
+                                              unsigned int digit = digitToNumber(*p++, &error);
+                                              if (digit > 1)
+                                                  error = true;
+                                              old = value;
+                                              value <<= 1;
+                                              if (value < old)
+                                                  overflow = true;
+                                              value |= digit;
+                                          } while (p != lexer->cursor);
+                                          if (overflow)
+                                              lexer->token.overflow = true;
+                                          if (error)
+                                              return EMIT_SPECIAL(INVALID_BINARY_LITERAL, "binary constant");
+                                          lexer->token.integer = value;
+                                          return EMIT_SPECIAL(INTEGER_LITERAL, "binary constant");
+                                        }
 
-        [0-9][0-9a-zA-Z_]*          { uint_value_t value = 0, old;
-                                      const char* p = lexer.tokenStart;
-                                      int len = (int)(lexer.cursor - lexer.tokenStart);
-                                      bool error = false, overflow = false;
-                                      do {
-                                          unsigned int digit = digitToNumber(*p++, &error);
-                                          if (digit > 9)
-                                              error = true;
-                                          old = value;
-                                          value *= 10;
-                                          if (value < old)
-                                              overflow = true;
-                                          value += digit;
-                                      } while (p != lexer.cursor);
-                                      lexer.curColumn += len;
-                                      if (error) {
-                                          getLocation(&lexer, &loc);
-                                          // FIXME compilerError(compiler, &loc, "syntax error in decimal constant.");
-                                      } else if (overflow) {
-                                          getLocation(&lexer, &loc);
-                                          // FIXME compilerWarning(compiler, &loc, "overflow while parsing octal constant.");
-                                      }
-                                      emitToken(&lexer, T_INTEGER_LITERAL, "decimal constant")->integer = value;
-                                      continue;
-                                    }
+            "0o" [0-9a-zA-Z_]+          { uint_value_t value = 0, old;
+                                          const char* p = tokenStart + 2;
+                                          bool error = false, overflow = false;
+                                          do {
+                                              unsigned int digit = digitToNumber(*p++, &error);
+                                              if (digit > 7)
+                                                  error = true;
+                                              old = value;
+                                              value <<= 3;
+                                              if (value < old)
+                                                  overflow = true;
+                                              value |= digit;
+                                          } while (p != lexer->cursor);
+                                          if (overflow)
+                                              lexer->token.overflow = true;
+                                          if (error)
+                                              return EMIT_SPECIAL(INVALID_OCTAL_LITERAL, "octal constant");
+                                          lexer->token.integer = value;
+                                          return EMIT_SPECIAL(INTEGER_LITERAL, "octal constant");
+                                        }
 
-        *                           { ++lexer.curColumn;
-                                      getLocation(&lexer, &loc);
-                                      ch = lexer.cursor[-1];
-                                      /* FIXME
-                                      if (ch >= 32 && ch < 127)
-                                          compilerError(compiler, &loc, "unexpected symbol '%c'.", ch);
-                                      else
-                                          compilerError(compiler, &loc, "unexpected symbol.");
-                                      */
-                                    }
+            "0x" [0-9a-zA-Z_]+          { uint_value_t value = 0, old;
+                                          const char* p = tokenStart + 2;
+                                          bool error = false, overflow = false;
+                                          do {
+                                              old = value;
+                                              value <<= 4;
+                                              if (value < old)
+                                                  overflow = true;
+                                              value |= digitToNumber(*p++, &error);
+                                          } while (p != lexer->cursor);
+                                          if (overflow)
+                                              lexer->token.overflow = true;
+                                          if (error)
+                                              return EMIT_SPECIAL(INVALID_HEXADECIMAL_LITERAL, "hexadecimal constant");
+                                          lexer->token.integer = value;
+                                          return EMIT_SPECIAL(INTEGER_LITERAL, "hexadecimal constant");
+                                        }
 
-        */
+            [0-9][0-9a-zA-Z_]*          { uint_value_t value = 0, old;
+                                          const char* p = tokenStart;
+                                          bool error = false, overflow = false;
+                                          do {
+                                              unsigned int digit = digitToNumber(*p++, &error);
+                                              if (digit > 9)
+                                                  error = true;
+                                              old = value;
+                                              value *= 10;
+                                              if (value < old)
+                                                  overflow = true;
+                                              value += digit;
+                                          } while (p != lexer->cursor);
+                                          if (overflow)
+                                              lexer->token.overflow = true;
+                                          if (error)
+                                              return EMIT_SPECIAL(INVALID_DECIMAL_LITERAL, "decimal constant");
+                                          lexer->token.integer = value;
+                                          return EMIT_SPECIAL(INTEGER_LITERAL, "decimal constant");
+                                        }
+
+            *                           { return EMIT_SPECIAL(INVALID_SYMBOL, "invalid symbol"); }
+
+           */
     }
 }

@@ -3,6 +3,9 @@
 
 #include <drunkfly/common.h>
 
+STRUCT(SourceFile);
+STRUCT(SourceLine);
+
 STRUCT(CompilerToken);
 STRUCT(CompilerLocation);
 STRUCT(Compiler);

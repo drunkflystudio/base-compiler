@@ -55,6 +55,7 @@ add_custom_command(OUTPUT "${parser_c}" "${parser_h}"
 set(src_compiler
     drunkfly/compiler/arena.c
     drunkfly/compiler/arena.h
+    drunkfly/compiler/lexer.h
     drunkfly/compiler/parser.y
     drunkfly/compiler/private.h
     drunkfly/compiler/token.h
@@ -77,7 +78,7 @@ source_group("Generated Files" FILES ${gen})
 add_library(FlyCompilerCore STATIC ${src} ${src_compiler} ${gen})
 
 set_target_properties(FlyCompilerCore PROPERTIES FOLDER "Libs")
-target_include_directories(FlyCompilerCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(FlyCompilerCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(FlyCompilerCore PUBLIC FlyCommon)
 
 ######################################################################################################################

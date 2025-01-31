@@ -66,7 +66,11 @@ void yyreduceposn(CompilerLocation* ret, const CompilerLocation* inputs, int cou
 %token <token> KW_void
 %token <token> KW_while
 %token <token> KW_word
-%token <token> T_FILE_START
+%token <token> T_INVALID_SYMBOL
+%token <token> T_INVALID_BINARY_LITERAL
+%token <token> T_INVALID_OCTAL_LITERAL
+%token <token> T_INVALID_HEXADECIMAL_LITERAL
+%token <token> T_INVALID_DECIMAL_LITERAL
 %token <token> T_MULTI_LINE_COMMENT
 %token <token> T_SINGLE_LINE_COMMENT
 %token <token> T_IDENTIFIER
@@ -124,10 +128,10 @@ void yyreduceposn(CompilerLocation* ret, const CompilerLocation* inputs, int cou
 }
 
 %location CompilerLocation {
-    struct Module* module;
-    int startLine;
+    SourceFile* file;
+    SourceLine* startLine;
+    SourceLine* endLine;
     int startColumn;
-    int endLine;
     int endColumn;
 }
 

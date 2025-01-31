@@ -11,12 +11,12 @@ typedef unsigned long uint_value_fmt;
 #define UINT_VALUE_FMT "%" PRINTF_INT32_MODIFIER "u"
 
 struct CompilerToken {
-    CompilerToken* next;
     const char* text;
     const char* name;
     CompilerLocation location;
     uint_value_t integer;
-    int id;
+    short id;
+    char overflow; /* bool */
 };
 
 #endif

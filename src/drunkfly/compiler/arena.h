@@ -5,7 +5,8 @@
 
 #define COMPILER_ARENA_SIZE 32768
 
-STRUCT(CompilerArena) {
+STRUCT(CompilerArena)
+{
     CompilerArena* prev;
     size_t allocatedSize;
     size_t bytesLeft;
