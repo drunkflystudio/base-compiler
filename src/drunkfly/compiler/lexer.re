@@ -43,6 +43,16 @@ void compilerInitLexer(CompilerLexer* lexer, SourceFile* file, SourceLine* line,
     lexer->state = state;
 }
 
+#if defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))
+# if defined(__clang__) || (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+#  pragma GCC diagnostic ignored "-Wpedantic"
+#  pragma GCC diagnostic ignored "-Wchar-subscripts"
+# else
+#  pragma GCC diagnostic ignored "-pedantic"
+#  pragma GCC diagnostic ignored "-Wchar-subscripts"
+# endif
+#endif
+
 bool compilerGetToken(Compiler* compiler, lua_State* L, CompilerLexer* lexer)
 {
     const char* tokenStart;
@@ -101,11 +111,6 @@ bool compilerGetToken(Compiler* compiler, lua_State* L, CompilerLexer* lexer)
             lexer->token.location.startColumn = (int)(lexer->cursor - lexer->start);
             lexer->token.overflow = false;
             tokenStart = lexer->cursor;
-
-            #ifdef __GNUC__
-            #pragma GCC diagnostic ignored "-Wpedantic"
-            #pragma GCC diagnostic ignored "-Wchar-subscripts"
-            #endif
 
             /*!re2c
 
