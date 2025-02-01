@@ -19,7 +19,7 @@
 
 %{
 
-#pragma GCC diagnostic push
+//#pragma GCC diagnostic push
 #include "src/util/nowarn_in_bison.h"
 
 #include "src/msg/msg.h"
@@ -139,7 +139,7 @@ code_expr
 
 code_opt
 : '(' opt_or '?' code_exprs ')' {
-    $$ = opts.make_code_cond($2, $4, nullptr);
+    $$ = opts.make_code_cond($2, $4, /*nullptr*/NULL);
 } | '(' opt_or '?' code_exprs ':' code_exprs ')' {
     $$ = opts.make_code_cond($2, $4, $6);
 };
@@ -196,7 +196,7 @@ Ret Input::load_syntax_config(Opt& opts, Lang lang) {
     files.push_back(in);
     msg.filenames.push_back("<default syntax file>");
 
-    const char* src = nullptr;
+    const char* src = /*nullptr*/NULL;
     switch (lang) {
         case Lang::C: src = DEFAULT_SYNTAX_C; break;
         case Lang::D: src = DEFAULT_SYNTAX_D; break;
@@ -212,7 +212,7 @@ Ret Input::load_syntax_config(Opt& opts, Lang lang) {
         case Lang::NONE: break; // no language => no default syntax config
     }
 
-    if (src != nullptr) {
+    if (src != /*nullptr*/NULL) {
         size_t flen = strlen(src);
 
         if (flen + maxfill() > BSIZE) {

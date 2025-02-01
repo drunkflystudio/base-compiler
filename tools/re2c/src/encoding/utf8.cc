@@ -22,7 +22,7 @@ static void add_continuous( RangeSuffix*& root, IrAllocator& alc, rune l, rune h
         const uint32_t lc = lcs[n - i];
         const uint32_t hc = hcs[n - i];
         for (;;) {
-            if (*p == nullptr) {
+            if (*p == /*nullptr*/NULL) {
                 *p = make_range_suffix(alc, lc, hc);
                 p = &(*p)->child;
                 break;
@@ -109,15 +109,15 @@ static Regexp* symbol(RESpec& spec, rune r) {
 //
 Regexp* range(RESpec& spec, const Range* r) {
     // empty range
-    if (!r) return nullptr;
+    if (!r) return /*nullptr*/NULL;
 
     // one-symbol range
     if (!r->next() && r->lower() == r->upper() - 1) {
         return symbol(spec, r->lower());
     }
 
-    RangeSuffix* root = nullptr;
-    for (; r != nullptr; r = r->next()) {
+    RangeSuffix* root = /*nullptr*/NULL;
+    for (; r != /*nullptr*/NULL; r = r->next()) {
         split_by_rune_length(root, spec.ir_alc, r->lower(), r->upper() - 1);
     }
     return to_regexp(spec, root);

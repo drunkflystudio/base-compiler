@@ -25,7 +25,7 @@ class GenBitmapChecks : public RenderCallback {
             std::ostream& os, const opt_t* opts, const CodeBmState* bm, const std::string& cond)
         : os(os), opts(opts), bm(bm), cond(cond) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::BITMAP:
             os << bitmap_name(opts, cond);
@@ -108,7 +108,7 @@ static CodeBmState* find_bitmap(
     for (CodeBmState* b = bitmap->states->head; b; b = b->next) {
         if (b->state == s && matches(opts, b->go, b->state, go, s)) return b;
     }
-    return nullptr;
+    return /*nullptr*/NULL;
 }
 
 static void init_bitmap(Output& output, CodeBitmap* bitmap) {
@@ -118,7 +118,7 @@ static void init_bitmap(Output& output, CodeBitmap* bitmap) {
     OutAllocator& alc = output.allocator;
     Scratchbuf& buf = output.scratchbuf;
 
-    static constexpr uint32_t WIDTH = 8;
+    static const/*expr*/ uint32_t WIDTH = 8;
     const uint32_t nchars = bitmap->nchars;
     uint32_t nmaps = 0;
     for (CodeBmState* b = bitmap->states->head; b; b = b->next) ++nmaps;
@@ -301,7 +301,7 @@ static CodeGoIfL* code_goifl(
     CodeGoIfL* x = output.allocator.alloct<CodeGoIfL>(1);
     x->nbranches = 0;
     x->branches = output.allocator.alloct<CodeGoBranch>(n);
-    x->def = eof == NOEOF ? nullptr : next;
+    x->def = eof == NOEOF ? /*nullptr*/NULL : next;
 
     // In rec/func mode transition can only be elideed if there is a single branch.
     // Otherwise an IF/ELSE-IF.../ELSE is needed, where every branch ends in a tailcall
@@ -310,15 +310,15 @@ static CodeGoIfL* code_goifl(
 
     for (;;) {
         if (n == 1 && s[0].to == next && may_elide) {
-            add_branch_jump(x, nullptr, opts, nullptr, next, s[0], skip, eof);
+            add_branch_jump(x, /*nullptr*/NULL, opts, /*nullptr*/NULL, next, s[0], skip, eof);
             break;
         } else if (n == 1) {
-            add_branch_jump(x, nullptr, opts, s[0].to, next, s[0], skip, eof);
+            add_branch_jump(x, /*nullptr*/NULL, opts, s[0].to, next, s[0], skip, eof);
             break;
         } else if (n == 2 && s[0].to == next && may_elide) {
             const char* cmp = code_cmp_yych(output, OP_CMP_GE, s[0].ub);
             add_branch_jump(x, cmp, opts, s[1].to, next, s[1], skip, eof);
-            add_branch_jump(x, nullptr, opts, nullptr, next, s[0], skip, eof);
+            add_branch_jump(x, /*nullptr*/NULL, opts, /*nullptr*/NULL, next, s[0], skip, eof);
             break;
         } else if (n == 3
                 && s[1].to == next
@@ -328,7 +328,7 @@ static CodeGoIfL* code_goifl(
                 && may_elide) {
             const char* cmp = code_cmp_yych(output, OP_CMP_NE, s[0].ub);
             add_branch_jump(x, cmp, opts, s[0].to, next, s[0], skip, eof);
-            add_branch_jump(x, nullptr, opts, nullptr, next, s[1], skip, eof);
+            add_branch_jump(x, /*nullptr*/NULL, opts, /*nullptr*/NULL, next, s[1], skip, eof);
             break;
         } else if (n >= 3
                 && s[1].ub - s[0].ub == 1
@@ -434,7 +434,7 @@ static CodeGoIfL* code_gobm(
     CodeGoIfL* x = output.allocator.alloct<CodeGoIfL>(1);
     x->nbranches = 0;
     x->branches = output.allocator.alloct<CodeGoBranch>(3);
-    x->def = eof == NOEOF ? nullptr : next;
+    x->def = eof == NOEOF ? /*nullptr*/NULL : next;
 
     GenBitmapChecks callback(buf.stream(), opts, bm, dfa.cond);
 
@@ -442,7 +442,7 @@ static CodeGoIfL* code_gobm(
         const char* cond = opts->gen_code_yybm_filter(buf, callback);
 
         // Have low spans => next state must be null to disallow transtion elision in linear IF.
-        State* s = nother > 0 ? nullptr : next;
+        State* s = nother > 0 ? /*nullptr*/NULL : next;
         CodeGoSwIf* swif = code_goswif(output, hspan, hspans, s, skip, eof);
 
         add_branch_swif(x, cond, swif);
@@ -454,10 +454,10 @@ static CodeGoIfL* code_gobm(
 
     if (nother > 0) {
         // Rec/func mode => next state must be null to disallow transtion elision in linear IF.
-        State* s = opts->code_model == CodeModel::REC_FUNC ? nullptr : next;
+        State* s = opts->code_model == CodeModel::REC_FUNC ? /*nullptr*/NULL : next;
         CodeGoSwIf* swif = code_goswif(output, other, nother, s, skip, eof);
 
-        add_branch_swif(x, nullptr, swif);
+        add_branch_swif(x, /*nullptr*/NULL, swif);
     }
 
     operator delete(other);
@@ -483,7 +483,7 @@ static CodeGoCpTable* code_gocp_table(Output& output, const Span* span, uint32_t
 static CodeGoCp* code_gocp(Output& output, const Span* span, uint32_t span_count,
         const Span* hspan, uint32_t hspan_count, State* next, uint32_t eof) {
     CodeGoCp* x = output.allocator.alloct<CodeGoCp>(1);
-    x->hgo = hspan_count == 0 ? nullptr
+    x->hgo = hspan_count == 0 ? /*nullptr*/NULL
             : code_goswif(output, hspan, hspan_count, next, false, eof);
     x->table = code_gocp_table(output, span, span_count);
     return x;
@@ -493,14 +493,14 @@ State* fallback_state_with_eof_rule(
         const Adfa& dfa, const opt_t* opts, const State* state, tcid_t* ptags) {
     CHECK(opts->fill_eof != NOEOF);
 
-    State* fallback = nullptr;
+    State* fallback = /*nullptr*/NULL;
     tcid_t falltags = TCID0;
 
     if (state->action.kind == Action::Kind::INITIAL) {
         // End-of-input rule $ in the initial state takes priority over any other rule.
         fallback = dfa.eof_state;
         falltags = TCID0;
-    } else if (state->rule != Rule::NONE) {
+    } else if (state->rule != Rule::NONE()) {
         // EOF in accepting state: match the rule in this state.
         fallback = dfa.finstates[state->rule];
         falltags = state->rule_tags;
@@ -519,7 +519,8 @@ static void code_go(Output& output, const Adfa& dfa, State* from) {
 
     // Mark all states that are targets of `yyaccept` switch to as used.
     if (from->action.kind == Action::Kind::ACCEPT) {
-        for (const AcceptTrans& a : *from->action.info.accepts) {
+        for (auto it = from->action.info.accepts->begin(); it != from->action.info.accepts->end(); ++it) {
+            const AcceptTrans& a = *it;
             a.state->label->used = true;
         }
     }
@@ -531,7 +532,7 @@ static void code_go(Output& output, const Adfa& dfa, State* from) {
 
     // With end-of-input rule $, mark states that are targets of fallback transitions as used.
     if (opts->fill_eof != NOEOF && !(go->span_count == 1 && from->next == span[0].to)) {
-        State* f = fallback_state_with_eof_rule(dfa, opts, from, nullptr);
+        State* f = fallback_state_with_eof_rule(dfa, opts, from, /*nullptr*/NULL);
         if (f) f->label->used = true;
     }
 
@@ -540,7 +541,7 @@ static void code_go(Output& output, const Adfa& dfa, State* from) {
 
     // initialize high (wide) spans
     uint32_t hspan_count = 0;
-    const Span* hspan = nullptr;
+    const Span* hspan = /*nullptr*/NULL;
     for (uint32_t i = 0; i < go->span_count; ++i) {
         if (span[i].ub > 0x100) {
             hspan = &go->span[i];
@@ -559,7 +560,7 @@ static void code_go(Output& output, const Adfa& dfa, State* from) {
 
     // initialize bitmaps
     uint32_t bitmap_count = 0;
-    const CodeBmState* bm = nullptr;
+    const CodeBmState* bm = /*nullptr*/NULL;
     if (opts->bitmaps) {
         for (uint32_t i = 0; i < go->span_count; ++i) {
             State* s = go->span[i].to;
@@ -567,7 +568,7 @@ static void code_go(Output& output, const Adfa& dfa, State* from) {
 
             const CodeBmState* b = find_bitmap(opts, dfa.bitmap, go, s);
             if (b) {
-                if (bm == nullptr) {
+                if (bm == /*nullptr*/NULL) {
                     bm = b;
                 }
                 ++bitmap_count;
@@ -605,7 +606,7 @@ static void code_go(Output& output, const Adfa& dfa, State* from) {
 void init_go(CodeGo* go) {
     go->kind = CodeGo::Kind::EMPTY;
     go->span_count = 0;
-    go->span = nullptr;
+    go->span = /*nullptr*/NULL;
     go->tags = TCID0;
     go->skip = false;
 }
@@ -625,6 +626,29 @@ bool consume(const State* s) {
     return true;
 }
 
+static Ret split(OutAllocator& alc, const std::string& s,
+    const char*& name, const char*& param, const char*& type, const opt_t* opts)
+{
+    std::vector<std::string> parts;
+    for (size_t p1 = 0;;) {
+        size_t p2 = s.find(opts->fn_sep, p1);
+        if (p2 == std::string::npos) {
+            parts.push_back(s.substr(p1, s.length() - p1));
+            break;
+        } else {
+            parts.push_back(s.substr(p1, p2 - p1));
+            p1 = p2 + opts->fn_sep.length();
+        }
+    }
+    name = copystr(parts[0], alc);
+    type = parts.size() > 1 ? copystr(parts[1], alc) : NULL; // nullptr
+    param = parts.size() > 2 ? copystr(parts[2], alc) : name;
+    if (parts.size() > 3) {
+        RET_FAIL(error("`re2c:YYFN` configuration element `%s` has too many parts", s.c_str()));
+    }
+    return Ret::OK;
+}
+
 // In rec-func mode we can precompute common YYFN parts.
 // This should be done for each block (with block-level configurations YYFN and `fn:sep`)
 // and once for the whole program (with whole-program configurations).
@@ -636,31 +660,10 @@ LOCAL_NODISCARD(Ret gen_fn_common(OutAllocator& alc, CodeFnCommon** fn_common, c
 
     const char* name, *param, *type;
 
-    auto split = [&](const std::string& s) -> Ret {
-        std::vector<std::string> parts;
-        for (size_t p1 = 0;;) {
-            size_t p2 = s.find(opts->fn_sep, p1);
-            if (p2 == std::string::npos) {
-                parts.push_back(s.substr(p1, s.length() - p1));
-                break;
-            } else {
-                parts.push_back(s.substr(p1, p2 - p1));
-                p1 = p2 + opts->fn_sep.length();
-            }
-        }
-        name = copystr(parts[0], alc);
-        type = parts.size() > 1 ? copystr(parts[1], alc) : nullptr;
-        param = parts.size() > 2 ? copystr(parts[2], alc) : name;
-        if (parts.size() > 3) {
-            RET_FAIL(error("`re2c:YYFN` configuration element `%s` has too many parts", s.c_str()));
-        }
-        return Ret::OK;
-    };
-
     CodeFnCommon* f = alc.alloct<CodeFnCommon>(1);
 
     DCHECK(!opts->api_fn.empty());
-    CHECK_RET(split(opts->api_fn[0]));
+    CHECK_RET(split(alc, opts->api_fn[0], name, param, type, opts));
     f->name = name;
     f->type = type;
 
@@ -670,8 +673,8 @@ LOCAL_NODISCARD(Ret gen_fn_common(OutAllocator& alc, CodeFnCommon** fn_common, c
     f->args_yych = code_args(alc);
 
     for (size_t i = 1; i < opts->api_fn.size(); ++i) {
-        CHECK_RET(split(opts->api_fn[i]));
-        if (type == nullptr) {
+        CHECK_RET(split(alc, opts->api_fn[i], name, param, type, opts));
+        if (type == /*nullptr*/NULL) {
             RET_FAIL(error(
                 "missing type in `re2c:YYFN` configuration element `%s`", opts->api_fn[i].c_str()));
         }
@@ -706,7 +709,7 @@ LOCAL_NODISCARD(Ret codegen_analyze_block(Output& output)) {
     const opt_t* opts = block.opts;
 
     Code* code = block.code->head;
-    if (code == nullptr || code->kind != CodeKind::DFAS) {
+    if (code == /*nullptr*/NULL || code->kind != CodeKind::DFAS) {
         return Ret::OK;
     } else if (dfas.empty()) {
         code->kind = CodeKind::EMPTY;
@@ -719,7 +722,8 @@ LOCAL_NODISCARD(Ret codegen_analyze_block(Output& output)) {
 
     const std::unique_ptr<Adfa>& first_dfa = *dfas.begin();
 
-    for (const std::unique_ptr<Adfa>& dfa : dfas) {
+    for (auto it = dfas.begin(); it != dfas.end(); ++it) {
+        const std::unique_ptr<Adfa>& dfa = *it;
         const bool first = (dfa == first_dfa);
 
         if (opts->bitmaps) {
@@ -797,7 +801,7 @@ LOCAL_NODISCARD(Ret codegen_analyze_block(Output& output)) {
             // In loop/switch or rec/func mode, condition numbers are the numeric indices of their
             // initial DFA state. Otherwise we do not assign explicit numbers, and conditions are
             // implicitly assigned consecutive numbers starting from zero.
-            block.conds.push_back({dfa->cond,
+            block.conds.push_back(StartCond{dfa->cond,
                     opts->code_model == CodeModel::GOTO_LABEL ? 0 : dfa->head->label->index});
         }
     }
@@ -806,14 +810,15 @@ LOCAL_NODISCARD(Ret codegen_analyze_block(Output& output)) {
     // In goto/label and rec/func modes they use separate global enumeration that starts from zero.
     uint32_t& counter = opts->code_model == CodeModel::LOOP_SWITCH
             ? output.label_counter : output.fill_label_counter;
-    for (const std::unique_ptr<Adfa>& dfa : dfas) {
+    for (auto it = dfas.begin(); it != dfas.end(); ++it) {
+        const std::unique_ptr<Adfa>& dfa = *it;
         for (State* s = dfa->head; s; s = s->next) {
             if (s->fill_state == s) {
                 s->fill_label = new_label(alc, counter++);
 
                 if (opts->storable_state) {
                     block.fill_goto[s->fill_label->index] =
-                            gen_goto_after_fill(output, *dfa, s, nullptr);
+                            gen_goto_after_fill(output, *dfa, s, /*nullptr*/NULL);
                 }
             }
         }
@@ -825,28 +830,36 @@ LOCAL_NODISCARD(Ret codegen_analyze_block(Output& output)) {
 Ret codegen_analyze(Output& output) {
     CHECK_RET(gen_fn_common(output.allocator, &output.fn_common, output.total_opts));
 
-    for (const blocks_t& bs : {output.cblocks, output.hblocks}) {
-        for (OutputBlock* b : bs) {
+    //for (const blocks_t& bs : {output.cblocks, output.hblocks}) {
+        for (auto it = output.cblocks.begin(); it != output.cblocks.end(); ++it) {
+            OutputBlock* b = *it;
             output.set_current_block(b);
             CHECK_RET(codegen_analyze_block(output));
         }
-    }
+        for (auto it = output.hblocks.begin(); it != output.hblocks.end(); ++it) {
+            OutputBlock* b = *it;
+            output.set_current_block(b);
+            CHECK_RET(codegen_analyze_block(output));
+        }
+    //}
 
     // Generate implicit condiiton enum in the header, if there is no explicit `conditions` block.
     const opt_t* opts = output.total_opts;
     if (!opts->header_file.empty() && opts->start_conditions && output.cond_enum_autogen) {
         output.header_mode(true);
         output.gen_stmt(code_newline(output.allocator));
-        output.gen_stmt(code_fmt(output.allocator, CodeKind::COND_ENUM, nullptr, nullptr, nullptr));
+        output.gen_stmt(code_fmt(output.allocator, CodeKind::COND_ENUM, /*nullptr*/NULL, /*nullptr*/NULL, /*nullptr*/NULL));
         output.header_mode(false);
     }
 
-    output.set_current_block(nullptr);
+    output.set_current_block(/*nullptr*/NULL);
     return Ret::OK;
 }
 
 // C++11 requres outer decl for ODR-used static constexpr data members (not needed in C++17).
+/*
 constexpr uint32_t Label::NONE;
 constexpr uint32_t CodeGoCpTable::TABLE_SIZE;
+*/
 
 } // end namespace re2c

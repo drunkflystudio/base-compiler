@@ -94,10 +94,11 @@ void prune(ctx_t& ctx) {
     // final item per closure].
 
     closure_t& closure = ctx.state, &buffer = ctx.reach;
-    const clos_t* f = nullptr;
+    const clos_t* f = /*nullptr*/NULL;
     buffer.clear();
 
-    for (const clos_t& c : closure) {
+    for (auto it = closure.begin(); it != closure.end(); ++it) {
+        const clos_t& c = *it;
         TnfaState* s = c.state;
 
         closure_cleanup<ctx_t>(s);
@@ -105,19 +106,20 @@ void prune(ctx_t& ctx) {
         if (s->kind == TnfaState::Kind::RAN) {
             buffer.push_back(c);
         } else if (s->kind == TnfaState::Kind::FIN
-                && (f == nullptr || s->rule < f->state->rule)) {
+                && (f == /*nullptr*/NULL || s->rule < f->state->rule)) {
             f = &c;
         }
     }
 
-    if (f != nullptr) {
+    if (f != /*nullptr*/NULL) {
         buffer.push_back(*f);
 
         // mark dropped rules as shadowed
         if (ctx.msg.warn.is_set(Warn::UNREACHABLE_RULES)) {
             std::vector<Rule>& rules = ctx.rules;
             const uint32_t l = rules[f->state->rule].semact->loc.line;
-            for (const clos_t& c : closure) {
+            for (auto it = closure.begin(); it != closure.end(); ++it) {
+                const clos_t& c = *it;
                 if (&c != f && c.state->kind == TnfaState::Kind::FIN) {
                     rules[c.state->rule].shadow.insert(l);
                 }
@@ -142,12 +144,13 @@ void generate_versions(ctx_t& ctx) {
 
     typename ctx_t::newvers_t newacts(
         newver_cmp_t<typename ctx_t::history_t>(thist, ctx.hc_caches));
-    tcmd_t* cmd = nullptr;
+    tcmd_t* cmd = /*nullptr*/NULL;
 
     // For each tag, if there is at least one tagged transition, allocate a new version: negative
     // in the case of transition with a negative tag, and positive otherwise. The absolute version
     // value should be unique among all versions of all tags.
-    for (clos_t& c : clos) {
+    for (auto it = clos.begin(); it != clos.end(); ++it) {
+        const clos_t& c = *it;
         const hidx_t l = c.thist, h = c.ttran;
         if (h == HROOT) continue;
 
@@ -171,7 +174,8 @@ void generate_versions(ctx_t& ctx) {
     }
 
     // actions
-    for (const auto& i : newacts) {
+    for (auto it = newacts.begin(); it != newacts.end(); ++it) {
+        const auto& i = *it;
         const tagver_t m = i.second, v = i.first.base;
         const hidx_t h = i.first.history;
         const size_t t = i.first.tag;
@@ -183,14 +187,16 @@ void generate_versions(ctx_t& ctx) {
     }
 
     // mark tags with history
-    for (const auto& j : newvers) {
+    for (auto it = newvers.begin(); it != newvers.end(); ++it) {
+        const auto& j = *it;
         if (history(tags[j.first.tag])) {
             dfa.mtagvers.insert(abs(j.second));
         }
     }
 
     // update tag versions in closure
-    for (clos_t& c : clos) {
+    for (auto it = clos.begin(); it != clos.end(); ++it) {
+        clos_t& c = *it;
         const hidx_t h = c.ttran;
         if (h == HROOT) continue;
 

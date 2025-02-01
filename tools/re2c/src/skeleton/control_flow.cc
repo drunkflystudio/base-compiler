@@ -21,7 +21,7 @@ namespace {
 // See note [counting skeleton edges].
 // A type for counting total size of default paths. Most real-world cases have only a few short
 // paths. We don't need all paths anyway, just some examples.
-using paths_size_t = u32lim_t<1024>; // ~1Kb
+typedef u32lim_t<1024> paths_size_t; /*using paths_size_t = u32lim_t<1024>;*/ // ~1Kb
 
 struct StackItem {
     uint32_t node;
@@ -66,7 +66,7 @@ void warn_undefined_control_flow(const Skeleton& skel) {
     std::vector<StackItem> stack;
     path_t path(0);
 
-    stack.push_back({0, skel.nodes[0].arcs.begin()});
+    stack.push_back(StackItem{0, skel.nodes[0].arcs.begin()});
 
     while (!stack.empty()) {
         StackItem i = stack.back();
@@ -75,9 +75,9 @@ void warn_undefined_control_flow(const Skeleton& skel) {
 
         if (i.arc == node.arcs.begin()) {
             // DFS recursive enter
-            if (node.rule != Rule::NONE && node.rule != skel.dfa.eof_rule) {
+            if (node.rule != Rule::NONE() && node.rule != skel.dfa.eof_rule) {
                 // accepting path, terminate recursion
-            } else if (node.end() || (use_eof_rule && node.rule == Rule::NONE)) {
+            } else if (node.end() || (use_eof_rule && node.rule == Rule::NONE())) {
                 // found path to default state
                 get_path_on_stack(path, stack, i.node);
                 paths.push_back(path);
@@ -89,10 +89,10 @@ void warn_undefined_control_flow(const Skeleton& skel) {
                 const uint32_t succ = static_cast<uint32_t>(i.arc->first);
 
                 // reschedule this node with the next successor
-                stack.push_back({i.node, ++i.arc});
+                stack.push_back(StackItem{i.node, ++i.arc});
 
                 // schedule the first successor node
-                stack.push_back({succ, skel.nodes[succ].arcs.begin()});
+                stack.push_back(StackItem{succ, skel.nodes[succ].arcs.begin()});
             }
         } else if (i.arc == node.arcs.end()) {
             // DFS recursive return
@@ -101,10 +101,10 @@ void warn_undefined_control_flow(const Skeleton& skel) {
             const uint32_t succ = static_cast<uint32_t>(i.arc->first);
 
             // reschedule this node with the next successor and updated distance
-            stack.push_back({i.node, ++i.arc});
+            stack.push_back(StackItem{i.node, ++i.arc});
 
             // schedule the current successor node
-            stack.push_back({succ, skel.nodes[succ].arcs.begin()});
+            stack.push_back(StackItem{succ, skel.nodes[succ].arcs.begin()});
         }
     }
 

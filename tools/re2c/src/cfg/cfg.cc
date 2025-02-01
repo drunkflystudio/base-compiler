@@ -24,8 +24,8 @@ cfg_context_t::cfg_context_t(Tdfa& dfa)
       trans_mark(state_mark + nstate),
       final_mark(trans_mark + nstate * nsym),
       mark(0),
-      succb(nullptr),
-      succe(nullptr),
+      succb(/*nullptr*/NULL),
+      succe(/*nullptr*/NULL),
       worklist() {
     memset(state_mark, 0, nstate * (nsym + 2) * sizeof(uint32_t));
     worklist.reserve(nstate);
@@ -42,11 +42,11 @@ static void fallback(cfg_context_t& ctx, size_t x);
 
 cfg_t::cfg_t(Tdfa& a)
     : dfa(a),
-      bblocks(nullptr),
+      bblocks(/*nullptr*/NULL),
       nbbarc(0),
       nbbfin(0),
       nbbfall(0),
-      tcmd0(nullptr) {
+      tcmd0(/*nullptr*/NULL) {
     cfg_context_t ctx(dfa);
     map_actions_to_bblocks(ctx);
     create_bblocks(ctx);
@@ -61,7 +61,7 @@ void cfg_t::map_actions_to_bblocks(cfg_context_t& ctx) {
         cfg_ix_t* trans2bb = &ctx.trans2bb[i * ctx.nsym];
         tcmd_t** cmd = dfa.states[i]->tcmd;
         for (size_t c = 0; c < ctx.nsym; ++c) {
-            trans2bb[c] = cmd[c] == nullptr ? 0 : nbb++;
+            trans2bb[c] = cmd[c] == /*nullptr*/NULL ? 0 : nbb++;
         }
     }
     nbbarc = nbb;
@@ -69,7 +69,7 @@ void cfg_t::map_actions_to_bblocks(cfg_context_t& ctx) {
     // bblock for final tagged epsilon-transition
     for (size_t i = 0; i < ctx.nstate; ++i) {
         TdfaState* s = dfa.states[i];
-        ctx.final2bb[i] = (s->rule != Rule::NONE && s->tcmd[ctx.nsym]) ? nbb++ : 0;
+        ctx.final2bb[i] = (s->rule != Rule::NONE() && s->tcmd[ctx.nsym]) ? nbb++ : 0;
     }
     nbbfin = nbb;
 
@@ -89,7 +89,7 @@ void cfg_t::create_bblocks(cfg_context_t& ctx) {
 
     // root bblock
     successors(ctx, 0, true /*self*/);
-    new(b++) cfg_bb_t(ctx.succb, ctx.succe, tcmd0, nullptr);
+    new(b++) cfg_bb_t(ctx.succb, ctx.succe, tcmd0, /*nullptr*/NULL);
 
     // transition bblocks
     for (size_t i = 0; i < ctx.nstate; ++i) {
@@ -98,7 +98,7 @@ void cfg_t::create_bblocks(cfg_context_t& ctx) {
         for (size_t c = 0; c < ctx.nsym; ++c) {
             if (trans2bb[c]) {
                 successors(ctx, s->arcs[c], true /*self*/);
-                new(b++) cfg_bb_t(ctx.succb, ctx.succe, s->tcmd[c], nullptr);
+                new(b++) cfg_bb_t(ctx.succb, ctx.succe, s->tcmd[c], /*nullptr*/NULL);
             }
         }
     }
@@ -107,7 +107,7 @@ void cfg_t::create_bblocks(cfg_context_t& ctx) {
     for (size_t i = 0; i < ctx.nstate; ++i) {
         if (ctx.final2bb[i]) {
             const TdfaState* s = dfa.states[i];
-            new(b++) cfg_bb_t(nullptr, nullptr, s->tcmd[ctx.nsym], &dfa.rules[s->rule]);
+            new(b++) cfg_bb_t(/*nullptr*/NULL, /*nullptr*/NULL, s->tcmd[ctx.nsym], &dfa.rules[s->rule]);
         }
     }
 
@@ -122,8 +122,8 @@ void cfg_t::create_bblocks(cfg_context_t& ctx) {
 }
 
 cfg_bb_t::cfg_bb_t(const cfg_ix_t* sb, const cfg_ix_t* se, tcmd_t*& c, const Rule* r)
-    : succb(nullptr),
-      succe(nullptr),
+    : succb(/*nullptr*/NULL),
+      succe(/*nullptr*/NULL),
       cmd(c),
       rule(r) {
     const size_t n = static_cast<size_t>(se - sb);
@@ -251,7 +251,7 @@ cfg_t::~cfg_t() {
 }
 
 // C++11 requres outer decl for ODR-used static constexpr data members (not needed in C++17).
-constexpr uint32_t cfg_context_t::MAX_MARK;
+//constexpr uint32_t cfg_context_t::MAX_MARK;
 
 } // namespace re2c
 

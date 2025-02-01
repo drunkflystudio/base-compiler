@@ -29,8 +29,8 @@
 namespace re2c {
 namespace {
 
-static constexpr size_t SCC_INF = std::numeric_limits<size_t>::max();
-static constexpr size_t SCC_UND = SCC_INF - 1;
+static /*constexpr*/ size_t SCC_INF() { return std::numeric_limits<size_t>::max(); }
+static /*constexpr*/ size_t SCC_UND() { return SCC_INF() - 1; }
 
 static bool loopback(size_t state, size_t narcs, const size_t* arcs) {
     for (size_t i = 0; i < narcs; ++i) {
@@ -47,10 +47,10 @@ struct StackItem {
 
 // Tarjan's algorithm
 static void scc(const Tdfa& dfa, std::vector<bool>& trivial, std::vector<StackItem>& stack_dfs) {
-    std::vector<size_t> lowlink(dfa.states.size(), SCC_UND);
+    std::vector<size_t> lowlink(dfa.states.size(), SCC_UND());
     std::stack<size_t> stack;
 
-    stack_dfs.push_back({0, 0, 0});
+    stack_dfs.push_back(StackItem{0, 0, 0});
 
     while (!stack_dfs.empty()) {
         const size_t i = stack_dfs.back().state;
@@ -62,13 +62,13 @@ static void scc(const Tdfa& dfa, std::vector<bool>& trivial, std::vector<StackIt
 
         if (c == 0) {
             // DFS recursive enter
-            DCHECK(lowlink[i] == SCC_UND);
+            DCHECK(lowlink[i] == SCC_UND());
             link = lowlink[i] = stack.size();
             stack.push(i);
         } else {
             // DFS recursive return (from one of successor states)
             const size_t j = arcs[c - 1];
-            DCHECK(lowlink[j] != SCC_UND);
+            DCHECK(lowlink[j] != SCC_UND());
             lowlink[i] = std::min(lowlink[i], lowlink[j]);
         }
 
@@ -76,7 +76,7 @@ static void scc(const Tdfa& dfa, std::vector<bool>& trivial, std::vector<StackIt
         for (; c < dfa.nchars; ++c) {
             const size_t j = arcs[c];
             if (j != Tdfa::NIL) {
-                if (lowlink[j] == SCC_UND) {
+                if (lowlink[j] == SCC_UND()) {
                     break;
                 }
                 lowlink[i] = std::min(lowlink[i], lowlink[j]);
@@ -85,8 +85,8 @@ static void scc(const Tdfa& dfa, std::vector<bool>& trivial, std::vector<StackIt
 
         if (c < dfa.nchars) {
             // recurse into the next successor state
-            stack_dfs.push_back({i, c + 1, link});
-            stack_dfs.push_back({arcs[c], 0, SCC_UND});
+            stack_dfs.push_back(StackItem{i, c + 1, link});
+            stack_dfs.push_back(StackItem{arcs[c], 0, SCC_UND()});
         } else if (lowlink[i] == link) {
             // All successors have been visited. An SCC is non-trivial (it has loops) if either:
             //   - it contains multiple interconnected states, or
@@ -96,7 +96,7 @@ static void scc(const Tdfa& dfa, std::vector<bool>& trivial, std::vector<StackIt
             for (;;) {
                 const size_t j = stack.top();
                 stack.pop();
-                lowlink[j] = SCC_INF;
+                lowlink[j] = SCC_INF();
                 if (i == j) break;
             }
         }
@@ -108,9 +108,9 @@ static void calc_fill(const Tdfa& dfa,
                       std::vector<StackItem>& stack_dfs,
                       std::vector<size_t>& fill) {
     const size_t nstates = dfa.states.size();
-    fill.resize(nstates, SCC_UND);
+    fill.resize(nstates, SCC_UND());
 
-    stack_dfs.push_back({0, 0, SCC_INF});
+    stack_dfs.push_back(StackItem{0, 0, SCC_INF()});
 
     while (!stack_dfs.empty()) {
         const size_t i = stack_dfs.back().state;
@@ -121,12 +121,12 @@ static void calc_fill(const Tdfa& dfa,
 
         if (c == 0) {
             // DFS recursive enter
-            if (fill[i] != SCC_UND) continue;
+            if (fill[i] != SCC_UND()) continue;
             fill[i] = 0;
         } else {
             // DFS recursive return (from one of successor states)
             const size_t j = arcs[c - 1];
-            DCHECK(fill[i] != SCC_UND && fill[j] != SCC_UND);
+            DCHECK(fill[i] != SCC_UND() && fill[j] != SCC_UND());
             fill[i] = std::max(fill[i], 1 + (trivial[j] ? fill[j] : 0));
         }
 
@@ -138,8 +138,8 @@ static void calc_fill(const Tdfa& dfa,
 
         if (c < dfa.nchars) {
             // recurse into the next successor state
-            stack_dfs.push_back({i, c + 1, SCC_INF});
-            stack_dfs.push_back({arcs[c], 0, SCC_INF});
+            stack_dfs.push_back(StackItem{i, c + 1, SCC_INF()});
+            stack_dfs.push_back(StackItem{arcs[c], 0, SCC_INF()});
         }
     }
 

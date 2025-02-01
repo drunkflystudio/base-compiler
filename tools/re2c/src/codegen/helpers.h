@@ -55,7 +55,7 @@ void argsubst(std::ostringstream& os,
               bool allow_unnamed,
               T val) {
     CHECK(!stub.empty());
-    DCHECK(arg != nullptr);
+    DCHECK(arg != /*nullptr*/NULL);
 
     const char* s = str.c_str(), *e = s + str.length(), *p, *q;
     const size_t l = strlen(arg);
@@ -64,7 +64,7 @@ void argsubst(std::ostringstream& os,
         os.write(s, p - s);
         s = p;
         p += stub.length();
-        q = *p == '{' ? strchr(p + 1, '}') : nullptr;
+        q = *p == '{' ? strchr(p + 1, '}') : /*nullptr*/NULL;
 
         if (q && l == static_cast<size_t>(q - p - 1) && memcmp(p + 1, arg, l) == 0) {
             // named substitution of the form @@{arg}

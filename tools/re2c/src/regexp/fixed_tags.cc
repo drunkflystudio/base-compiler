@@ -36,13 +36,13 @@ struct Level {
 
 static void find_fixed_tags(
         RESpec& spec, std::vector<StackItem>& stack, std::vector<Level>& levels, Regexp* re0) {
-    static constexpr uint32_t VARDIST = Tag::VARDIST;
+    static const/*expr*/ uint32_t VARDIST = Tag::VARDIST();
 
     // initial base tag at the topmost level is the fake "rightmost tag" (cursor)
     DCHECK(levels.empty());
-    levels.push_back({Tag::RIGHTMOST, 0, 0});
+    levels.push_back(Level{Tag::RIGHTMOST(), 0, 0});
 
-    stack.push_back({re0, 0});
+    stack.push_back(StackItem{re0, 0});
 
     while (!stack.empty()) {
         const StackItem i = stack.back();
@@ -57,20 +57,20 @@ static void find_fixed_tags(
         } else if (re->kind == Regexp::Kind::ALT) {
             if (i.succ == 0) {
                 // recurse into the left sub-regexp (leave the current regexp on stack)
-                stack.push_back({re, 1});
-                stack.push_back({re->alt.re1, 0});
+                stack.push_back(StackItem{re, 1});
+                stack.push_back(StackItem{re->alt.re1, 0});
 
                 // increase level when descending into the left sub-regexp
-                levels.push_back({Tag::NONE, 0, 0});
+                levels.push_back(Level{Tag::NONE(), 0, 0});
 
             } else if (i.succ == 1) {
                 // recurse into the right sub-regexp (leave the current regexp on stack)
-                stack.push_back({re, 2});
-                stack.push_back({re->alt.re2, 0});
+                stack.push_back(StackItem{re, 2});
+                stack.push_back(StackItem{re->alt.re2, 0});
 
                 // increase level when descending into the right sub-regexp (keep the left
                 // sub-regexp level on stack, it will be needed to compare left and right distance)
-                levels.push_back({Tag::NONE, 0, 0});
+                levels.push_back(Level{Tag::NONE(), 0, 0});
 
             } else {
                 // both sub-regexp visited, pop both levels from stack and compare their distances:
@@ -91,11 +91,11 @@ static void find_fixed_tags(
         } else if (re->kind == Regexp::Kind::ITER) {
             if (i.succ == 0) {
                 // recurse into sub-regexp (leave the current regexp on stack)
-                stack.push_back({re, 1});
-                stack.push_back({re->iter.re, 0});
+                stack.push_back(StackItem{re, 1});
+                stack.push_back(StackItem{re->iter.re, 0});
 
                 // increase level when descending into sub-regexp
-                levels.push_back({Tag::NONE, 0, 0});
+                levels.push_back(Level{Tag::NONE(), 0, 0});
             } else {
                 // sub-regexp visited, pop level from stack: if it has fixed distance and repetition
                 // count is constant, resulting distance is fixed
@@ -114,8 +114,8 @@ static void find_fixed_tags(
         } else if (re->kind == Regexp::Kind::CAT) {
             // the right sub-regexp is pushed on stack after the left sub-regexp and visited earlier
             // (because distance is computed from right to left)
-            stack.push_back({re->cat.re1, 0});
-            stack.push_back({re->cat.re2, 0});
+            stack.push_back(StackItem{re->cat.re1, 0});
+            stack.push_back(StackItem{re->cat.re2, 0});
 
         } else if (re->kind == Regexp::Kind::TAG) {
             Tag& tag = spec.tags[re->tag.idx];
@@ -133,7 +133,7 @@ static void find_fixed_tags(
             } else if (spec.opts->tags_history) {
                 // Fixed tags with subhistories are possible in principle, but it ends up being too
                 // slow (handling special case adds overhead).
-            } else if (l.tag != Tag::NONE && l.dist_to_tag != VARDIST
+            } else if (l.tag != Tag::NONE() && l.dist_to_tag != VARDIST
                     && (spec.opts->fixed_tags == FixedTags::ALL || toplevel)) {
                 // this tag can be fixed
                 tag.base = l.tag;
@@ -158,7 +158,8 @@ static void find_fixed_tags(
 void find_fixed_tags(RESpec& spec) {
     std::vector<StackItem> stack;
     std::vector<Level> levels;
-    for (Regexp* re : spec.res) {
+    for (auto it = spec.res.begin(); it != spec.res.end(); ++it) {
+        Regexp* re = *it;
         find_fixed_tags(spec, stack, levels, re);
     }
 }

@@ -25,8 +25,8 @@ RangeSuffix* make_range_suffix(Allocator& alc, uint32_t lo, uint32_t hi) {
     RangeSuffix* p = alc.template alloct<RangeSuffix>(1);
     p->l = lo;
     p->h = hi;
-    p->next = nullptr;
-    p->child = nullptr;
+    p->next = /*nullptr*/NULL;
+    p->child = /*nullptr*/NULL;
     return p;
 }
 

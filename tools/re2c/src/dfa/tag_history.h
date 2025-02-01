@@ -12,13 +12,13 @@
 
 namespace re2c {
 
-using hidx_t = int32_t;
-using tag_path_t = std::vector<tag_info_t>;
+typedef int32_t hidx_t; /*using hidx_t = int32_t;*/
+typedef std::vector<tag_info_t> tag_path_t; /*using tag_path_t = std::vector<tag_info_t>;*/
 
-static constexpr hidx_t HROOT = 0;
-static constexpr tag_info_t NOINFO{~0u, 0};
-static constexpr uint32_t NONFIN = ~0u;
-static constexpr uint32_t USED = NONFIN - 1;
+static const/*expr*/ hidx_t HROOT = 0;
+static const/*expr*/ tag_info_t NOINFO{~0u, 0};
+static const/*expr*/ uint32_t NONFIN = ~0u;
+static const/*expr*/ uint32_t USED = NONFIN - 1;
 
 // tag history for POSIX semantics
 struct phistory_t {

@@ -119,7 +119,7 @@ template<typename ctx_t>
 bool scan(ctx_t& ctx, TnfaState* q, bool all) {
     bool any = false;
 
-    using conf_t = typename ctx_t::conf_t;
+    typedef typename ctx_t::conf_t conf_t; /*using conf_t = typename ctx_t::conf_t;*/
     const conf_t x = ctx.state[q->clos];
 
     switch (q->kind) {

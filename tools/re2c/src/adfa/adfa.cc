@@ -51,10 +51,10 @@ Adfa::Adfa(Tdfa&& dfa,
       lower_char(0),
       upper_char(charset.back()),
       state_count(0),
-      head(nullptr),
-      defstate(nullptr),
-      eof_state(nullptr),
-      finstates(rules.size(), nullptr),
+      head(/*nullptr*/NULL),
+      defstate(/*nullptr*/NULL),
+      eof_state(/*nullptr*/NULL),
+      finstates(rules.size(), /*nullptr*/NULL),
 
       stagnames(),
       stagvars(),
@@ -71,10 +71,10 @@ Adfa::Adfa(Tdfa&& dfa,
       need_accept(false),
       oldstyle_ctxmarker(false),
 
-      bitmap(nullptr),
+      bitmap(/*nullptr*/NULL),
       setup(su),
 
-      initial_label(nullptr) {
+      initial_label(/*nullptr*/NULL) {
 
     const size_t nstates = dfa.states.size();
     const size_t nchars = dfa.nchars;
@@ -115,13 +115,13 @@ Adfa::Adfa(Tdfa&& dfa,
                     && t->tcid[c] == tc
                     && (end || is_eof(opts, charset[c]) == ie)
                     ;);
-            s->go.span[j].to = to == Tdfa::NIL ? nullptr : i2s[to];
+            s->go.span[j].to = to == Tdfa::NIL ? /*nullptr*/NULL : i2s[to];
             s->go.span[j].ub = charset[c];
             s->go.span[j].tags = tc;
         }
         s->go.span_count = j;
     }
-    *p = nullptr;
+    *p = /*nullptr*/NULL;
 
     delete[] i2s;
 }
@@ -173,7 +173,7 @@ void Adfa::reorder() {
 
     DCHECK(state_count == ord.size());
 
-    ord.push_back(nullptr);
+    ord.push_back(/*nullptr*/NULL);
     for (uint32_t i = 0; i < state_count; ++i) {
         ord[i]->next = ord[i + 1];
     }
@@ -301,7 +301,7 @@ void Adfa::find_base_state(const opt_t* opts) {
 void Adfa::prepare(const opt_t* opts) {
     // create rule states
     for (State* s = head; s; s = s->next) {
-        if (s->rule != Rule::NONE && s->rule != eof_rule) {
+        if (s->rule != Rule::NONE() && s->rule != eof_rule) {
             if (!finstates[s->rule]) {
                 State* n = new State;
                 if (s->rule == def_rule) {
@@ -330,7 +330,7 @@ void Adfa::prepare(const opt_t* opts) {
     }
 
     // create default state (if needed)
-    State* default_state = nullptr;
+    State* default_state = /*nullptr*/NULL;
     for (State* s = head; s; s = s->next) {
         for (uint32_t i = 0; i < s->go.span_count; ++i) {
             if (!s->go.span[i].to) {
@@ -430,7 +430,8 @@ Ret Adfa::calc_stats(OutputBlock& out) {
 
     // calculate ``YYMAXNMATCH`
     max_nmatch = 0;
-    for (const Rule& rule : rules) {
+    for (auto it = rules.begin(); it != rules.end(); ++it) {
+        const Rule& rule = *it;
         max_nmatch = std::max(max_nmatch, rule.ncap);
     }
 
@@ -455,7 +456,8 @@ Ret Adfa::calc_stats(OutputBlock& out) {
     }
 
     if (!oldstyle_ctxmarker) {
-        for (const Tag& tag : tags) {
+        for (auto it = tags.begin(); it != tags.end(); ++it) {
+            const Tag& tag = *it;
             if (history(tag)) {
                 mtagvars.insert(tag.name);
             } else if (tag.name) {
@@ -489,7 +491,7 @@ static bool can_hoist_tags(const State* s, const opt_t* opts) {
     const size_t nspan = s->go.span_count;
     DCHECK(nspan != 0);
 
-    if (nspan == 1 && s->rule != Rule::NONE) return false;
+    if (nspan == 1 && s->rule != Rule::NONE()) return false;
 
     // check that all transitions agree on tags
     tcid_t tags = span[0].tags;
@@ -502,7 +504,7 @@ static bool can_hoist_tags(const State* s, const opt_t* opts) {
     // If end-of-input rule $ is used, check that final/fallback tags agree with other tags, as the
     // lexer may follow the final/fallback transition.
     if (opts->fill_eof != NOEOF
-            && tags != (s->rule == Rule::NONE ? s->fall_tags : s->rule_tags)) {
+            && tags != (s->rule == Rule::NONE() ? s->fall_tags : s->rule_tags)) {
         return false;
     }
 

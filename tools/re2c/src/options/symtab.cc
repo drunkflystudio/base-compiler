@@ -6,7 +6,7 @@ namespace re2c {
 
 const AstNode* find_def(const symtab_t& symtab, const char* name) {
     symtab_t::const_iterator i = symtab.find(name);
-    return i == symtab.end() ? nullptr : i->second;
+    return i == symtab.end() ? /*nullptr*/NULL : i->second;
 }
 
 Ret add_named_def(symtab_t& symtab, const char* name, const AstNode* ast, Input& input) {
@@ -33,7 +33,8 @@ Ret add_named_def(symtab_t& symtab, const char* name, const AstNode* ast, Input&
 }
 
 Ret merge_symtab(symtab_t& symtab, const symtab_t& other, Input& input) {
-    for (const auto& i : other) {
+    for (auto it = other.begin(); it != other.end(); ++it) {
+        const auto& i = *it;
         CHECK_RET(add_named_def(symtab, i.first, i.second, input));
     }
     return Ret::OK;

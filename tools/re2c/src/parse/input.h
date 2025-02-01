@@ -33,7 +33,7 @@ struct conopt_t;
 struct opt_t;
 struct Opt;
 struct StxCode;
-using StxCodes = list_t<StxCode>;
+typedef list_t<StxCode> StxCodes; /*using StxCodes = list_t<StxCode>;*/
 
 struct InputFile {
     FILE* file;
@@ -71,7 +71,7 @@ class Input: private LexerState {
     // and line start `pos` are only updated for `cur`.
     loc_t location;
 
-    enum class ConfKind {NONE, STR, NUM, LIST, CODE} conf_kind;
+    enum /*class*/ ConfKind {NONE, STR, NUM, LIST, CODE} conf_kind;
     std::string tmp_str;
     int32_t tmp_num;
     bool tmp_bool;

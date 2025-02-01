@@ -106,7 +106,7 @@ void Warn::nondeterministic_tags(
         error_accuml |= e;
 
         msg.warning_start(loc, e);
-        if (tagname == nullptr) {
+        if (tagname == /*nullptr*/NULL) {
             fprintf(stderr, "trailing context");
         } else {
             fprintf(stderr, "tag `%s`", tagname);
@@ -141,7 +141,8 @@ void Warn::undefined_control_flow(
         if (paths.size() == 1) {
             fprint_default_path(stderr, skel, paths.front());
         } else {
-            for (const path_t& path : paths) {
+            for (auto it = paths.begin(); it != paths.end(); ++it) {
+                const path_t& path = *it;
                 fprintf(stderr, "\n\t");
                 fprint_default_path(stderr, skel, path);
             }

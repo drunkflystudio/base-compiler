@@ -8,8 +8,8 @@
 namespace re2c {
 
 // Disable warnings on NULL constant in the re2c-generated code (for tags).
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
+//#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
 #define YYCTYPE char
 
 std::string ver_to_vernum(const char* ver) {
@@ -26,7 +26,7 @@ std::string ver_to_vernum(const char* ver) {
     sfx = [a-z]+;
 
     @p1 num @e1 (dot @p2 num @e2 (dot @p3 num @e3 (dot num)*)? )? (dot sfx)? end {
-        static constexpr uint32_t PARTS = 3, WIDTH = 2, SIZE = PARTS * WIDTH;
+        static const uint32_t PARTS = 3, WIDTH = 2, SIZE = PARTS * WIDTH; // constexpr
         char buffer[SIZE], *q, *q0;
         const char * bounds[] = {p1, e1, p2, e2, p3, e3}, *p, *p0;
 
@@ -47,6 +47,6 @@ std::string ver_to_vernum(const char* ver) {
 }
 
 #undef YYCTYPE
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
 
 } // namespace re2c

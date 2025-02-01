@@ -14,7 +14,7 @@ struct Tdfa;
 struct tcmd_t;
 struct opt_t;
 
-using cfg_ix_t = uint32_t;
+typedef uint32_t cfg_ix_t; /*using cfg_ix_t = uint32_t;*/
 
 // basic block
 struct cfg_bb_t {
@@ -29,7 +29,7 @@ struct cfg_bb_t {
 
 // helper structure used in control flow graph construction
 struct cfg_context_t {
-    static constexpr uint32_t MAX_MARK = ~0u;
+    static const/*expr*/ uint32_t MAX_MARK = ~0u;
 
     Tdfa& dfa;
     const size_t nstate;

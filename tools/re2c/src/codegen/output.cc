@@ -20,7 +20,7 @@ OutputBlock::OutputBlock(InputBlock kind, const std::string& name, const loc_t& 
     : kind(kind),
       name(name),
       loc(loc),
-      code(nullptr),
+      code(/*nullptr*/NULL),
       used_yyaccept(false),
       have_user_code(false),
       conds(),
@@ -28,13 +28,13 @@ OutputBlock::OutputBlock(InputBlock kind, const std::string& name, const loc_t& 
       mtags(),
       svars(),
       mvars(),
-      opts(nullptr),
+      opts(/*nullptr*/NULL),
       dfas(),
       max_fill(1),
       max_nmatch(1),
-      start_label(nullptr),
+      start_label(/*nullptr*/NULL),
       fill_goto(),
-      fn_common(nullptr),
+      fn_common(/*nullptr*/NULL),
       binops()
     {}
 
@@ -58,14 +58,18 @@ Output::Output(OutAllocator& alc, Msg& msg)
       done_mtag_defs(false),
       skeletons(),
       scratchbuf(allocator),
-      current_block(nullptr),
-      total_opts(nullptr),
-      fn_common(nullptr)
+      current_block(/*nullptr*/NULL),
+      total_opts(/*nullptr*/NULL),
+      fn_common(/*nullptr*/NULL)
     {}
 
 Output::~Output() {
+    /*
     for (OutputBlock* b : cblocks) delete b;
     for (OutputBlock* b : hblocks) delete b;
+    */
+    for (auto it = cblocks.begin(); it != cblocks.end(); ++it) delete *it;
+    for (auto it = hblocks.begin(); it != hblocks.end(); ++it) delete *it;
 }
 
 void Output::header_mode(bool on) {
@@ -77,7 +81,7 @@ bool Output::in_header() const {
 }
 
 OutputBlock& Output::block() {
-    return current_block == nullptr ? *pblocks->back() : *current_block;
+    return current_block == /*nullptr*/NULL ? *pblocks->back() : *current_block;
 }
 
 void Output::set_current_block(OutputBlock* block) {
@@ -120,7 +124,8 @@ Ret Output::new_block(Opt& opts, InputBlock kind, std::string name, const loc_t&
     }
 
     // Check that the new block has a unique name.
-    for (const OutputBlock* b : *pblocks) {
+    for (auto it = pblocks->begin(); it != pblocks->end(); ++it) {
+        const OutputBlock* b = *it;
         if (b->name == name) {
             RET_FAIL(msg.error(loc,
                                "block named `%s` is already defined on line %u",

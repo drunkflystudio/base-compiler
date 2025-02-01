@@ -189,8 +189,8 @@ AstGram::AstGram(const std::string& name)
       inherited_defs(),
       inherited_eofs(),
       inherited_setup(),
-      def_rule(Rule::NONE),
-      eof_rule(Rule::NONE) {}
+      def_rule(Rule::NONE()),
+      eof_rule(Rule::NONE()) {}
 
 AstBlock::AstBlock(const std::string& name, const opt_t* opts, const AstGrams& grams)
     : name(name), opts(opts), grams(grams) {}
@@ -198,7 +198,8 @@ AstBlock::AstBlock(const std::string& name, const opt_t* opts, const AstGrams& g
 AstBlocks::AstBlocks(): blocks() {}
 
 AstBlocks::~AstBlocks() {
-    for (AstBlock* b : blocks) {
+    for (auto it = blocks.begin(); it != blocks.end(); ++it) {
+        AstBlock* b = *it;
         delete b;
     }
 }
@@ -218,20 +219,22 @@ const AstBlock* AstBlocks::find(const std::string& name) const {
         }
         error("cannot find `rules` block");
     } else {
-        for (const AstBlock* b : blocks) {
+        for (auto it = blocks.begin(); it != blocks.end(); ++it) {
+            const AstBlock* b = *it;
             if (b->name == name) return b;
         }
         error("cannot find `rules` block named `%s`", name.c_str());
     }
-    return nullptr;
+    return /*nullptr*/NULL;
 }
 
 const opt_t* AstBlocks::last_opts() const {
-    return blocks.empty() ? nullptr : blocks.back()->opts;
+    return blocks.empty() ? /*nullptr*/NULL : blocks.back()->opts;
 }
 
 AstGram& find_or_add_gram(AstGrams& grams, const std::string& name) {
-    for (AstGram& gram : grams) {
+    for (auto it = grams.begin(); it != grams.end(); ++it) {
+        AstGram& gram = *it;
         if (gram.name == name) return gram;
     }
     grams.push_back(AstGram(name));
@@ -245,9 +248,10 @@ static inline void append(std::vector<T>& x, const std::vector<T>& y) {
 
 Ret use_block(Input& input, const Ast& ast, Opt& opts, AstGrams& grams, const std::string& name) {
     const AstBlock* b = ast.blocks.find(name);
-    if (b == nullptr) return Ret::FAIL;
+    if (b == /*nullptr*/NULL) return Ret::FAIL;
 
-    for (const AstGram& g : b->grams) {
+    for (auto it = b->grams.begin(); it != b->grams.end(); ++it) {
+        const AstGram& g = *it;
         AstGram& gram = find_or_add_gram(grams, g.name);
 
         // Merge rules. Inherited special rules *, $ and <!> are kept separate from those defined in
@@ -264,10 +268,15 @@ Ret use_block(Input& input, const Ast& ast, Opt& opts, AstGrams& grams, const st
     return opts.merge(b->opts, input);
 }
 
+static bool xx(const AstGram& g) { return g.setup.empty(); }
+static bool yy(const AstGram& g) { return g.name == "*"; }
+static bool zz(const AstGram& g) { return g.name == "0"; }
+
 Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, Ast& ast) {
     if (grams.empty()) return Ret::OK;
 
-    for (const AstGram& g : grams) {
+    for (auto it = grams.begin(); it != grams.end(); ++it) {
+        const AstGram& g = *it;
         if (g.defs.size() > 1) {
             RET_FAIL(msg.error(g.defs[1]->loc,
                                "code to default rule %sis already defined at line %u",
@@ -285,7 +294,8 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
 
     if (!opts->start_conditions) {
         // normal mode: there must be no named grams corresponding to conditions
-        for (const AstGram& g : grams) {
+        for (auto it = grams.begin(); it != grams.end(); ++it) {
+            const AstGram& g = *it;
             if (!g.name.empty()) { // found named gram
                 const loc_t& loc = !g.rules.empty() ? g.rules[0].semact->loc
                         : !g.defs.empty() ? g.defs[0]->loc : NOWHERE;
@@ -298,7 +308,8 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
     } else {
         // condition mode, at least one named gram => this is a block with conditions
 
-        for (const AstGram& g : grams) {
+        for (auto it = grams.begin(); it != grams.end(); ++it) {
+            const AstGram& g = *it;
             if (g.name.empty()) { // found unnamed gram
                 const loc_t& l = !g.rules.empty() ? g.rules[0].semact->loc
                         : !g.defs.empty() ? g.defs[0]->loc : NOWHERE;
@@ -306,7 +317,8 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
             }
         }
 
-        for (const AstGram& g : grams) {
+        for (auto it = grams.begin(); it != grams.end(); ++it) {
+            const AstGram& g = *it;
             if (g.setup.size() > 1) {
                 RET_FAIL(msg.error(g.setup[1]->loc,
                                    "code to setup rule `%s` is already defined at line %u",
@@ -314,7 +326,8 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
             }
         }
 
-        for (const AstGram& g : grams) {
+        for (auto it = grams.begin(); it != grams.end(); ++it) {
+            const AstGram& g = *it;
             if (g.name != "*" && !g.setup.empty() && g.rules.empty()) {
                 RET_FAIL(msg.error(g.setup[0]->loc,
                                    "setup for non existing condition `%s` found", g.name.c_str()));
@@ -322,9 +335,10 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
         }
 
         auto no_setup = std::find_if(
-                grams.begin(), grams.end(), [](const AstGram& g) { return g.setup.empty(); });
+                grams.begin(), grams.end(), xx);
         if (no_setup == grams.end()) { // all grams have setup
-            for (const AstGram& g : grams) {
+            for (auto it = grams.begin(); it != grams.end(); ++it) {
+                const AstGram& g = *it;
                 if (g.name == "*") {
                     RET_FAIL(msg.error(g.setup[0]->loc,
                                        "setup for all conditions '<!*>' is illegal if setup for "
@@ -333,7 +347,8 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
             }
         }
 
-        for (const AstGram& g : grams) {
+        for (auto it = grams.begin(); it != grams.end(); ++it) {
+            const AstGram& g = *it;
             if (g.name == "0" && g.rules.size() > 1) {
                 RET_FAIL(msg.error(g.rules[1].semact->loc,
                                    "startup code is already defined at line %u",
@@ -343,7 +358,8 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
     }
 
     // Inherit special rules from other blocks (unless a local one is defined).
-    for (AstGram& g : grams) {
+    for (auto it = grams.begin(); it != grams.end(); ++it) {
+        AstGram& g = *it;
         append(g.defs, g.inherited_defs);
         append(g.eofs, g.inherited_eofs);
         append(g.setup, g.inherited_setup);
@@ -352,9 +368,10 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
     // Merge <*> rules and <!*> setup to all conditions except "0". Star rules must have lower
     // priority than normal rules.
     auto star = std::find_if(
-            grams.begin(), grams.end(), [](const AstGram& g) { return g.name == "*"; });
+            grams.begin(), grams.end(), yy);
     if (star != grams.end()) {
-        for (AstGram& g : grams) {
+        for (auto it = grams.begin(); it != grams.end(); ++it) {
+            AstGram& g = *it;
             if (g.name != "*" && g.name != "0") {
                 append(g.rules, star->rules);
                 append(g.defs, star->defs);
@@ -366,7 +383,8 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
     }
 
     // Merge end of input rule $ and default rule * with the lowest priority.
-    for (AstGram& g : grams) {
+    for (auto it = grams.begin(); it != grams.end(); ++it) {
+        AstGram& g = *it;
         // See note [EOF rule handling].
         if (!g.eofs.empty()) {
             g.eof_rule = g.rules.size();
@@ -382,7 +400,7 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
 
     // "0" condition must be the first one.
     auto zero = std::find_if(
-            grams.begin(), grams.end(), [](const AstGram& g) { return g.name == "0"; });
+            grams.begin(), grams.end(), zz);
     if (zero != grams.end() && zero != grams.begin()) {
         AstGram zero_copy(*zero);
         grams.erase(zero);
@@ -391,7 +409,8 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
 
     // Check that `re2c:eof` configuration and the $ rule are used together. This must be done after
     // merging rules inherited from other blocks and <*> condition (because they might add $ rule).
-    for (const AstGram& g : grams) {
+    for (auto it = grams.begin(); it != grams.end(); ++it) {
+        const AstGram& g = *it;
         if (!g.eofs.empty() && opts->fill_eof == NOEOF) {
             RET_FAIL(msg.error(g.eofs[0]->loc,
                                "%s$ rule found, but `re2c:eof` configuration is not set",
@@ -406,6 +425,6 @@ Ret check_and_merge_special_rules(AstGrams& grams, const opt_t* opts, Msg& msg, 
 }
 
 // C++11 requres outer decl for ODR-used static constexpr data members (not needed in C++17).
-constexpr uint32_t Ast::MANY;
+//constexpr uint32_t Ast::MANY;
 
 } // namespace re2c

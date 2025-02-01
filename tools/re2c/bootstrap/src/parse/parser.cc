@@ -76,7 +76,7 @@
 #line 10 "../src/parse/parser.ypp"
 
 
-#pragma GCC diagnostic push
+//#pragma GCC diagnostic push
 #include "src/util/nowarn_in_bison.h"
 
 #include "src/msg/msg.h"
@@ -1241,7 +1241,8 @@ yyreduce:
   case 17: /* rule: TOKEN_CLIST trailexpr ccode  */
 #line 117 "../src/parse/parser.ypp"
                               {
-    for (const std::string& cond : ast.temp_condlist) {
+    for (auto it = ast.temp_condlist.begin(); it != ast.temp_condlist.end(); ++it) {
+        const std::string& cond = *it;
         find_or_add_gram(grams, cond).rules.push_back(AstRule((yyvsp[-1].regexp), (yyvsp[0].semact)));
     }
     ast.temp_condlist.clear();
@@ -1252,7 +1253,8 @@ yyreduce:
   case 18: /* rule: TOKEN_CLIST '*' ccode  */
 #line 123 "../src/parse/parser.ypp"
                         {
-    for (const std::string& cond : ast.temp_condlist) {
+    for (auto it = ast.temp_condlist.begin(); it != ast.temp_condlist.end(); ++it) {
+        const std::string& cond = *it;
         find_or_add_gram(grams, cond).defs.push_back((yyvsp[0].semact));
     }
     ast.temp_condlist.clear();
@@ -1263,7 +1265,8 @@ yyreduce:
   case 19: /* rule: TOKEN_CLIST '$' ccode  */
 #line 129 "../src/parse/parser.ypp"
                         {
-    for (const std::string& cond : ast.temp_condlist) {
+    for (auto it = ast.temp_condlist.begin(); it != ast.temp_condlist.end(); ++it) {
+        const std::string& cond = *it;
         find_or_add_gram(grams, cond).eofs.push_back((yyvsp[0].semact));
     }
     ast.temp_condlist.clear();
@@ -1274,7 +1277,8 @@ yyreduce:
   case 20: /* rule: TOKEN_CSETUP TOKEN_CODE  */
 #line 135 "../src/parse/parser.ypp"
                           {
-    for (const std::string& cond : ast.temp_condlist) {
+    for (auto it = ast.temp_condlist.begin(); it != ast.temp_condlist.end(); ++it) {
+        const std::string& cond = *it;
         find_or_add_gram(grams, cond).setup.push_back((yyvsp[0].semact));
     }
     ast.temp_condlist.clear();
@@ -1305,7 +1309,7 @@ yyreduce:
   case 24: /* ccode: TOKEN_CJUMP  */
 #line 154 "../src/parse/parser.ypp"
               {
-    (yyval.semact) = ast.sem_act(input.tok_loc(), nullptr, (yyvsp[0].cstr), true);
+    (yyval.semact) = ast.sem_act(input.tok_loc(), /*nullptr*/NULL, (yyvsp[0].cstr), true);
 }
 #line 1311 "src/parse/parser.cc"
     break;
@@ -1320,7 +1324,7 @@ yyreduce:
 #line 160 "../src/parse/parser.ypp"
                 {
     (yyval.regexp) = ast.cat(ast.cap((yyvsp[-2].regexp), CAPTURE_IF_NOT_INVERTED),
-                 ast.cat(ast.tag(input.tok_loc(), nullptr, false), (yyvsp[0].regexp)));
+                 ast.cat(ast.tag(input.tok_loc(), /*nullptr*/NULL, false), (yyvsp[0].regexp)));
 }
 #line 1326 "src/parse/parser.cc"
     break;
@@ -1348,10 +1352,10 @@ yyreduce:
                  {
     switch((yyvsp[0].op)) {
     case '*':
-        (yyval.regexp) = ast.iter((yyvsp[-1].regexp), 0, Ast::MANY);
+        (yyval.regexp) = ast.iter((yyvsp[-1].regexp), 0, Ast::MANY());
         break;
     case '+':
-        (yyval.regexp) = ast.iter((yyvsp[-1].regexp), 1, Ast::MANY);
+        (yyval.regexp) = ast.iter((yyvsp[-1].regexp), 1, Ast::MANY());
         break;
     case '?':
         (yyval.regexp) = ast.iter((yyvsp[-1].regexp), 0, 1);
@@ -1397,7 +1401,7 @@ yyreduce:
 #line 214 "../src/parse/parser.ypp"
            {
     (yyval.regexp) = find_def(opts.symtab, (yyvsp[0].cstr));
-    if ((yyval.regexp) == nullptr) {
+    if ((yyval.regexp) == /*nullptr*/NULL) {
         input.error_at_tok("undefined symbol '%s'", (yyvsp[0].cstr));
         YYABORT;
     } else if (Ast::needs_wrap((yyval.regexp))) {

@@ -13,7 +13,7 @@
 namespace re2c {
 
 InputFile::InputFile(size_t fidx)
-    : file(nullptr),
+    : file(/*nullptr*/NULL),
       name(),
       path(),
       escaped_name(),
@@ -38,8 +38,9 @@ Ret InputFile::open(const std::string& filename,
         file = fopen(path.c_str(), "rb");
 
         // otherwise search in all include paths
-        for (const std::string& incpath : include_paths) {
-            if (file != nullptr) break;
+        for (auto it = include_paths.begin(); it != include_paths.end(); ++it) {
+            const std::string& incpath = *it;
+            if (file != /*nullptr*/NULL) break;
             path = incpath + name;
             file = fopen(path.c_str(), "rb");
         }
@@ -60,15 +61,16 @@ Ret InputFile::open(const std::string& filename,
 }
 
 InputFile::~InputFile() {
-    if (file != nullptr && file != stdin) {
+    if (file != /*nullptr*/NULL && file != stdin) {
         fclose(file);
     }
 }
 
-const uint8_t* const Input::ENDPOS = reinterpret_cast<const uint8_t*>(UINT64_MAX);
+const uint8_t* const Input::ENDPOS = reinterpret_cast<const uint8_t*>(/*UINT64_MAX*/0xffffffffffffffffull);
 
 Input::~Input() {
-    for (InputFile* in: files) {
+    for (auto it = files.begin(); it != files.end(); ++it) {
+        InputFile* in = *it;
         delete in;
     }
 }
@@ -76,7 +78,8 @@ Input::~Input() {
 void Input::reset_lexer() {
     reset_ptrs();
 
-    for (InputFile* in: files) {
+    for (auto it = files.begin(); it != files.end(); ++it) {
+        InputFile* in = *it;
         delete in;
     }
     files.clear();
@@ -151,7 +154,8 @@ Ret Input::include(const std::string& filename, uint8_t* at) {
     // top). We want to break from the unreading cycle early, therefore we go in reverse order of
     // file offsets in buffer and break as soon as the end offset is less than cursor (current
     // position). `at` points at the start of `include` block.
-    for (InputFile* in : files) {
+    for (auto it = files.begin(); it != files.end(); ++it) {
+        InputFile* in = *it;
         if (in->so >= at) {
             // unread whole fragment
             fseek(in->file, static_cast<long>(in->so - in->eo), SEEK_CUR);
@@ -171,7 +175,7 @@ Ret Input::include(const std::string& filename, uint8_t* at) {
 
     // refill buffer (discard everything up to cursor, clear EOF)
     lim = cur = mar = ctx = tok = ptr = pos = bot + BSIZE;
-    eof = nullptr;
+    eof = /*nullptr*/NULL;
     return fill(BSIZE) ? Ret::OK : Ret::FAIL;
 }
 
@@ -272,14 +276,15 @@ Ret Input::gen_dep_file(const std::string& header) const {
     if (fname.empty()) return Ret::OK;
 
     FILE* file = fopen(fname.c_str(), "w");
-    if (file == nullptr) RET_FAIL(error("cannot open dep file %s", fname.c_str()));
+    if (file == /*nullptr*/NULL) RET_FAIL(error("cannot open dep file %s", fname.c_str()));
 
     fprintf(file, "%s", escape_backslashes(globopts->output_file).c_str());
     if (!header.empty()) {
         fprintf(file, " %s", header.c_str());
     }
     fprintf(file, ":");
-    for (const std::string& fdep : filedeps) {
+    for (auto it = filedeps.begin(); it != filedeps.end(); ++it) {
+        const std::string& fdep = *it;
         fprintf(file, " %s", fdep.c_str());
     }
     fprintf(file, "\n");

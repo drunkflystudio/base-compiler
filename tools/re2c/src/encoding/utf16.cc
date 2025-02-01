@@ -13,7 +13,7 @@ namespace utf16 {
 static void add_continuous1(RangeSuffix*& root, IrAllocator& alc, uint32_t l, uint32_t h) {
     RangeSuffix** p = &root;
     for (;;) {
-        if (*p == nullptr) {
+        if (*p == /*nullptr*/NULL) {
             *p = make_range_suffix(alc, l, h);
             break;
         } else if ((*p)->l == l && (*p)->h == h) {
@@ -34,7 +34,7 @@ static void add_continuous2(RangeSuffix*& root,
                             uint32_t h_tr) {
     RangeSuffix** p = &root;
     for (;;) {
-        if (*p == nullptr) {
+        if (*p == /*nullptr*/NULL) {
             *p = make_range_suffix(alc, l_tr, h_tr);
             p = &(*p)->child;
             break;
@@ -46,7 +46,7 @@ static void add_continuous2(RangeSuffix*& root,
         }
     }
     for (;;) {
-        if (*p == nullptr) {
+        if (*p == /*nullptr*/NULL) {
             *p = make_range_suffix(alc, l_ld, h_ld);
             break;
         } else if ((*p)->l == l_ld && (*p)->h == h_ld) {
@@ -138,15 +138,15 @@ static Regexp* symbol(RESpec& spec, rune r) {
 //
 Regexp* range(RESpec& spec, const Range* r) {
     // empty range
-    if (!r) return nullptr;
+    if (!r) return /*nullptr*/NULL;
 
     // one-symbol range
     if (!r->next() && r->lower() == r->upper() - 1) {
         return symbol(spec, r->lower());
     }
 
-    RangeSuffix* root = nullptr;
-    for (; r != nullptr; r = r->next()) {
+    RangeSuffix* root = /*nullptr*/NULL;
+    for (; r != /*nullptr*/NULL; r = r->next()) {
         split_by_rune_length(root, spec.ir_alc, r->lower(), r->upper() - 1);
     }
     return to_regexp(spec, root);

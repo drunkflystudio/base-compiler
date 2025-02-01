@@ -58,11 +58,11 @@ inline Range* RangeMgr::make(Range* n, uint32_t l, uint32_t u) {
 }
 
 inline Range* RangeMgr::sym(uint32_t c) {
-    return make(nullptr, c, c + 1);
+    return make(/*nullptr*/NULL, c, c + 1);
 }
 
 inline Range* RangeMgr::ran(uint32_t l, uint32_t u) {
-    return make(nullptr, l, u);
+    return make(/*nullptr*/NULL, l, u);
 }
 
 } // namespace re2c

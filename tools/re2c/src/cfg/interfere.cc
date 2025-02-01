@@ -9,7 +9,7 @@
 
 namespace re2c {
 
-using vals_t = std::vector<tagver_t>;
+typedef std::vector<tagver_t> vals_t; /*using vals_t = std::vector<tagver_t>;*/
 static void interfere(const tcmd_t* cmd,
                       const bool* live,
                       bool* interf,
@@ -31,7 +31,8 @@ void cfg_t::interference(const cfg_t& cfg, const bool* live, bool* interf) {
 
     // versions of tags with/without history interfere
     const std::set<tagver_t>& mt = cfg.dfa.mtagvers;
-    for (tagver_t ver : mt) {
+    for (auto it = mt.begin(); it != mt.end(); ++it) {
+        tagver_t ver = *it;
         for (tagver_t u = ver, v = 0; v < maxver; ++v) {
             if (mt.find(v) == mt.end()) {
                 const size_t uidx = static_cast<size_t>(u);

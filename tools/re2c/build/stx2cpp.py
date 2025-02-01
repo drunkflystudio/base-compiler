@@ -16,7 +16,7 @@ output = sys.argv[2]
 
 with open(output, 'w') as output_file:
     name = os.path.splitext(os.path.basename(output))[0].upper()
-    output_file.write("static constexpr const char* " + name + " =\n")
+    output_file.write("static /*constexpr*/ const char* " + name + " =\n")
 
     # write input file line by line as a string, escaping characters as needed
     with open(input, 'r') as input_file:

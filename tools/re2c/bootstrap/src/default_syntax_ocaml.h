@@ -1,4 +1,4 @@
-static constexpr const char* DEFAULT_SYNTAX_OCAML =
+static /*constexpr*/ const char* DEFAULT_SYNTAX_OCAML =
     "// supported feature lists -----------------------------------------------------\n"
     "\n"
     "supported_apis = [\"record\", \"generic\"];\n"

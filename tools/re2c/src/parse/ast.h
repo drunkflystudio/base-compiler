@@ -34,6 +34,8 @@ enum class AstKind: uint32_t {
     TAG,  // a tag, like @t (s-tag, single-valued tag) or #t (m-tag. multi-valued tag)
     CAP   // capturing or non-capturing group
 };
+inline bool operator==(AstKind a, AstKind b) { return (uint32_t)a == (uint32_t)b; }
+inline bool operator!=(AstKind a, AstKind b) { return (uint32_t)a != (uint32_t)b; }
 
 // A character (symbol) in the abstract syntax tree.
 struct AstChar {
@@ -134,7 +136,7 @@ struct AstGram {
     explicit AstGram(const std::string& name);
 };
 
-using AstGrams = std::vector<AstGram>;
+typedef std::vector<AstGram> AstGrams; /*using AstGrams = std::vector<AstGram>;*/
 
 // Input program block (e.g. within `/*!re2c` and `*/` comments). May include one or more grammars.
 // Multiple grammars within one block are possible if start conditions are used (in that case each
@@ -186,7 +188,7 @@ class Ast {
     AstBlocks blocks;
 
     // Used to denote unbounded repetition (iteration, Kleene star).
-    static constexpr uint32_t MANY = std::numeric_limits<uint32_t>::max();
+    static /*constexpr*/ uint32_t MANY() { return std::numeric_limits<uint32_t>::max(); }
 
     Ast(AstAllocator& ast_alc, OutAllocator& out_alc);
 

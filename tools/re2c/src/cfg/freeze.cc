@@ -18,7 +18,8 @@ void freeze_tags(Tdfa& dfa) {
     tcpool_t& pool = dfa.tcpool;
     const size_t nsym = dfa.nchars;
 
-    for (TdfaState* s : dfa.states) {
+    for (auto it = dfa.states.begin(); it != dfa.states.end(); ++it) {
+        TdfaState* s = *it;
         tcmd_t** cmd = s->tcmd,
                  **const fin = cmd + nsym,
                          **const fall = fin + 1;
@@ -36,7 +37,7 @@ void freeze_tags(Tdfa& dfa) {
         *id++ = pool.insert(*fall);
 
         delete[] s->tcmd;
-        s->tcmd = nullptr;
+        s->tcmd = /*nullptr*/NULL;
     }
 }
 

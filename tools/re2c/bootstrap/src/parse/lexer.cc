@@ -1730,7 +1730,7 @@ yy273:
 	++cur;
 	cur = yyt1;
 #line 325 "../src/parse/lexer.re"
-	{ *ptail = nullptr; return Ret::OK; }
+	{ *ptail = /*nullptr*/NULL; return Ret::OK; }
 #line 1735 "src/parse/lexer.cc"
 yy274:
 	yych = *++cur;
@@ -1760,7 +1760,7 @@ yy278:
 	{
         BlockNameList *l = alc.alloct<BlockNameList>(1);
         l->name = newcstr(tok + 1, cur, alc);
-        l->next = nullptr;
+        l->next = /*nullptr*/NULL;
         *ptail = l;
         ptail = &l->next;
 
@@ -1883,7 +1883,7 @@ yy287:
 }
 
 Ret Input::lex_special_block(Output& out, CodeKind kind, uint32_t mask) {
-    const char* fmt = nullptr, *sep = nullptr;
+    const char* fmt = /*nullptr*/NULL, *sep = /*nullptr*/NULL;
     BlockNameList* blocks;
 
     out.gen_raw(tok, ptr, globopts->line_dirs);
@@ -2195,7 +2195,7 @@ yy312:
             --cur;
             uint32_t c;
             CHECK_RET(lex_cls_chr(c));
-            ast.temp_chars.push_back({c, tok_loc()});
+            ast.temp_chars.push_back(AstChar{c, tok_loc()});
             yylval->regexp = ast.str(tok_loc(), false);
             RET_TOK(TOKEN_REGEXP);
         }
@@ -2292,7 +2292,7 @@ yy327:
         if (!globopts->flex_syntax) {
             RET_FAIL(error_at_tok("unexpected character: '%c'", *tok));
         }
-        ast.temp_chars.push_back({*tok, tok_loc()});
+        ast.temp_chars.push_back(AstChar{*tok, tok_loc()});
         yylval->regexp = ast.str(tok_loc(), false);
         RET_TOK(TOKEN_REGEXP);
     }
@@ -2334,7 +2334,7 @@ yy332:
         // consume one character, otherwise we risk breaking operator precedence in cases like
         // `ab*`: it should be `a(b)*`, not `(ab)*`
         cur = tok + 1;
-        ast.temp_chars.push_back({tok[0], tok_loc()});
+        ast.temp_chars.push_back(AstChar{tok[0], tok_loc()});
         yylval->regexp = ast.str(tok_loc(), false);
         RET_TOK(TOKEN_REGEXP);
     }
@@ -3443,6 +3443,12 @@ error:
     RET_FAIL(error_at_cur("syntax error in condition list"));
 }
 
+static bool is_blank(const uint8_t* s, const uint8_t* e)
+{
+    while (s < e && is_space(*s)) ++s;
+    return s == e;
+}
+
 Ret Input::process_semact(RE2C_STYPE* yylval, Ast& ast, const uint8_t* p, const uint8_t* q) {
     const char* text = "";
     if (globopts->indentation_sensitive) {
@@ -3453,10 +3459,6 @@ Ret Input::process_semact(RE2C_STYPE* yylval, Ast& ast, const uint8_t* p, const 
         if (p <= q) {
             // Split semantic action by newlines (note: last character `*q` is not a newline).
             // Drop blank lines (this simplifies the code below that removes indentation).
-            auto is_blank = [](const uint8_t* s, const uint8_t* e) {
-                while (s < e && is_space(*s)) ++s;
-                return s == e;
-            };
             tmp_list.clear();
             for (const uint8_t* s = p; s < q; ++s) {
                 if (*s == '\n') {
@@ -3475,7 +3477,8 @@ Ret Input::process_semact(RE2C_STYPE* yylval, Ast& ast, const uint8_t* p, const 
 
                 // Cut off base indentation from every line and glue them together.
                 tmp_str.clear();
-                for (std::string& line: tmp_list) {
+                for (auto it = tmp_list.begin(); it != tmp_list.end(); ++it) {
+                    std::string& line = *it;
                     if (line.compare(0, indent, indstr) == 0) {
                         tmp_str += line.substr(indent, std::string::npos); // remove indent
                     } else {
@@ -3490,7 +3493,7 @@ Ret Input::process_semact(RE2C_STYPE* yylval, Ast& ast, const uint8_t* p, const 
         text = ast.cstr_global(p, q + 1);
     }
 
-    yylval->semact = ast.sem_act(tok_loc(), text, nullptr, false);
+    yylval->semact = ast.sem_act(tok_loc(), text, /*nullptr*/NULL, false);
     return Ret::OK;
 }
 
@@ -4882,7 +4885,7 @@ yy570:
 yy571:
 	++cur;
 #line 865 "../src/parse/lexer.re"
-	{ c = '-'_u8; return Ret::OK; }
+	{ c = (uint8_t)'-'; return Ret::OK; }
 #line 4887 "src/parse/lexer.cc"
 yy572:
 	yyaccept = 0;
@@ -4927,47 +4930,47 @@ yy577:
 yy578:
 	++cur;
 #line 864 "../src/parse/lexer.re"
-	{ c = '\\'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\\'; return Ret::OK; }
 #line 4932 "src/parse/lexer.cc"
 yy579:
 	++cur;
 #line 866 "../src/parse/lexer.re"
-	{ c = ']'_u8; return Ret::OK; }
+	{ c = (uint8_t)']'; return Ret::OK; }
 #line 4937 "src/parse/lexer.cc"
 yy580:
 	++cur;
 #line 857 "../src/parse/lexer.re"
-	{ c = '\a'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\a'; return Ret::OK; }
 #line 4942 "src/parse/lexer.cc"
 yy581:
 	++cur;
 #line 858 "../src/parse/lexer.re"
-	{ c = '\b'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\b'; return Ret::OK; }
 #line 4947 "src/parse/lexer.cc"
 yy582:
 	++cur;
 #line 859 "../src/parse/lexer.re"
-	{ c = '\f'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\f'; return Ret::OK; }
 #line 4952 "src/parse/lexer.cc"
 yy583:
 	++cur;
 #line 860 "../src/parse/lexer.re"
-	{ c = '\n'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\n'; return Ret::OK; }
 #line 4957 "src/parse/lexer.cc"
 yy584:
 	++cur;
 #line 861 "../src/parse/lexer.re"
-	{ c = '\r'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\r'; return Ret::OK; }
 #line 4962 "src/parse/lexer.cc"
 yy585:
 	++cur;
 #line 862 "../src/parse/lexer.re"
-	{ c = '\t'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\t'; return Ret::OK; }
 #line 4967 "src/parse/lexer.cc"
 yy586:
 	++cur;
 #line 863 "../src/parse/lexer.re"
-	{ c = '\v'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\v'; return Ret::OK; }
 #line 4972 "src/parse/lexer.cc"
 yy587:
 	yyaccept = 1;
@@ -5274,7 +5277,7 @@ yy616:
 yy617:
 	++cur;
 #line 865 "../src/parse/lexer.re"
-	{ c = '-'_u8; return Ret::OK; }
+	{ c = (uint8_t)'-'; return Ret::OK; }
 #line 5279 "src/parse/lexer.cc"
 yy618:
 	yyaccept = 2;
@@ -5319,47 +5322,47 @@ yy623:
 yy624:
 	++cur;
 #line 864 "../src/parse/lexer.re"
-	{ c = '\\'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\\'; return Ret::OK; }
 #line 5324 "src/parse/lexer.cc"
 yy625:
 	++cur;
 #line 866 "../src/parse/lexer.re"
-	{ c = ']'_u8; return Ret::OK; }
+	{ c = (uint8_t)']'; return Ret::OK; }
 #line 5329 "src/parse/lexer.cc"
 yy626:
 	++cur;
 #line 857 "../src/parse/lexer.re"
-	{ c = '\a'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\a'; return Ret::OK; }
 #line 5334 "src/parse/lexer.cc"
 yy627:
 	++cur;
 #line 858 "../src/parse/lexer.re"
-	{ c = '\b'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\b'; return Ret::OK; }
 #line 5339 "src/parse/lexer.cc"
 yy628:
 	++cur;
 #line 859 "../src/parse/lexer.re"
-	{ c = '\f'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\f'; return Ret::OK; }
 #line 5344 "src/parse/lexer.cc"
 yy629:
 	++cur;
 #line 860 "../src/parse/lexer.re"
-	{ c = '\n'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\n'; return Ret::OK; }
 #line 5349 "src/parse/lexer.cc"
 yy630:
 	++cur;
 #line 861 "../src/parse/lexer.re"
-	{ c = '\r'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\r'; return Ret::OK; }
 #line 5354 "src/parse/lexer.cc"
 yy631:
 	++cur;
 #line 862 "../src/parse/lexer.re"
-	{ c = '\t'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\t'; return Ret::OK; }
 #line 5359 "src/parse/lexer.cc"
 yy632:
 	++cur;
 #line 863 "../src/parse/lexer.re"
-	{ c = '\v'_u8; return Ret::OK; }
+	{ c = (uint8_t)'\v'; return Ret::OK; }
 #line 5364 "src/parse/lexer.cc"
 yy633:
 	yyaccept = 3;
@@ -5668,42 +5671,42 @@ yy667:
 yy668:
 	++cur;
 #line 901 "../src/parse/lexer.re"
-	{ ast.chr = '\\'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\\'; return Ret::OK; }
 #line 5673 "src/parse/lexer.cc"
 yy669:
 	++cur;
 #line 894 "../src/parse/lexer.re"
-	{ ast.chr = '\a'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\a'; return Ret::OK; }
 #line 5678 "src/parse/lexer.cc"
 yy670:
 	++cur;
 #line 895 "../src/parse/lexer.re"
-	{ ast.chr = '\b'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\b'; return Ret::OK; }
 #line 5683 "src/parse/lexer.cc"
 yy671:
 	++cur;
 #line 896 "../src/parse/lexer.re"
-	{ ast.chr = '\f'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\f'; return Ret::OK; }
 #line 5688 "src/parse/lexer.cc"
 yy672:
 	++cur;
 #line 897 "../src/parse/lexer.re"
-	{ ast.chr = '\n'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\n'; return Ret::OK; }
 #line 5693 "src/parse/lexer.cc"
 yy673:
 	++cur;
 #line 898 "../src/parse/lexer.re"
-	{ ast.chr = '\r'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\r'; return Ret::OK; }
 #line 5698 "src/parse/lexer.cc"
 yy674:
 	++cur;
 #line 899 "../src/parse/lexer.re"
-	{ ast.chr = '\t'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\t'; return Ret::OK; }
 #line 5703 "src/parse/lexer.cc"
 yy675:
 	++cur;
 #line 900 "../src/parse/lexer.re"
-	{ ast.chr = '\v'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\v'; return Ret::OK; }
 #line 5708 "src/parse/lexer.cc"
 yy676:
 	yyaccept = 1;
@@ -6043,42 +6046,42 @@ yy711:
 yy712:
 	++cur;
 #line 901 "../src/parse/lexer.re"
-	{ ast.chr = '\\'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\\'; return Ret::OK; }
 #line 6048 "src/parse/lexer.cc"
 yy713:
 	++cur;
 #line 894 "../src/parse/lexer.re"
-	{ ast.chr = '\a'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\a'; return Ret::OK; }
 #line 6053 "src/parse/lexer.cc"
 yy714:
 	++cur;
 #line 895 "../src/parse/lexer.re"
-	{ ast.chr = '\b'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\b'; return Ret::OK; }
 #line 6058 "src/parse/lexer.cc"
 yy715:
 	++cur;
 #line 896 "../src/parse/lexer.re"
-	{ ast.chr = '\f'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\f'; return Ret::OK; }
 #line 6063 "src/parse/lexer.cc"
 yy716:
 	++cur;
 #line 897 "../src/parse/lexer.re"
-	{ ast.chr = '\n'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\n'; return Ret::OK; }
 #line 6068 "src/parse/lexer.cc"
 yy717:
 	++cur;
 #line 898 "../src/parse/lexer.re"
-	{ ast.chr = '\r'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\r'; return Ret::OK; }
 #line 6073 "src/parse/lexer.cc"
 yy718:
 	++cur;
 #line 899 "../src/parse/lexer.re"
-	{ ast.chr = '\t'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\t'; return Ret::OK; }
 #line 6078 "src/parse/lexer.cc"
 yy719:
 	++cur;
 #line 900 "../src/parse/lexer.re"
-	{ ast.chr = '\v'_u8; return Ret::OK; }
+	{ ast.chr = (uint8_t)'\v'; return Ret::OK; }
 #line 6083 "src/parse/lexer.cc"
 yy720:
 	yyaccept = 3;

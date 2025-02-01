@@ -42,7 +42,7 @@ namespace re2c {
 // Type for calculating the size of path cover. Paths are dumped to file as soon as generated and
 // don't eat heap space. The total size of path cover (measured in edges) is O(N^2) where N is the
 // number of edges in skeleton.
-using cover_size_t = u32lim_t<1024 * 1024 * 1024>; // ~1Gb
+typedef u32lim_t<1024 * 1024 * 1024> cover_size_t; /*using cover_size_t = u32lim_t<1024 * 1024 * 1024>;*/ // ~1Gb
 
 struct cover_t {
     std::vector<uint8_t> loops;
@@ -86,7 +86,7 @@ static void apply(Skeleton& skel, const tcmd_t* cmd, uint32_t dist) {
         if (tcmd_t::iscopy(p)) {
             tags[l] = tags[r];
         } else if (tcmd_t::isset(p)) {
-            tags[l] = *h == TAGVER_BOTTOM ? Skeleton::DEFTAG : dist;
+            tags[l] = *h == TAGVER_BOTTOM ? Skeleton::DEFTAG() : dist;
         } else {
             if (l != r) tags[l] = tags[r];
 
@@ -94,7 +94,7 @@ static void apply(Skeleton& skel, const tcmd_t* cmd, uint32_t dist) {
             const tagver_t* h0 = h;
             for (; *h != TAGVER_ZERO; ++h);
             for (; h --> h0; ) {
-                t = mtag(skel.tagtrie, t, *h == TAGVER_BOTTOM ? Skeleton::DEFTAG : dist);
+                t = mtag(skel.tagtrie, t, *h == TAGVER_BOTTOM ? Skeleton::DEFTAG() : dist);
             }
             tags[l] = t;
         }
@@ -166,19 +166,19 @@ template<typename key_t>
 static void write_keys(const path_t& path, Skeleton& skel, size_t width) {
     // find last accepting node
     size_t f;
-    for (f = path.len(); f > 0 && path.node(skel, f).rule == Rule::NONE; --f);
+    for (f = path.len(); f > 0 && path.node(skel, f).rule == Rule::NONE(); --f);
     const size_t rule = path.node(skel, f).rule;
 
     size_t ltag = 0, htag = 0, trail = 0;
-    if (rule != Rule::NONE) {
+    if (rule != Rule::NONE()) {
         const Rule& r = skel.dfa.rules[rule];
         ltag = r.ltag;
         htag = r.htag;
         trail = r.ttag;
     }
 
-    const Node::range_t** arcs = nullptr;
-    size_t* chars = nullptr;
+    const Node::range_t** arcs = /*nullptr*/NULL;
+    size_t* chars = /*nullptr*/NULL;
     uint32_t* tags = skel.tagvals;
     mtag_trie_t& tagtrie = skel.tagtrie;
 
@@ -221,7 +221,7 @@ static void write_keys(const path_t& path, Skeleton& skel, size_t width) {
         }
 
         size_t matched = 0;
-        if (rule != Rule::NONE) {
+        if (rule != Rule::NONE()) {
             if (trail == htag) {
                 // no trailing context
                 matched = f;
@@ -231,7 +231,7 @@ static void write_keys(const path_t& path, Skeleton& skel, size_t width) {
                 if (!fixed(tag)) {
                     // variable-length trailing context
                     matched = tags[skel.dfa.finvers[trail]];
-                } else if (tag.base != Tag::RIGHTMOST) {
+                } else if (tag.base != Tag::RIGHTMOST()) {
                     // fixed-length trailing context based on tag
                     matched = tags[skel.dfa.finvers[tag.base]] - tag.dist;
                 } else {
@@ -239,7 +239,7 @@ static void write_keys(const path_t& path, Skeleton& skel, size_t width) {
                     matched = f - tag.dist;
                 }
             }
-            DCHECK(matched != Skeleton::DEFTAG);
+            DCHECK(matched != Skeleton::DEFTAG());
         }
 
         // count keys
@@ -302,11 +302,11 @@ static void write_keys(const path_t& path, Skeleton& skel, size_t width) {
                     // variable-length tag
                     const size_t tver = static_cast<size_t>(skel.dfa.finvers[t]);
                     tval = tags[tver];
-                } else if (tag.base != Tag::RIGHTMOST) {
+                } else if (tag.base != Tag::RIGHTMOST()) {
                     // fixed-length tag based on another tag
                     const size_t tver = static_cast<size_t>(skel.dfa.finvers[tag.base]);
                     tval = tags[tver];
-                    if (tval != Skeleton::DEFTAG) tval -= tag.dist;
+                    if (tval != Skeleton::DEFTAG()) tval -= tag.dist;
                 } else {
                     // fixed-length tag based on the rightmost position
                     tval = f - tag.dist;
@@ -376,7 +376,7 @@ static void gencover(Skeleton& skel, cover_t& cover, size_t i) {
         Node::arcs_t::const_iterator
         arc = node.arcs.begin(),
         end = node.arcs.end();
-        const suffix_t* min_sfx = nullptr;
+        const suffix_t* min_sfx = /*nullptr*/NULL;
         size_t min_idx = 0;
 
         // pick the shortest suffix to minimize cover size; handle all child states before setting
@@ -395,7 +395,7 @@ static void gencover(Skeleton& skel, cover_t& cover, size_t i) {
             }
         }
 
-        if (min_sfx == nullptr) {
+        if (min_sfx == /*nullptr*/NULL) {
             // all outgoing paths loop back into this node (this can happen in cases like `[^]*`)
         } else {
             suffix = *min_sfx;
@@ -410,7 +410,7 @@ template<typename cunit_t, typename key_t>
 static void generate_paths_cunit_key(Skeleton& skel, cover_t& cover) {
     gencover<cunit_t, key_t>(skel, cover, 0);
     if (cover.size.overflow()) {
-        skel.msg.warning(nullptr, skel.loc, false,
+        skel.msg.warning(/*nullptr*/NULL, skel.loc, false,
                          "DFA %sis too large: can only generate partial path cover",
                          incond(skel.cond).c_str());
     }

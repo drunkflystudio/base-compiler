@@ -26,7 +26,7 @@ struct Opt;
 struct opt_t;
 struct OutputBlock;
 struct State;
-using Adfas = std::vector<std::unique_ptr<Adfa>>;
+typedef std::vector<std::unique_ptr<Adfa>> Adfas; /*using Adfas = std::vector<std::unique_ptr<Adfa>>;*/
 
 class Scratchbuf {
     OutAllocator& alc;
@@ -48,9 +48,9 @@ class Scratchbuf {
     Scratchbuf& label(const Label& l);
 };
 
-using blocks_t = std::vector<OutputBlock*>;
-using blocks_citer_t = blocks_t::const_iterator;
-using tagnames_t = std::set<std::string>;
+typedef std::vector<OutputBlock*> blocks_t; /*using blocks_t = std::vector<OutputBlock*>;*/
+typedef blocks_t::const_iterator blocks_citer_t; /*using blocks_citer_t = blocks_t::const_iterator;*/
+typedef std::set<std::string> tagnames_t; /*using tagnames_t = std::set<std::string>;*/
 
 struct RenderContext {
     std::ostringstream os;
@@ -62,7 +62,7 @@ struct RenderContext {
     bool oneline_mode;
 
     RenderContext(const Msg& msg, const std::string& file)
-        : os(), msg(msg), opts(nullptr), file(file), line(1), ind(0), oneline_mode(false) {}
+        : os(), msg(msg), opts(/*nullptr*/NULL), file(file), line(1), ind(0), oneline_mode(false) {}
     FORBID_COPY(RenderContext);
 };
 
@@ -80,9 +80,9 @@ struct StartCond {
     std::string name;
     uint32_t number;
 };
-using StartConds = std::vector<StartCond>;
+typedef std::vector<StartCond> StartConds; /*using StartConds = std::vector<StartCond>;*/
 
-using storable_states_t = std::map<uint32_t, CodeList*>;
+typedef std::map<uint32_t, CodeList*> storable_states_t; /*using storable_states_t = std::map<uint32_t, CodeList*>;*/
 
 struct OutputBlock {
     InputBlock kind;

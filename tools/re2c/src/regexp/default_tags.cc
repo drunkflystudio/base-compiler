@@ -12,7 +12,7 @@ namespace re2c {
 namespace {
 
 static Regexp* negative_tags(RESpec& spec, const size_t* stidx, const size_t* etidx) {
-    Regexp* x = nullptr;
+    Regexp* x = /*nullptr*/NULL;
     if (spec.opts->nested_negative_tags) {
         // Add transitions for all negative tags (including nested ones). It allows to avoid tag
         // initialization and fixup at the end of match, at the cost of adding more tag actions.
@@ -68,7 +68,7 @@ void insert_default_tags(RESpec& spec) {
 
     std::vector<Regexp*>::reverse_iterator i_re;
     for (i_re = spec.res.rbegin(); i_re != spec.res.rend(); ++i_re) {
-        stack.push_back({*i_re, nullptr, nullptr});
+        stack.push_back(StackItem{*i_re, /*nullptr*/NULL, /*nullptr*/NULL});
     }
 
     while (!stack.empty()) {
@@ -77,14 +77,14 @@ void insert_default_tags(RESpec& spec) {
         Regexp* re = i.re;
 
         if (re->kind == Regexp::Kind::ALT) {
-            if (i.ltag == nullptr) {
+            if (i.ltag == /*nullptr*/NULL) {
                 // collect tags from the left sub-regexp and return to this regexp
-                stack.push_back({re, tag, nullptr});
-                stack.push_back({re->alt.re1, nullptr, nullptr});
-            } else if (i.rtag == nullptr) {
+                stack.push_back(StackItem{re, tag, /*nullptr*/NULL});
+                stack.push_back(StackItem{re->alt.re1, /*nullptr*/NULL, /*nullptr*/NULL});
+            } else if (i.rtag == /*nullptr*/NULL) {
                 // collect tags from the right sub-regexp and return to this regexp
-                stack.push_back({re, i.ltag, tag});
-                stack.push_back({re->alt.re2, nullptr, nullptr});
+                stack.push_back(StackItem{re, i.ltag, tag});
+                stack.push_back(StackItem{re->alt.re2, /*nullptr*/NULL, /*nullptr*/NULL});
             } else {
                 // both sub-regexp traversed, add negative tags
                 Regexp* x = negative_tags(spec, i.ltag, i.rtag);
@@ -100,10 +100,10 @@ void insert_default_tags(RESpec& spec) {
                               : re_cat(spec, re->alt.re2, x);
             }
         } else if (re->kind == Regexp::Kind::CAT) {
-            stack.push_back({re->cat.re2, nullptr, nullptr});
-            stack.push_back({re->cat.re1, nullptr, nullptr});
+            stack.push_back(StackItem{re->cat.re2, /*nullptr*/NULL, /*nullptr*/NULL});
+            stack.push_back(StackItem{re->cat.re1, /*nullptr*/NULL, /*nullptr*/NULL});
         } else if (re->kind == Regexp::Kind::ITER) {
-            stack.push_back({re->iter.re, nullptr, nullptr});
+            stack.push_back(StackItem{re->iter.re, /*nullptr*/NULL, /*nullptr*/NULL});
         } else if (re->kind == Regexp::Kind::TAG) {
             *tag++ = re->tag.idx;
         }

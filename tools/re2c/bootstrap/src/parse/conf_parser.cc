@@ -76,7 +76,7 @@
 #line 20 "../src/parse/conf_parser.ypp"
 
 
-#pragma GCC diagnostic push
+//#pragma GCC diagnostic push
 #include "src/util/nowarn_in_bison.h"
 
 #include "src/msg/msg.h"
@@ -1289,7 +1289,7 @@ yyreduce:
   case 22: /* code_opt: '(' opt_or '?' code_exprs ')'  */
 #line 141 "../src/parse/conf_parser.ypp"
                                 {
-    (yyval.code) = opts.make_code_cond((yyvsp[-3].opt), (yyvsp[-1].codes), nullptr);
+    (yyval.code) = opts.make_code_cond((yyvsp[-3].opt), (yyvsp[-1].codes), /*nullptr*/NULL);
 }
 #line 1295 "src/parse/conf_parser.cc"
     break;
@@ -1588,7 +1588,7 @@ Ret Input::load_syntax_config(Opt& opts, Lang lang) {
     files.push_back(in);
     msg.filenames.push_back("<default syntax file>");
 
-    const char* src = nullptr;
+    const char* src = /*nullptr*/NULL;
     switch (lang) {
         case Lang::C: src = DEFAULT_SYNTAX_C; break;
         case Lang::D: src = DEFAULT_SYNTAX_D; break;
@@ -1604,7 +1604,7 @@ Ret Input::load_syntax_config(Opt& opts, Lang lang) {
         case Lang::NONE: break; // no language => no default syntax config
     }
 
-    if (src != nullptr) {
+    if (src != /*nullptr*/NULL) {
         size_t flen = strlen(src);
 
         if (flen + maxfill() > BSIZE) {

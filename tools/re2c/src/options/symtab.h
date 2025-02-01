@@ -18,7 +18,7 @@ struct symtab_cmp_t {
     }
 };
 
-using symtab_t = std::map<const char*, const AstNode*, symtab_cmp_t>;
+typedef std::map<const char*, const AstNode*, symtab_cmp_t> symtab_t; /*using symtab_t = std::map<const char*, const AstNode*, symtab_cmp_t>;*/
 
 const AstNode* find_def(const symtab_t& symtab, const char* name) NODISCARD;
 Ret add_named_def(symtab_t& symtab, const char* name, const AstNode* ast, Input& input) NODISCARD;

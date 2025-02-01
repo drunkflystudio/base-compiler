@@ -56,7 +56,7 @@ template<> inline membuf_t<uint32_t>& OutBuf::select() { return buf32; }
 template<> inline membuf_t<uint64_t>& OutBuf::select() { return buf64; }
 
 inline void OutBuf::init(size_t selector) {
-    static constexpr size_t KB = 1024 * 1024;
+    static const/*expr*/ size_t KB = 1024 * 1024;
     switch (selector) {
     case 1: buf8.init(KB);  break;
     case 2: buf16.init(KB); break;
@@ -66,7 +66,7 @@ inline void OutBuf::init(size_t selector) {
         UNREACHABLE();
     }
     size = 0;
-    file = nullptr;
+    file = /*nullptr*/NULL;
 }
 
 inline void OutBuf::free(size_t selector) {
@@ -110,7 +110,7 @@ struct Node {
         range_t* next;
     };
 
-    using arcs_t = std::map<size_t, range_t*>;
+    typedef std::map<size_t, range_t*> arcs_t; /*using arcs_t = std::map<size_t, range_t*>;*/
 
     arcs_t arcs;
     size_t rule;
@@ -127,7 +127,7 @@ struct Node {
 };
 
 struct Skeleton {
-    static constexpr uint32_t DEFTAG = std::numeric_limits<uint32_t>::max();
+    static /*constexpr*/ uint32_t DEFTAG() { return std::numeric_limits<uint32_t>::max(); }
 
     Tdfa& dfa;
 
@@ -162,7 +162,7 @@ struct Skeleton {
 };
 
 template<typename key_t> key_t rule2key(size_t r, size_t def) {
-    if (r == Rule::NONE) {
+    if (r == Rule::NONE()) {
         return std::numeric_limits<key_t>::max();
     } else if (r == def) {
         key_t k = std::numeric_limits<key_t>::max();

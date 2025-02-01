@@ -56,7 +56,7 @@ struct DfsAstToRe {
     bool in_iter;       // if this AST is under repetition
 
     DfsAstToRe(const AstNode* ast, int32_t height, bool in_iter)
-        : ast(ast), re1(nullptr), re2(nullptr), height(height), succ(0), in_iter(in_iter) {}
+        : ast(ast), re1(/*nullptr*/NULL), re2(/*nullptr*/NULL), height(height), succ(0), in_iter(in_iter) {}
 };
 
 // On-stack information for iterative depth-first conversion of character difference AST to Range.
@@ -66,7 +66,7 @@ struct DfsDiffToRange {
     uint8_t succ;       // index of the current successor node in AST
 
     DfsDiffToRange(const AstNode* ast)
-        : ast(ast), range(nullptr), succ(0) {}
+        : ast(ast), range(/*nullptr*/NULL), succ(0) {}
 };
 
 LOCAL_NODISCARD(Regexp* fictive_tags(RESpec& spec, int32_t height)) {
@@ -74,11 +74,11 @@ LOCAL_NODISCARD(Regexp* fictive_tags(RESpec& spec, int32_t height)) {
 
     // opening fictive tag
     Regexp* t1 = re_tag(spec, tags.size(), false);
-    tags.emplace_back(Tag::FICTIVE, Tag::FICTIVE, false, false, height + 1);
+    tags.emplace_back(Tag::FICTIVE(), Tag::FICTIVE(), false, false, height + 1);
 
     // closing fictive tag
     Regexp* t2 = re_tag(spec, tags.size(), false);
-    tags.emplace_back(Tag::FICTIVE, Tag::FICTIVE, false, false, height);
+    tags.emplace_back(Tag::FICTIVE(), Tag::FICTIVE(), false, false, height);
 
     return re_cat(spec, t1, t2);
 }
@@ -135,14 +135,14 @@ LOCAL_NODISCARD(Regexp* structural_tags(
         // See note [POSIX subexpression hierarchy].
         return fictive_tags(spec, x.height);
     }
-    return nullptr;
+    return /*nullptr*/NULL;
 }
 
 // Insert a regexp between concatenated tags. If there are no tags, just return the regexp.
 LOCAL_NODISCARD(Regexp* insert_between_tags(RESpec& spec, Regexp* tags, Regexp* re)) {
-    if (tags == nullptr) {
+    if (tags == /*nullptr*/NULL) {
         return re;
-    } else if (re != nullptr) {
+    } else if (re != /*nullptr*/NULL) {
         DCHECK(tags->kind == Regexp::Kind::CAT);
         DCHECK(tags->cat.re1->kind == Regexp::Kind::TAG);
         DCHECK(tags->cat.re2->kind == Regexp::Kind::TAG);
@@ -197,9 +197,10 @@ LOCAL_NODISCARD(Ret char_to_range(RESpec& spec, const AstChar& chr, bool icase, 
 LOCAL_NODISCARD(Ret cls_to_range(RESpec& spec, const AstNode* ast, Range** prange)) {
     DCHECK(ast->kind == AstKind::CLS);
     RangeMgr& rm = spec.rangemgr;
-    Range *r = nullptr;
+    Range *r = /*nullptr*/NULL;
 
-    for (const AstRange& a : ast->cls.ranges) {
+    for (auto it = ast->cls.ranges.begin(); it != ast->cls.ranges.end(); ++it) {
+        const AstRange& a = *it;
         Range* s = spec.opts->encoding.validate_range(rm, a.lower, a.upper);
         if (!s) {
             RET_FAIL(spec.msg.error(a.loc,
@@ -267,10 +268,11 @@ LOCAL_NODISCARD(Ret re_class(RESpec& spec, const loc_t& loc, const Range* range,
 LOCAL_NODISCARD(Ret re_string(RESpec& spec, const AstNode* ast, Regexp** pre)) {
     DCHECK(ast->kind == AstKind::STR);
 
-    Regexp* x = nullptr;
+    Regexp* x = /*nullptr*/NULL;
     bool icase = is_icase(spec.opts, ast->str.icase);
 
-    for (const AstChar& a : ast->str.chars) {
+    for (auto it = ast->str.chars.begin(); it != ast->str.chars.end(); ++it) {
+        const AstChar& a = *it;
         Range* r;
         CHECK_RET(char_to_range(spec, a, icase, &r));
         Regexp* y;
@@ -289,7 +291,7 @@ LOCAL_NODISCARD(Ret diff_to_range(RESpec& spec,
     DCHECK(stack.empty());
     stack.emplace_back(ast0);
 
-    Range *range = nullptr;
+    Range *range = /*nullptr*/NULL;
 
     while (!stack.empty()) {
         // Ensure that the reference to stack top won't be accidentally invalidated on push.
@@ -336,7 +338,7 @@ LOCAL_NODISCARD(Ret diff_to_range(RESpec& spec,
                 x.range = range;
                 stack.emplace_back(ast->diff.ast2);
             } else { // 3rd visit: return
-                range = spec.rangemgr.sub(x.range, range); // can handle nullptr args
+                range = spec.rangemgr.sub(x.range, range); // can handle /*nullptr*/NULL args
                 stack.pop_back();
             }
             break;
@@ -350,7 +352,7 @@ LOCAL_NODISCARD(Ret diff_to_range(RESpec& spec,
                 x.range = range;
                 stack.emplace_back(ast->alt.ast2);
             } else { // 3rd visit: return
-                range = spec.rangemgr.add(x.range, range); // can handle nullptr args
+                range = spec.rangemgr.add(x.range, range); // can handle /*nullptr*/NULL args
                 stack.pop_back();
             }
             break;
@@ -373,7 +375,7 @@ LOCAL_NODISCARD(Ret ast_to_re(RESpec& spec,
     std::vector<Tag>& tags = spec.tags;
     const opt_t* opts = spec.opts;
     Range* range;
-    Regexp* re = nullptr;
+    Regexp* re = /*nullptr*/NULL;
 
     DCHECK(stack.empty());
     stack.emplace_back(ast0, 0, false);
@@ -501,7 +503,7 @@ LOCAL_NODISCARD(Ret ast_to_re(RESpec& spec,
                 if (m > 0) {
                     stack.emplace_back(ast, x.height, true);
                 } else {
-                    re = nullptr;
+                    re = /*nullptr*/NULL;
                 }
             } else { // 2nd visit: return
                 const uint32_t n = ast->iter.min;
@@ -552,10 +554,10 @@ Ret RESpec::init(const std::vector<AstRule>& ast) {
 }
 
 // C++11 requres outer decl for ODR-used static constexpr data members (not needed in C++17).
-constexpr size_t Tag::RIGHTMOST;
-constexpr size_t Tag::FICTIVE;
-constexpr size_t Tag::NONE;
-constexpr uint32_t Tag::VARDIST;
-constexpr size_t Rule::NONE;
+//constexpr size_t Tag::RIGHTMOST;
+//constexpr size_t Tag::FICTIVE;
+//constexpr size_t Tag::NONE;
+//constexpr uint32_t Tag::VARDIST;
+//constexpr size_t Rule::NONE;
 
 } // namespace re2c

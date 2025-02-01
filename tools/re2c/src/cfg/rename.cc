@@ -43,7 +43,8 @@ void cfg_t::renaming(cfg_t& cfg, const tagver_t* ver2new, tagver_t maxver) {
 
     // versions of tags with history
     std::set<tagver_t> newmt, &oldmt = cfg.dfa.mtagvers;
-    for (tagver_t v : oldmt) {
+    for (auto it = oldmt.begin(); it != oldmt.end(); ++it) {
+        tagver_t v = *it;
         newmt.insert(ver2new[v]);
     }
     oldmt.swap(newmt);

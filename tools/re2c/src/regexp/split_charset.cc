@@ -19,7 +19,8 @@ void split_charset(RESpec& spec) {
     std::set<uint32_t> cs;
     std::stack<const Regexp*> todo;
 
-    for (const Regexp* re : spec.res) {
+    for (auto it = spec.res.begin(); it != spec.res.end(); ++it) {
+        const Regexp* re = *it;
         todo.push(re);
     }
 

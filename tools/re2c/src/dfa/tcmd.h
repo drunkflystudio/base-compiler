@@ -26,13 +26,13 @@ struct tcmd_t {
     static tcmd_t** topsort(tcmd_t** phead, tcmd_t* end, uint32_t* indeg);
 };
 
-using tcid_t = uint32_t;
+typedef uint32_t tcid_t; /*using tcid_t = uint32_t;*/
 
-static constexpr tcid_t TCID0 = 0;
-static constexpr tcid_t TCID_NONE = std::numeric_limits<tcid_t>::max();
+static const/*expr*/ tcid_t TCID0 = 0;
+#define /*static constexpr tcid_t*/ TCID_NONE /*=*/ ((tcid_t)std::numeric_limits<tcid_t>::max())
 
 class tcpool_t {
-    using index_t = lookup_t<const tcmd_t*>;
+    typedef lookup_t<const tcmd_t*> index_t; /*using index_t = lookup_t<const tcmd_t*>;*/
 
     DfaAllocator& alc;
     index_t index;

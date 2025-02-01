@@ -30,7 +30,7 @@ Tdfa::Tdfa(DfaAllocator& dfa_alc, size_t charset_bounds, size_t def_rule, size_t
       states(),
       nchars(charset_bounds - 1), // (n + 1) bounds for n ranges
       mtagvers(),
-      finvers(nullptr),
+      finvers(/*nullptr*/NULL),
       tcpool(dfa_alc),
       maxtagver(0),
       def_rule(def_rule),
@@ -47,7 +47,8 @@ Ret determinization(Tnfa&& nfa, Tdfa& dfa, const opt_t* opts, Msg& msg, const st
 }
 
 Tdfa::~Tdfa() {
-    for (TdfaState* s : states) {
+    for (auto it = states.begin(); it != states.end(); ++it) {
+        TdfaState* s = *it;
         delete s;
     }
 }
@@ -128,14 +129,14 @@ void reach_on_symbol(ctx_t& ctx, uint32_t sym) {
 
 TnfaState* transition(TnfaState* state, uint32_t symbol) {
     if (state->kind != TnfaState::Kind::RAN) {
-        return nullptr;
+        return /*nullptr*/NULL;
     }
     for (const Range* r = state->ran; r; r = r->next()) {
         if ((r->lower() <= symbol) && (symbol < r->upper())) {
             return state->out1;
         }
     }
-    return nullptr;
+    return /*nullptr*/NULL;
 }
 
 template<typename ctx_t>
@@ -212,7 +213,8 @@ void warn_nondeterministic_tags(const ctx_t& ctx) {
         }
     }
 
-    for (const Rule& rule : rules) {
+    for (auto it = rules.begin(); it != rules.end(); ++it) {
+        const Rule& rule = *it;
         for (size_t t = rule.ltag; t < rule.htag; ++t) {
             const size_t m = maxv[t];
             if (m > 1) {
@@ -244,7 +246,7 @@ determ_context_t<history_t>::determ_context_t(Tnfa&& nfa,
       origin(Tdfa::NIL),
       target(Tdfa::NIL),
       symbol(0),
-      actions(nullptr),
+      actions(/*nullptr*/NULL),
       tagvertbl(tags.size()),
       history(),
       kernels(),
@@ -260,10 +262,10 @@ determ_context_t<history_t>::determ_context_t(Tnfa&& nfa,
       state(),
       gor1_topsort(),
       gor1_linear(),
-      newprectbl(nullptr),
-      oldprectbl(nullptr),
+      newprectbl(/*nullptr*/NULL),
+      oldprectbl(/*nullptr*/NULL),
       oldprecdim(0),
-      histlevel(nullptr),
+      histlevel(/*nullptr*/NULL),
       sortcores(),
       fincount(),
       worklist(),
@@ -314,7 +316,7 @@ template determ_context_t<phistory_t>::determ_context_t(
         Tnfa&& nfa, Tdfa& dfa, const opt_t* opts, Msg& msg, const std::string& cond);
 
 // C++11 requres outer decl for ODR-used static constexpr data members (not needed in C++17).
-constexpr uint32_t Tdfa::NIL;
+//constexpr uint32_t Tdfa::NIL;
 
 } // namespace re2c
 

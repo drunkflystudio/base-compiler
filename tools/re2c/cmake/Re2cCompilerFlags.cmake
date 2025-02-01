@@ -26,6 +26,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT isMultiConfig)
 endif()
 
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    if(FALSE)
     try_cxxflag("-W")
     try_cxxflag("-Wall")
     try_cxxflag("-Wextra")
@@ -63,6 +64,7 @@ if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
     # Prepend to avoid overriding user-defined options set with -DCMAKE_CXX_FLAGS.
     set(CMAKE_CXX_FLAGS "${re2c_cxx_flags} ${CMAKE_CXX_FLAGS}")
+    endif()
 else()
     # /W3 enables levels 1 - 3 (severe, significant and production quality warnings).
     # /W4 (informational warnings) and /Wall (/W4 plus off-by-default warnings) emit too much noise.

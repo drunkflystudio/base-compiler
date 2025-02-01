@@ -26,7 +26,7 @@ class RangeMgr;
 class Enc {
   public:
     // Supported encodings.
-    enum class Type: uint32_t {
+    enum /*class*/ Type: uint32_t {
         //         code point range   code point size       code unit range   code unit size
         // ----------------------------------------------------------------------------------
         ASCII,  //  [0 - 0xFF]         fixed, 1 byte         [0 - 0xFF]        1 byte
@@ -38,16 +38,16 @@ class Enc {
     };
 
     // What to do with invalid code points:
-    enum class Policy: uint32_t {
+    enum /*class*/ Policy: uint32_t {
         FAIL,       // abort with an error
         SUBSTITUTE, // silently replace with an invalid code point
         IGNORE      // do nothing, as if they were valid
     };
 
   private:
-    static constexpr uint32_t SURR_MIN = 0xD800;
-    static constexpr uint32_t SURR_MAX = 0xDFFF;
-    static constexpr uint32_t UNICODE_ERROR = 0xFFFD;
+    static const/*expr*/ uint32_t SURR_MIN = 0xD800;
+    static const/*expr*/ uint32_t SURR_MAX = 0xDFFF;
+    static const/*expr*/ uint32_t UNICODE_ERROR = 0xFFFD;
 
     Type type_;
     Policy policy_;

@@ -21,12 +21,12 @@ class array_t {
     template<typename Allocator>
     void init(const T* data, size_t size, Allocator& alc) {
         if (size > 0) {
-            CHECK(size < UINT32_MAX);
+            CHECK(size < /*UINT32_MAX*/0xffffffff);
             size_ = static_cast<uint32_t>(size);
             data_ = alc.template alloct<T>(size);
             memcpy(data_, data, size * sizeof(T));
         } else {
-            data_ = nullptr;
+            data_ = /*nullptr*/NULL;
             size_ = 0;
         }
     }
@@ -69,7 +69,7 @@ struct membuf_t {
 
     void free() {
         operator delete(ptr_);
-        ptr_ = nullptr;
+        ptr_ = /*nullptr*/NULL;
         size_ = 0;
     }
 
@@ -156,7 +156,7 @@ struct lookup_t {
 // Insertion is O(n), as it loops over all elements to ensure they are different.
 template<typename T>
 class uniq_vector_t : public std::vector<T> {
-    using base_t = std::vector<T>;
+    typedef std::vector<T> base_t; /*using base_t = std::vector<T>;*/
 
     void push_back(const T& v) = delete;
     template<class... Args> void emplace_back(Args&&... args) = delete;
@@ -164,7 +164,7 @@ class uniq_vector_t : public std::vector<T> {
 
   public:
     size_t find_or_add(const T& v) {
-        const size_t size = base_t::size();
+        /*const*/ size_t size = base_t::size();
         for (size_t i = 0; i < size; ++i) {
             if (base_t::operator[](i) == v) {
                 return i;
@@ -184,14 +184,14 @@ struct list_t {
 template<typename T, typename Allocator>
 inline list_t<T>* new_list(Allocator& alc) {
     list_t<T>* x = alc.template alloct<list_t<T> >(1);
-    x->head = nullptr;
+    x->head = /*nullptr*/NULL;
     x->ptail = &x->head;
     return x;
 }
 
 template<typename T>
 inline void append(list_t<T>* list, T* elem) {
-    if (elem != nullptr) {
+    if (elem != /*nullptr*/NULL) {
         *list->ptail = elem;
         list->ptail = &elem->next;
     }
@@ -199,7 +199,7 @@ inline void append(list_t<T>* list, T* elem) {
 
 template<typename T>
 inline void prepend(list_t<T>* list, T* elem) {
-    if (elem != nullptr) {
+    if (elem != /*nullptr*/NULL) {
         if (!list->head) {
             list->ptail = &elem->next;
         }
@@ -214,7 +214,7 @@ inline void append(list_t<T>* list1, list_t<T>* list2) {
         *list1->ptail = list2->head;
         list1->ptail = list2->ptail;
         // for safety, clear the old list
-        list2->head = nullptr;
+        list2->head = /*nullptr*/NULL;
         list2->ptail = &list2->head;
     }
 }
@@ -226,7 +226,7 @@ inline void prepend(list_t<T>* list1, list_t<T>* list2) {
         if (!list1->head) list1->ptail = list2->ptail;
         list1->head = list2->head;
         // for safety, clear the old list
-        list2->head = nullptr;
+        list2->head = /*nullptr*/NULL;
         list2->ptail = &list2->head;
     }
 }

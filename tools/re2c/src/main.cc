@@ -144,7 +144,7 @@ LOCAL_NODISCARD(Ret compile(int, char* argv[])) {
     Input input(out_alc, &globopts, msg);
     CHECK_RET(opts.parse(argv, input, RE2C_LANG));
 
-    CHECK_RET(input.open(globopts.source_file, nullptr));
+    CHECK_RET(input.open(globopts.source_file, /*nullptr*/NULL));
 
     Output output(out_alc, msg);
 
@@ -165,7 +165,7 @@ LOCAL_NODISCARD(Ret compile(int, char* argv[])) {
         AstGrams grams;
         if (kind == InputBlock::USE) {
             const AstBlock* b = ast.blocks.find(block_name);
-            if (b == nullptr) return Ret::FAIL;
+            if (b == /*nullptr*/NULL) return Ret::FAIL;
             grams = b->grams;
             CHECK_RET(opts.restore(b->opts));
         }
@@ -182,7 +182,8 @@ LOCAL_NODISCARD(Ret compile(int, char* argv[])) {
         } else {
             // Convert AST to a DFA for each condition.
             CHECK_RET(check_and_merge_special_rules(grams, b.opts, output.msg, ast));
-            for (const AstGram& gram : grams) {
+            for (auto it = grams.begin(); it != grams.end(); ++it) {
+                const AstGram& gram = *it;
                 CHECK_RET(ast_to_dfa(gram, output, b.dfas, dfa_alc));
             }
             output.gen_stmt(code_dfas(out_alc));

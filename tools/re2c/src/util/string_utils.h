@@ -46,9 +46,11 @@ inline const char* copystr(const std::string& s, allocator_t& alc) {
     return p;
 }
 
+/*
 inline constexpr uint8_t operator ""_u8(char c) noexcept {
     return static_cast<uint8_t>(c);
 }
+*/
 
 } // namespace re2c
 

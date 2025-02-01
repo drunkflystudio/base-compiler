@@ -23,8 +23,8 @@ static bool oneline_stmt_list(const CodeList* list) {
 #undef ONELINE_CODE
     };
 
-    return list->head != nullptr
-            && list->head->next == nullptr
+    return list->head != /*nullptr*/NULL
+            && list->head->next == /*nullptr*/NULL
             && oneliners.find(list->head->kind) != oneliners.end();
 }
 
@@ -75,7 +75,7 @@ class RenderSimple : public RenderCallback {
   public:
     RenderSimple(RenderContext& rctx): rctx(rctx) {}
 
-    virtual void render_var(StxVarId var) override {
+    virtual void render_var(StxVarId var) /*override*/ {
         render_global_var(rctx, var);
     }
 };
@@ -144,13 +144,13 @@ class RenderVar : public RenderCallback {
   public:
     RenderVar(RenderContext& rctx, const CodeVar* code): rctx(rctx), code(code) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::NAME:
             rctx.os << code->name;
             break;
         case StxVarId::INIT:
-            DCHECK(code->init != nullptr);
+            DCHECK(code->init != /*nullptr*/NULL);
             rctx.os << code->init;
             break;
         case StxVarId::TYPE:
@@ -172,7 +172,7 @@ class RenderVar : public RenderCallback {
         }
     }
 
-    bool eval_cond(StxLOpt opt) override {
+    bool eval_cond(StxLOpt opt) /*override*/ {
         if (opt == StxLOpt::INIT) {
             return !code->is_default;
         }
@@ -198,17 +198,17 @@ class RenderIfThenElse : public RenderCallback {
     RenderIfThenElse(RenderContext& rctx, const CodeBranches* code, bool oneline)
             : rctx(rctx)
             , code(code)
-            , curr_branch(nullptr)
-            , last_branch(nullptr)
+            , curr_branch(/*nullptr*/NULL)
+            , last_branch(/*nullptr*/NULL)
             , nbranches(0)
-            , curr_stmt(nullptr)
-            , last_stmt(nullptr)
+            , curr_stmt(/*nullptr*/NULL)
+            , last_stmt(/*nullptr*/NULL)
             , nstmts(0)
             , oneline(oneline) {
         for (const CodeBranch* b = code->head; b; b = b->next) ++nbranches;
     }
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
             case StxVarId::COND: rctx.os << curr_branch->cond; break;
             case StxVarId::STMT: render_maybe_oneline(rctx, curr_stmt, oneline); break;
@@ -216,13 +216,13 @@ class RenderIfThenElse : public RenderCallback {
         }
     }
 
-    size_t get_list_size(StxVarId var) const override {
+    size_t get_list_size(StxVarId var) const /*override*/ {
         switch (var) {
         case StxVarId::BRANCH:
             return nbranches;
         case StxVarId::STMT: {
             size_t n = 0;
-            if (curr_branch->code != nullptr) {
+            if (curr_branch->code != /*nullptr*/NULL) {
                 for (const Code* s = curr_branch->code->head; s; s = s->next) ++n;
             }
             const_cast<size_t&>(nstmts) = n;
@@ -234,7 +234,7 @@ class RenderIfThenElse : public RenderCallback {
         }
     }
 
-    void start_list(StxVarId var, size_t lbound, size_t rbound) override {
+    void start_list(StxVarId var, size_t lbound, size_t rbound) /*override*/ {
         switch (var) {
         case StxVarId::BRANCH:
             DCHECK(rbound < nbranches);
@@ -250,7 +250,7 @@ class RenderIfThenElse : public RenderCallback {
         }
     }
 
-    bool next_in_list(StxVarId var) override {
+    bool next_in_list(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::BRANCH:
             curr_branch = curr_branch->next;
@@ -264,9 +264,9 @@ class RenderIfThenElse : public RenderCallback {
         }
     }
 
-    bool eval_cond(StxLOpt opt) override {
+    bool eval_cond(StxLOpt opt) /*override*/ {
         switch (opt) {
-            case StxLOpt::COND: return curr_branch->cond != nullptr;
+            case StxLOpt::COND: return curr_branch->cond != /*nullptr*/NULL;
             case StxLOpt::MANY: return nbranches > 1;
             default: break;
         }
@@ -283,7 +283,7 @@ class RenderSwitchCaseDefault : public RenderCallback {
   public:
     RenderSwitchCaseDefault(RenderContext& rctx): rctx(rctx) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         render_global_var(rctx, var);
     }
 };
@@ -310,7 +310,7 @@ class RenderSwitchCaseRange : public RenderCallback {
         }
     }
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         if (var == StxVarId::VAL) {
             switch (code->kind) {
             case CodeCase::Kind::DEFAULT:
@@ -345,7 +345,7 @@ class RenderSwitchCaseRange : public RenderCallback {
         }
     }
 
-    size_t get_list_size(StxVarId var) const override {
+    size_t get_list_size(StxVarId var) const /*override*/ {
         if (var == StxVarId::VAL) {
             return nsyms;
         }
@@ -353,7 +353,7 @@ class RenderSwitchCaseRange : public RenderCallback {
         return 0;
     }
 
-    void start_list(StxVarId var, size_t lbound, size_t rbound) override {
+    void start_list(StxVarId var, size_t lbound, size_t rbound) /*override*/ {
         if (var == StxVarId::VAL) {
             curr_sym = lbound;
             last_sym = rbound;
@@ -362,7 +362,7 @@ class RenderSwitchCaseRange : public RenderCallback {
         }
     }
 
-    bool next_in_list(StxVarId var) override {
+    bool next_in_list(StxVarId var) /*override*/ {
         if (var == StxVarId::VAL) {
             return ++curr_sym <= last_sym;
         }
@@ -370,7 +370,7 @@ class RenderSwitchCaseRange : public RenderCallback {
         return false;
     }
 
-    bool eval_cond(StxLOpt opt) override {
+    bool eval_cond(StxLOpt opt) /*override*/ {
         switch (opt) {
         case StxLOpt::MANY:
             return nsyms > 1;
@@ -401,8 +401,8 @@ class RenderSwitchCaseBlock : public RenderCallback {
     RenderSwitchCaseBlock(RenderContext& rctx, const CodeCase* code, bool oneline)
             : rctx(rctx)
             , code(code)
-            , curr_stmt(nullptr)
-            , last_stmt(nullptr)
+            , curr_stmt(/*nullptr*/NULL)
+            , last_stmt(/*nullptr*/NULL)
             , nstmt(0)
             , curr_range(0)
             , last_range(0)
@@ -411,7 +411,7 @@ class RenderSwitchCaseBlock : public RenderCallback {
         for (const Code* s = code->body->head; s; s = s->next) ++nstmt;
     }
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::CASE:
             switch (code->kind) {
@@ -437,7 +437,7 @@ class RenderSwitchCaseBlock : public RenderCallback {
         }
     }
 
-    size_t get_list_size(StxVarId var) const override {
+    size_t get_list_size(StxVarId var) const /*override*/ {
         switch (var) {
         case StxVarId::CASE:
             return nranges;
@@ -449,7 +449,7 @@ class RenderSwitchCaseBlock : public RenderCallback {
         }
     }
 
-    void start_list(StxVarId var, size_t lbound, size_t rbound) override {
+    void start_list(StxVarId var, size_t lbound, size_t rbound) /*override*/ {
         switch (var) {
         case StxVarId::CASE:
             curr_range = lbound;
@@ -465,7 +465,7 @@ class RenderSwitchCaseBlock : public RenderCallback {
         }
     }
 
-    bool next_in_list(StxVarId var) override {
+    bool next_in_list(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::CASE:
             return code->kind == CodeCase::Kind::RANGES && ++curr_range <= last_range;
@@ -492,13 +492,13 @@ class RenderSwitch : public RenderCallback {
     RenderSwitch(RenderContext& rctx, const CodeSwitch* code)
             : rctx(rctx)
             , code(code)
-            , curr_case(nullptr)
-            , last_case(nullptr)
+            , curr_case(/*nullptr*/NULL)
+            , last_case(/*nullptr*/NULL)
             , ncases(0) {
         for (const CodeCase* c = code->cases->head; c; c = c->next) ++ncases;
     }
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::EXPR:
             rctx.os << code->expr;
@@ -518,7 +518,7 @@ class RenderSwitch : public RenderCallback {
         }
     }
 
-    size_t get_list_size(StxVarId var) const override {
+    size_t get_list_size(StxVarId var) const /*override*/ {
         if (var == StxVarId::CASE) {
             return ncases;
         }
@@ -526,7 +526,7 @@ class RenderSwitch : public RenderCallback {
         return 0;
     }
 
-    void start_list(StxVarId var, size_t lbound, size_t rbound) override {
+    void start_list(StxVarId var, size_t lbound, size_t rbound) /*override*/ {
         if (var == StxVarId::CASE) {
             DCHECK(rbound < ncases);
             find_list_bounds(code->cases->head, lbound, rbound, &curr_case, &last_case);
@@ -535,7 +535,7 @@ class RenderSwitch : public RenderCallback {
         }
     }
 
-    bool next_in_list(StxVarId var) override {
+    bool next_in_list(StxVarId var) /*override*/ {
         if (var == StxVarId::CASE) {
             curr_case = curr_case->next;
             return curr_case != last_case;
@@ -556,11 +556,11 @@ class RenderLoop : public RenderCallback {
 
   public:
     RenderLoop(RenderContext& rctx, const CodeList* code)
-            : rctx(rctx), code(code), curr_stmt(nullptr), last_stmt(nullptr), nstmts(0) {
+            : rctx(rctx), code(code), curr_stmt(/*nullptr*/NULL), last_stmt(/*nullptr*/NULL), nstmts(0) {
         for (const Code* s = code->head; s; s = s->next) ++nstmts;
     }
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
             case StxVarId::LABEL: rctx.os << rctx.opts->label_loop; break;
             case StxVarId::STMT: render(rctx, curr_stmt); break;
@@ -568,7 +568,7 @@ class RenderLoop : public RenderCallback {
         }
     }
 
-    size_t get_list_size(StxVarId var) const override {
+    size_t get_list_size(StxVarId var) const /*override*/ {
         if (var == StxVarId::STMT) {
             return nstmts;
         }
@@ -576,7 +576,7 @@ class RenderLoop : public RenderCallback {
         return 0;
     }
 
-    void start_list(StxVarId var, size_t lbound, size_t rbound) override {
+    void start_list(StxVarId var, size_t lbound, size_t rbound) /*override*/ {
         if (var == StxVarId::STMT) {
             DCHECK(rbound < nstmts);
             find_list_bounds(code->head, lbound, rbound, &curr_stmt, &last_stmt);
@@ -585,7 +585,7 @@ class RenderLoop : public RenderCallback {
         }
     }
 
-    bool next_in_list(StxVarId var) override {
+    bool next_in_list(StxVarId var) /*override*/ {
         if (var == StxVarId::STMT) {
             curr_stmt = curr_stmt->next;
             return curr_stmt != last_stmt;
@@ -605,7 +605,7 @@ class RenderJmp : public RenderCallback {
     RenderJmp(RenderContext& rctx, const char* label)
             : rctx(rctx), label(label) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
             case StxVarId::LABEL: rctx.os << label; break;
             default: render_global_var(rctx, var); break;
@@ -629,17 +629,17 @@ class RenderFnDef : public RenderCallback {
     RenderFnDef(RenderContext& rctx, const CodeFnDef* code)
             : rctx(rctx)
             , code(code)
-            , curr_param(nullptr)
-            , last_param(nullptr)
+            , curr_param(/*nullptr*/NULL)
+            , last_param(/*nullptr*/NULL)
             , nparams(0)
-            , curr_stmt(nullptr)
-            , last_stmt(nullptr)
+            , curr_stmt(/*nullptr*/NULL)
+            , last_stmt(/*nullptr*/NULL)
             , nstmts(0) {
         for (const CodeParam* p = code->params->head; p; p = p->next) ++nparams;
         for (const Code* s = code->body->head; s; s = s->next) ++nstmts;
     }
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::NAME:
             rctx.os << code->name;
@@ -662,7 +662,7 @@ class RenderFnDef : public RenderCallback {
         }
     }
 
-    size_t get_list_size(StxVarId var) const override {
+    size_t get_list_size(StxVarId var) const /*override*/ {
         switch (var) {
             case StxVarId::ARG: return nparams;
             case StxVarId::STMT: return nstmts;
@@ -670,7 +670,7 @@ class RenderFnDef : public RenderCallback {
         }
     }
 
-    void start_list(StxVarId var, size_t lbound, size_t rbound) override {
+    void start_list(StxVarId var, size_t lbound, size_t rbound) /*override*/ {
         switch (var) {
         case StxVarId::ARG:
             DCHECK(rbound < nparams);
@@ -686,7 +686,7 @@ class RenderFnDef : public RenderCallback {
         }
     }
 
-    bool next_in_list(StxVarId var) override {
+    bool next_in_list(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::ARG:
             curr_param = curr_param->next;
@@ -700,9 +700,9 @@ class RenderFnDef : public RenderCallback {
         }
     }
 
-    bool eval_cond(StxLOpt opt) override {
+    bool eval_cond(StxLOpt opt) /*override*/ {
         if (opt == StxLOpt::TYPE) {
-            return code->type != nullptr;
+            return code->type != /*nullptr*/NULL;
         }
         UNREACHABLE();
         return false;
@@ -722,13 +722,13 @@ class RenderFnCall : public RenderCallback {
     RenderFnCall(RenderContext& rctx, const CodeFnCall* code)
             : rctx(rctx)
             , code(code)
-            , curr_arg(nullptr)
-            , last_arg(nullptr)
+            , curr_arg(/*nullptr*/NULL)
+            , last_arg(/*nullptr*/NULL)
             , nargs(0) {
         for (const CodeArg* a = code->args->head; a; a = a->next) ++nargs;
     }
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
             case StxVarId::NAME: rctx.os << code->name; break;
             case StxVarId::RETVAL: rctx.os << code->retval; break;
@@ -737,7 +737,7 @@ class RenderFnCall : public RenderCallback {
         }
     }
 
-    size_t get_list_size(StxVarId var) const override {
+    size_t get_list_size(StxVarId var) const /*override*/ {
         if (var == StxVarId::ARG) {
             return nargs;
         }
@@ -745,7 +745,7 @@ class RenderFnCall : public RenderCallback {
         return 0;
     }
 
-    void start_list(StxVarId var, size_t lbound, size_t rbound) override {
+    void start_list(StxVarId var, size_t lbound, size_t rbound) /*override*/ {
         if (var == StxVarId::ARG) {
             DCHECK(rbound < nargs);
             find_list_bounds(code->args->head, lbound, rbound, &curr_arg, &last_arg);
@@ -754,7 +754,7 @@ class RenderFnCall : public RenderCallback {
         }
     }
 
-    bool next_in_list(StxVarId var) override {
+    bool next_in_list(StxVarId var) /*override*/ {
         if (var == StxVarId::ARG) {
             curr_arg = curr_arg->next;
             return curr_arg != last_arg;
@@ -763,12 +763,12 @@ class RenderFnCall : public RenderCallback {
         return false;
     }
 
-    bool eval_cond(StxLOpt opt) override {
+    bool eval_cond(StxLOpt opt) /*override*/ {
         switch (opt) {
         case StxLOpt::ARGS:
             return nargs > 0;
         case StxLOpt::RETVAL:
-            return code->retval != nullptr;
+            return code->retval != /*nullptr*/NULL;
         default:
             UNREACHABLE();
             return false;
@@ -789,13 +789,13 @@ class RenderRecFuncs : public RenderCallback {
     RenderRecFuncs(RenderContext& rctx, const CodeList* fns)
             : rctx(rctx)
             , fns(fns)
-            , curr_fn(nullptr)
-            , last_fn(nullptr)
+            , curr_fn(/*nullptr*/NULL)
+            , last_fn(/*nullptr*/NULL)
             , nfuncs(0) {
         for (const Code* x = fns->head; x; x = x->next) ++nfuncs;
     }
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::FNDECL: {
             RenderFnDef callback(rctx, &curr_fn->fndef);
@@ -813,7 +813,7 @@ class RenderRecFuncs : public RenderCallback {
         }
     }
 
-    size_t get_list_size(StxVarId var) const override {
+    size_t get_list_size(StxVarId var) const /*override*/ {
         if (var == StxVarId::FN) {
             return nfuncs;
         }
@@ -821,7 +821,7 @@ class RenderRecFuncs : public RenderCallback {
         return 0;
     }
 
-    void start_list(StxVarId var, size_t lbound, size_t rbound) override {
+    void start_list(StxVarId var, size_t lbound, size_t rbound) /*override*/ {
         if (var == StxVarId::FN) {
             DCHECK(rbound < nfuncs);
             find_list_bounds(fns->head, lbound, rbound, &curr_fn, &last_fn);
@@ -830,7 +830,7 @@ class RenderRecFuncs : public RenderCallback {
         }
     }
 
-    bool next_in_list(StxVarId var) override {
+    bool next_in_list(StxVarId var) /*override*/ {
         if (var == StxVarId::FN) {
             curr_fn = curr_fn->next;
             return curr_fn != last_fn;
@@ -850,7 +850,7 @@ class RenderAssign : public RenderCallback {
     RenderAssign(RenderContext& rctx, const CodeAssign* code)
             : rctx(rctx), code(code) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
             case StxVarId::LHS: rctx.os << code->lhs; break;
             case StxVarId::RHS: rctx.os << code->rhs; break;
@@ -868,7 +868,7 @@ class RenderDebug : public RenderCallback {
   public:
     RenderDebug(RenderContext& rctx, const CodeDebug* code): rctx(rctx), code(code) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::DEBUG: {
             std::ostringstream s(rctx.opts->api_debug);
@@ -904,7 +904,7 @@ class RenderSkipPeekBackupRestore : public RenderCallback {
   public:
     RenderSkipPeekBackupRestore(RenderContext& rctx): rctx(rctx) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
             case StxVarId::CHAR: rctx.os << rctx.opts->var_char; break;
             case StxVarId::CTYPE: rctx.os << rctx.opts->api_char_type; break;
@@ -920,7 +920,7 @@ class RenderSkipPeekBackupRestore : public RenderCallback {
         }
     }
 
-    bool eval_cond(StxLOpt opt) override {
+    bool eval_cond(StxLOpt opt) /*override*/ {
         if (opt == StxLOpt::CAST) {
             return rctx.opts->char_conv;
         }
@@ -935,7 +935,7 @@ class RenderBackupRestoreCtx : public RenderCallback {
   public:
     RenderBackupRestoreCtx(RenderContext& rctx): rctx(rctx) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
             case StxVarId::CTXMARKER: rctx.os << rctx.opts->api_ctxmarker; break;
             case StxVarId::CURSOR: rctx.os << rctx.opts->api_cursor; break;
@@ -955,7 +955,7 @@ class RenderTagOps : public RenderCallback {
     RenderTagOps(RenderContext& rctx, const CodeTag* code)
             : rctx(rctx), code(code) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         const opt_t* opts = rctx.opts;
         switch (var) {
         case StxVarId::TAG:
@@ -1029,9 +1029,9 @@ class RenderTagOps : public RenderCallback {
         }
     }
 
-    bool eval_cond(StxLOpt opt) override {
+    bool eval_cond(StxLOpt opt) /*override*/ {
         if (opt == StxLOpt::NESTED) {
-            return code->tag2 != nullptr; // for nested tags there is a negative tag
+            return code->tag2 != /*nullptr*/NULL; // for nested tags there is a negative tag
         }
         UNREACHABLE();
         return false;
@@ -1080,7 +1080,7 @@ class RenderArray : public RenderCallback {
         }
     }
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::NAME:
             rctx.os << code->name;
@@ -1107,7 +1107,7 @@ class RenderArray : public RenderCallback {
         }
     }
 
-    size_t get_list_size(StxVarId var) const override {
+    size_t get_list_size(StxVarId var) const /*override*/ {
         switch (var) {
             case StxVarId::ROW: return nrows;
             case StxVarId::ELEM: return ncols;
@@ -1115,7 +1115,7 @@ class RenderArray : public RenderCallback {
         }
     }
 
-    void start_list(StxVarId var, size_t lbound, size_t rbound) override {
+    void start_list(StxVarId var, size_t lbound, size_t rbound) /*override*/ {
         switch (var) {
         case StxVarId::ROW:
             DCHECK(rbound < nrows);
@@ -1133,7 +1133,7 @@ class RenderArray : public RenderCallback {
         }
     }
 
-    bool next_in_list(StxVarId var) override {
+    bool next_in_list(StxVarId var) /*override*/ {
         switch (var) {
             case StxVarId::ROW: return ++curr_row <= last_row;
             case StxVarId::ELEM: return ++curr_col <= last_col;
@@ -1154,7 +1154,7 @@ class RenderEnum : public RenderCallback {
     RenderEnum(RenderContext& rctx, const CodeEnum* code)
             : rctx(rctx), code(code), curr_elem(0), last_elem(0) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::TYPE:
             rctx.os << code->type;
@@ -1171,7 +1171,7 @@ class RenderEnum : public RenderCallback {
         }
     }
 
-    size_t get_list_size(StxVarId var) const override {
+    size_t get_list_size(StxVarId var) const /*override*/ {
         if (var == StxVarId::ELEM) {
             return code->size;
         }
@@ -1179,7 +1179,7 @@ class RenderEnum : public RenderCallback {
         return 0;
     }
 
-    void start_list(StxVarId var, size_t lbound, size_t rbound) override {
+    void start_list(StxVarId var, size_t lbound, size_t rbound) /*override*/ {
         if (var == StxVarId::ELEM) {
             curr_elem = lbound;
             last_elem = rbound;
@@ -1188,7 +1188,7 @@ class RenderEnum : public RenderCallback {
         }
     }
 
-    bool next_in_list(StxVarId var) override {
+    bool next_in_list(StxVarId var) /*override*/ {
         if (var == StxVarId::ELEM) {
             return ++curr_elem <= last_elem;
         } else {
@@ -1197,9 +1197,9 @@ class RenderEnum : public RenderCallback {
         return false;
     }
 
-    bool eval_cond(StxLOpt opt) override {
+    bool eval_cond(StxLOpt opt) /*override*/ {
         if (opt == StxLOpt::INIT) {
-            return code->elem_nums != nullptr;
+            return code->elem_nums != /*nullptr*/NULL;
         }
         UNREACHABLE();
         return false;
@@ -1214,13 +1214,13 @@ class RenderFingerprint : public RenderCallback {
   public:
     RenderFingerprint(RenderContext& rctx): rctx(rctx) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::VER:
             rctx.os << PACKAGE_VERSION;
             break;
         case StxVarId::DATE: {
-            time_t now = time(nullptr);
+            time_t now = time(/*nullptr*/NULL);
             rctx.os.write(ctime(&now), 24);
             break;
         }
@@ -1242,7 +1242,7 @@ class RenderLineInfo : public RenderCallback {
     RenderLineInfo(RenderContext& rctx, uint32_t line, const std::string& file)
             : rctx(rctx), line(line), file(file) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
             case StxVarId::LINE: rctx.os << line; break;
             case StxVarId::FILE: rctx.os << file; break;
@@ -1261,7 +1261,7 @@ class RenderSetAccept : public RenderCallback {
     RenderSetAccept(RenderContext& rctx, size_t val)
         : rctx(rctx), val(val) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::SETACCEPT: {
             std::ostringstream s(rctx.opts->api_accept_set);
@@ -1296,7 +1296,7 @@ class RenderSetCond : public RenderCallback {
     RenderSetCond(RenderContext& rctx, const char* cond)
         : rctx(rctx), cond(cond) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::SETCOND:
             argsubst(
@@ -1328,7 +1328,7 @@ class RenderSetState : public RenderCallback {
     RenderSetState(RenderContext& rctx, const char* state)
         : rctx(rctx), state(state) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::SETSTATE:
             argsubst(rctx.os,
@@ -1598,7 +1598,7 @@ static void render(RenderContext& rctx, const Code* code) {
             if (rctx.opts->version) rctx.os << " " PACKAGE_VERSION;
             if (rctx.opts->date) {
                 rctx.os << " on ";
-                time_t now = time(nullptr);
+                time_t now = time(/*nullptr*/NULL);
                 rctx.os.write(ctime(&now), 24);
             }
             rctx.os << " */";
@@ -1673,7 +1673,7 @@ static uint32_t write_converting_newlines(const std::string& str, FILE* f) {
 
 LOCAL_NODISCARD(Ret codegen_render_blocks(
         Output& output, const std::string& fname, const blocks_t& blocks)) {
-    FILE* file = nullptr, *temp = nullptr;
+    FILE* file = /*nullptr*/NULL, *temp = /*nullptr*/NULL;
     std::string filename = fname, tempname = fname;
 
     if (filename.empty()) {
@@ -1689,7 +1689,8 @@ LOCAL_NODISCARD(Ret codegen_render_blocks(
     // Second code generation pass: expand labels, combine/simplify statements, convert newlines,
     // write the generated code to a file.
     RenderContext rctx(output.msg, filename);
-    for (const OutputBlock* b : blocks) {
+    for (auto it = blocks.begin(); it != blocks.end(); ++it) {
+        const OutputBlock* b = *it;
         rctx.opts = b->opts;
         rctx.ind = b->opts->indent_top;
         render_list(rctx, b->code);

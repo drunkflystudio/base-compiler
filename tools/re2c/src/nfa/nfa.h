@@ -19,14 +19,14 @@ struct clos_t;
 // This cannot be a `enum class` because it is used in a bitfield, which triggers compiler
 // warnings and errors on some toolchains, see https://github.com/skvadrik/re2c/issues/446.
 // It cannot be a plain `enum` defaulting to `int` as well because of -Wsigned-enum-bitfield.
-constexpr uint32_t GOR_NOPASS = 0u;
-constexpr uint32_t GOR_TOPSORT = 1u;
-constexpr uint32_t GOR_LINEAR = 2u;
+const/*expr*/ uint32_t GOR_NOPASS = 0u;
+const/*expr*/ uint32_t GOR_TOPSORT = 1u;
+const/*expr*/ uint32_t GOR_LINEAR = 2u;
 
-static constexpr uint32_t NOCLOS = ~0u;
+static const/*expr*/ uint32_t NOCLOS = ~0u;
 
 struct TnfaState {
-    enum class Kind: uint32_t {ALT, RAN, TAG, FIN} kind;
+    enum /*class*/ Kind: uint32_t {ALT, RAN, TAG, FIN} kind;
     uint32_t rule;        // the number of regexp rule that this state belongs to
     TnfaState* out1;      // first outgoing transition (for all states except FIN)
     union {
@@ -100,7 +100,7 @@ struct Tnfa {
 
 Ret re_to_nfa(Tnfa& nfa, RESpec&& spec) NODISCARD;
 
-static constexpr uint32_t NONCORE = ~0u;
+static const/*expr*/ uint32_t NONCORE = ~0u;
 
 } // namespace re2c
 

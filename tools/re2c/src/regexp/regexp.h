@@ -20,7 +20,7 @@ struct Rule;
 struct opt_t;
 
 struct Regexp {
-    enum class Kind: uint32_t {NIL, SYM, ALT, CAT, ITER, TAG} kind;
+    enum /*class*/ Kind: uint32_t {NIL, SYM, ALT, CAT, ITER, TAG} kind;
     union {
         const Range* sym;
         struct {

@@ -35,7 +35,7 @@ tagver_t cfg_t::variable_allocation(const cfg_t& cfg, const bool* interf, tagver
             x = static_cast<size_t>(p->lhs);
             y = static_cast<size_t>(p->rhs);
 
-            if (y == TAGVER_ZERO || y == x) continue;
+            if (y == (size_t)TAGVER_ZERO || y == x) continue;
 
             rx = repr[x];
             ry = repr[y];

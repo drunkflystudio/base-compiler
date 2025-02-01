@@ -25,20 +25,20 @@ enum class AllocatorKind: uint32_t {
 //
 template<AllocatorKind kind, uint32_t SLAB_SIZE = 1024 * 1024, size_t ALIGN = 1>
 class slab_allocator_t {
-    using slabs_t = std::vector<char*>;
+    typedef std::vector<char*> slabs_t; /*using slabs_t = std::vector<char*>;*/
 
     slabs_t slabs_; // quasilist of allocated slabs of `SLAB_SIZE` bytes
     char* current_slab_;
     char* current_slab_end_;
 
   public:
-    slab_allocator_t(): slabs_(), current_slab_(nullptr), current_slab_end_(nullptr) {}
+    slab_allocator_t(): slabs_(), current_slab_(/*nullptr*/NULL), current_slab_end_(/*nullptr*/NULL) {}
     ~slab_allocator_t() { clear(); }
 
     void clear() {
         std::for_each(slabs_.rbegin(), slabs_.rend(), free);
         slabs_.clear();
-        current_slab_ = current_slab_end_ = nullptr;
+        current_slab_ = current_slab_end_ = /*nullptr*/NULL;
     }
 
     void* alloc(size_t size) {
@@ -72,17 +72,33 @@ class slab_allocator_t {
         return static_cast<data_t*>(alloc(n * sizeof(data_t)));
     }
 
-    slab_allocator_t(slab_allocator_t&&) = default;
-    slab_allocator_t& operator=(slab_allocator_t&&) = default;
+    slab_allocator_t(slab_allocator_t&& other)
+        : slabs_(std::move(other.slabs_))
+        , current_slab_(other.current_slab_)
+        , current_slab_end_(other.current_slab_end_)
+    {
+        other.current_slab_ = NULL;
+        other.current_slab_end_ = NULL;
+    }
+    slab_allocator_t& operator=(slab_allocator_t&& other)
+    {
+        clear();
+        slabs_ = std::move(other.slabs_);
+        current_slab_ = other.current_slab_;
+        current_slab_end_ = other.current_slab_end_;
+        other.current_slab_ = NULL;
+        other.current_slab_end_ = NULL;
+        return *this;
+    }
     FORBID_COPY(slab_allocator_t);
 };
 
 // Use maximum alignment.
 // Use different types to prevent accidentally mixing allocators for data with different life spans.
-using AstAllocator = slab_allocator_t<AllocatorKind::AST, 16 * 4096, sizeof(void*)>;
-using IrAllocator = slab_allocator_t<AllocatorKind::IR, 16 * 4096, sizeof(void*)>;
-using DfaAllocator = slab_allocator_t<AllocatorKind::DFA, 16 * 4096, sizeof(void*)>;
-using OutAllocator = slab_allocator_t<AllocatorKind::OUT, 16 * 4096, sizeof(void*)>;
+typedef slab_allocator_t<AllocatorKind::AST, 16 * 4096, sizeof(void*)> AstAllocator; /*using AstAllocator = slab_allocator_t<AllocatorKind::AST, 16 * 4096, sizeof(void*)>;*/
+typedef slab_allocator_t<AllocatorKind::IR, 16 * 4096, sizeof(void*)> IrAllocator; /*using IrAllocator = slab_allocator_t<AllocatorKind::IR, 16 * 4096, sizeof(void*)>;*/
+typedef slab_allocator_t<AllocatorKind::DFA, 16 * 4096, sizeof(void*)> DfaAllocator; /*using DfaAllocator = slab_allocator_t<AllocatorKind::DFA, 16 * 4096, sizeof(void*)>;*/
+typedef slab_allocator_t<AllocatorKind::OUT, 16 * 4096, sizeof(void*)> OutAllocator; /*using OutAllocator = slab_allocator_t<AllocatorKind::OUT, 16 * 4096, sizeof(void*)>;*/
 
 } // namespace re2c
 

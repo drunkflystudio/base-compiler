@@ -15,8 +15,8 @@ namespace re2c {
 namespace {
 
 // 0 < DIST_MAX < DIST_ERROR <= std::numeric_limits<uint32_t>::max()
-static constexpr uint32_t DIST_ERROR = std::numeric_limits<uint32_t>::max();
-static constexpr uint32_t DIST_MAX = DIST_ERROR - 1;
+static /*constexpr*/ uint32_t DIST_ERROR() { return std::numeric_limits<uint32_t>::max(); }
+static /*constexpr*/ uint32_t DIST_MAX() { return DIST_ERROR() - 1; }
 
 struct StackItem {
     uint32_t node;
@@ -31,14 +31,14 @@ struct StackItem {
 // empty regexp.
 Ret maxpath(const Skeleton& skel, uint32_t& dist) {
     std::vector<uint8_t> loops(skel.nodes_count);
-    std::vector<uint32_t> dists(skel.nodes_count, DIST_ERROR);
+    std::vector<uint32_t> dists(skel.nodes_count, DIST_ERROR());
     std::vector<StackItem> stack;
     stack.reserve(skel.nodes_count);
 
     // DFS "return value"
     dist = 0;
 
-    stack.push_back({0, 0, skel.nodes[0].arcs.begin()});
+    stack.push_back(StackItem{0, 0, skel.nodes[0].arcs.begin()});
 
     while (!stack.empty()) {
         StackItem i = stack.back();
@@ -47,7 +47,7 @@ Ret maxpath(const Skeleton& skel, uint32_t& dist) {
 
         if (i.arc == node.arcs.begin()) {
             // DFS recursive enter
-            if (dists[i.node] != DIST_ERROR) {
+            if (dists[i.node] != DIST_ERROR()) {
                 // already computed distance for this node
             } else if (node.end() || loops[i.node] > 1) {
                 // terminate recursion, set zero distance (loops are unrolled once, which must be in
@@ -60,10 +60,10 @@ Ret maxpath(const Skeleton& skel, uint32_t& dist) {
                 const uint32_t succ = static_cast<uint32_t>(i.arc->first);
 
                 // reschedule this node with the next successor
-                stack.push_back({i.node, 0, ++i.arc});
+                stack.push_back(StackItem{i.node, 0, ++i.arc});
 
                 // schedule the first successor node
-                stack.push_back({succ, 0, skel.nodes[succ].arcs.begin()});
+                stack.push_back(StackItem{succ, 0, skel.nodes[succ].arcs.begin()});
             }
             dist = dists[i.node];
         } else if (i.arc == node.arcs.end()) {
@@ -71,29 +71,29 @@ Ret maxpath(const Skeleton& skel, uint32_t& dist) {
             --loops[i.node];
 
             // use last successor's distance
-            DCHECK(dist != DIST_ERROR);
+            DCHECK(dist != DIST_ERROR());
             dist = std::max(i.dist, dist);
 
             // all successors traversed, set this node's distance
-            DCHECK(dist < DIST_MAX);
+            DCHECK(dist < DIST_MAX());
             dist = dists[i.node] = dist + 1;
-            if (dist == DIST_MAX) break;
+            if (dist == DIST_MAX()) break;
         } else {
             // use he previous successor's distance
-            DCHECK(dist != DIST_ERROR);
+            DCHECK(dist != DIST_ERROR());
             dist = std::max(i.dist, dist);
 
             const uint32_t succ = static_cast<uint32_t>(i.arc->first);
 
             // reschedule this node with the next successor and updated distance
-            stack.push_back({i.node, dist, ++i.arc});
+            stack.push_back(StackItem{i.node, dist, ++i.arc});
 
             // schedule the current successor node
-            stack.push_back({succ, 0, skel.nodes[succ].arcs.begin()});
+            stack.push_back(StackItem{succ, 0, skel.nodes[succ].arcs.begin()});
         }
     }
 
-    if (dist == DIST_MAX) {
+    if (dist == DIST_MAX()) {
         RET_FAIL(error("DFA path %sis too long", incond(skel.cond).c_str()));
     }
     return Ret::OK;

@@ -20,7 +20,7 @@ struct SemAct {
 };
 
 struct Rule {
-    static constexpr size_t NONE = std::numeric_limits<size_t>::max();
+    static /*constexpr*/ size_t NONE() { return std::numeric_limits<size_t>::max(); }
 
     const SemAct* semact;
     std::set<uint32_t> shadow;
@@ -29,12 +29,14 @@ struct Rule {
     size_t ttag; // trailing context
     size_t ncap; // number of POSIX captures
 
-    Rule(): semact(nullptr), shadow(), ltag(0), htag(0), ttag(0), ncap(0) {}
+    Rule(): semact(/*nullptr*/NULL), shadow(), ltag(0), htag(0), ttag(0), ncap(0) {}
     ~Rule() {}
-    Rule(const Rule& r) = default;
-    Rule& operator=(const Rule& r) = default;
+    Rule(const Rule& /*r*/) = default;
+    Rule& operator=(const Rule& /*r*/) = default;
+    /*
     Rule(Rule&& r) = default;
     Rule& operator=(Rule&& r) = default;
+    */
 };
 
 } // namespace re2c

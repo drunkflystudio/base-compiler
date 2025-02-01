@@ -1,4 +1,4 @@
-static constexpr const char* DEFAULT_SYNTAX_ZIG =
+static /*constexpr*/ const char* DEFAULT_SYNTAX_ZIG =
     "// supported feature lists -----------------------------------------------------\n"
     "\n"
     "supported_apis = [\"simple\", \"generic\", \"record\"];\n"

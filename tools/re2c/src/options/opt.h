@@ -40,7 +40,7 @@ class Warn;
 class RenderCallback;
 class Scratchbuf;
 struct StxCode;
-using StxCodes = list_t<StxCode>;
+typedef list_t<StxCode> StxCodes; /*using StxCodes = list_t<StxCode>;*/
 
 #define RE2C_SIGIL "@@"
 #define RE2C_YYFN_SEP ";"
@@ -396,7 +396,9 @@ using StxCodes = list_t<StxCode>;
 enum class StxVarId : uint32_t {
     RE2C_STX_LOCAL_VARS
     RE2C_STX_GLOBAL_VARS
+    ___StxVarId_unused___
 };
+inline bool operator==(StxVarId a, StxVarId b) { return (int)a == (int)b; }
 #undef STX_LOCAL_VAR
 #undef STX_GLOBAL_VAR
 
@@ -576,11 +578,12 @@ enum class StxVarId : uint32_t {
 enum class StxCodeId : uint32_t {
     RE2C_CODE_TEMPLATES
     RE2C_MUTCODES
+    ___StxCodeId_unused___
 };
 #undef CODE_TEMPLATE
 #undef MUTCODE
 
-enum class StxOptKind {GLOB, LOC, IMM, NEG, AND, OR};
+enum /*class*/ StxOptKind {GLOB, LOC, IMM, NEG, AND, OR};
 
 struct StxOpt {
     StxOptKind kind;
@@ -610,6 +613,7 @@ struct StxCodeList {
 };
 
 enum class StxCodeType {STR, VAR, COND, LIST, UD};
+inline bool operator==(StxCodeType a, StxCodeType b) { return (int)a == (int)b; }
 
 struct StxCode {
     StxCodeType type;
@@ -654,7 +658,7 @@ struct conopt_t {
 #define STX_OPT(type, name, value) name(value),
     RE2C_STX_OPTS
 #undef STX_OPT
-#define CODE_TEMPLATE(name, vars, list_vars, conds) code_##name(nullptr),
+#define CODE_TEMPLATE(name, vars, list_vars, conds) code_##name(/*nullptr*/NULL),
     RE2C_CODE_TEMPLATES
 #undef CODE_TEMPLATE
     p2067() {}
@@ -701,7 +705,7 @@ struct mutopt_t {
 #define MUTOPT(type, name, value) name(value),
     RE2C_MUTOPTS
 #undef MUTOPT
-#define MUTCODE(name) name(nullptr),
+#define MUTCODE(name) name(/*nullptr*/NULL),
     RE2C_MUTCODES
 #undef MUTCODE
     p2067() {}
@@ -732,7 +736,7 @@ struct mutdef_t {
 // Union of constant and mutable options and default flags.
 struct opt_t {
   private:
-    using stack_code_t = std::vector<std::pair<const StxCode*, uint8_t>>;
+    typedef std::vector<std::pair<const StxCode*, uint8_t>> stack_code_t; /*using stack_code_t = std::vector<std::pair<const StxCode*, uint8_t>>;*/
 
     // stack is placed here to avoid reallocating it every time
     mutable stack_code_t stack_code;
@@ -832,8 +836,8 @@ struct opt_t {
 // Options management.
 struct Opt {
   private:
-    using stack_code_t = std::vector<std::pair<const StxCode*, uint8_t>>;
-    using stack_code_list_t = std::vector<const StxCode*>;
+    typedef std::vector<std::pair<const StxCode*, uint8_t>> stack_code_t; /*using stack_code_t = std::vector<std::pair<const StxCode*, uint8_t>>;*/
+    typedef std::vector<const StxCode*> stack_code_list_t; /*using stack_code_list_t = std::vector<const StxCode*>;*/
 
   public:
     const conopt_t glob;

@@ -25,7 +25,7 @@ struct Tdfa;
 struct tcmd_t;
 class Msg;
 
-using prectable_t = int32_t;
+typedef int32_t prectable_t; /*using prectable_t = int32_t;*/
 
 struct clos_t {
     TnfaState* state;
@@ -34,7 +34,7 @@ struct clos_t {
     hidx_t ttran; // history of transition tags
     hidx_t thist; // history of lookahead tags
 
-    inline clos_t(): state(nullptr), origin(0), tvers(0), ttran(0), thist(HROOT) {}
+    inline clos_t(): state(/*nullptr*/NULL), origin(0), tvers(0), ttran(0), thist(HROOT) {}
     inline clos_t(TnfaState* s, uint32_t o, uint32_t v, hidx_t t, hidx_t h)
         : state(s), origin(o), tvers(v), ttran(t), thist(h) {}
     inline clos_t(const clos_t& c, TnfaState* s)
@@ -45,11 +45,11 @@ struct clos_t {
     static inline bool ran(const clos_t& c) { return c.state->kind == TnfaState::Kind::RAN; }
 };
 
-using closure_t = std::vector<clos_t>;
-using clositer_t = closure_t::iterator;
-using cclositer_t = closure_t::const_iterator;
-using rclositer_t = closure_t::reverse_iterator;
-using rcclositer_t = closure_t::const_reverse_iterator;
+typedef std::vector<clos_t> closure_t; /*using closure_t = std::vector<clos_t>;*/
+typedef closure_t::iterator clositer_t; /*using clositer_t = closure_t::iterator;*/
+typedef closure_t::const_iterator cclositer_t; /*using cclositer_t = closure_t::const_iterator;*/
+typedef closure_t::reverse_iterator rclositer_t; /*using rclositer_t = closure_t::reverse_iterator;*/
+typedef closure_t::const_reverse_iterator rcclositer_t; /*using rcclositer_t = closure_t::const_reverse_iterator;*/
 
 struct newver_t {
     size_t tag;
@@ -57,8 +57,8 @@ struct newver_t {
     hidx_t history;
 };
 
-using hc_cache_t = std::map<uint64_t, int32_t>; // 'hc' for history comparison
-using hc_caches_t = std::vector<hc_cache_t>;
+typedef std::map<uint64_t, int32_t> hc_cache_t; /*using hc_cache_t = std::map<uint64_t, int32_t>;*/ // 'hc' for history comparison
+typedef std::vector<hc_cache_t> hc_caches_t; /*using hc_caches_t = std::vector<hc_cache_t>;*/
 
 template<typename history_t>
 struct newver_cmp_t {
@@ -103,18 +103,18 @@ struct histleaf_t {
     int32_t height;
 };
 
-using kernels_t = lookup_t<const kernel_t*>;
+typedef lookup_t<const kernel_t*> kernels_t; /*using kernels_t = lookup_t<const kernel_t*>;*/
 
 template<typename history_type_t>
 struct determ_context_t {
-    using conf_t = clos_t;
-    using confset_t = std::vector<conf_t>;
-    using confiter_t = confset_t::iterator;
-    using cconfiter_t = confset_t::const_iterator;
-    using rconfiter_t = confset_t::reverse_iterator;
-    using rcconfiter_t = confset_t::const_reverse_iterator;
-    using history_t = history_type_t;
-    using newvers_t = std::map<newver_t, tagver_t, newver_cmp_t<history_t>>;
+    typedef clos_t conf_t; /*using conf_t = clos_t;*/
+    typedef std::vector<conf_t> confset_t; /*using confset_t = std::vector<conf_t>;*/
+    typedef confset_t::iterator confiter_t; /*using confiter_t = confset_t::iterator;*/
+    typedef confset_t::const_iterator cconfiter_t; /*using cconfiter_t = confset_t::const_iterator;*/
+    typedef confset_t::reverse_iterator rconfiter_t; /*using rconfiter_t = confset_t::reverse_iterator;*/
+    typedef confset_t::const_reverse_iterator rcconfiter_t; /*using rcconfiter_t = confset_t::const_reverse_iterator;*/
+    typedef history_type_t history_t; /*using history_t = history_type_t;*/
+    typedef std::map<newver_t, tagver_t, newver_cmp_t<history_t>> newvers_t; /*using newvers_t = std::map<newver_t, tagver_t, newver_cmp_t<history_t>>;*/
 
     const opt_t* opts;       // options
     Msg& msg;                // error messages and warnings
@@ -174,8 +174,8 @@ struct determ_context_t {
     FORBID_COPY(determ_context_t);
 };
 
-using pdetctx_t = determ_context_t<phistory_t>;
-using ldetctx_t = determ_context_t<lhistory_t>;
+typedef determ_context_t<phistory_t> pdetctx_t; /*using pdetctx_t = determ_context_t<phistory_t>;*/
+typedef determ_context_t<lhistory_t> ldetctx_t; /*using ldetctx_t = determ_context_t<lhistory_t>;*/
 
 template<typename ctx_t> void tagged_epsilon_closure(ctx_t& ctx);
 template<typename ctx_t> void closure(ctx_t& ctx);

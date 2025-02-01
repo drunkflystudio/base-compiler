@@ -94,13 +94,13 @@ tcmd_t** tcmd_t::topsort(tcmd_t** phead, tcmd_t* end, uint32_t* indeg) {
 
     // return the first non-trivial cycle on x-list (if any), or nil
     for (tcmd_t* x; (x = *ptail) != end && x->lhs == x->rhs; ptail = &x->next);
-    return *ptail == end ? nullptr : ptail;
+    return *ptail == end ? /*nullptr*/NULL : ptail;
 }
 
 tcpool_t::tcpool_t(DfaAllocator& alc): alc(alc), index() {
     // empty command must have static number zero
-    insert(nullptr);
-    CHECK(TCID0 == insert(nullptr));
+    insert(/*nullptr*/NULL);
+    CHECK(TCID0 == insert(/*nullptr*/NULL));
 }
 
 tcmd_t* tcpool_t::make_copy(tcmd_t* next, tagver_t lhs, tagver_t rhs) {

@@ -53,7 +53,7 @@ struct moore_key_t {
     tcid_t fincmd;
 };
 
-using moore_init_t = std::map<moore_key_t, size_t>;
+typedef std::map<moore_key_t, size_t> moore_init_t; /*using moore_init_t = std::map<moore_key_t, size_t>;*/
 
 static bool operator <(const moore_key_t&, const moore_key_t&);
 static void minimization_table(size_t*, const std::vector<TdfaState*>&, size_t);

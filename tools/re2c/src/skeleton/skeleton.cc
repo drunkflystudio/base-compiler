@@ -9,7 +9,7 @@ namespace re2c {
 struct opt_t;
 struct tcmd_t;
 
-Node::Node(): arcs(), rule(Rule::NONE), cmd(nullptr) {}
+Node::Node(): arcs(), rule(Rule::NONE()), cmd(/*nullptr*/NULL) {}
 
 void Node::init(const TdfaState* s,
                 const std::vector<uint32_t>& charset,
@@ -33,7 +33,7 @@ void Node::init(const TdfaState* s,
         r->cmd = t;
 
         // insert range at the end of a circular list
-        if (arcs[j] == nullptr) {
+        if (arcs[j] == /*nullptr*/NULL) {
             arcs[j] = r->next = r;
         } else {
             range_t* p0 = arcs[j], *p = p0;
@@ -131,6 +131,6 @@ uint64_t rule2key(size_t rule, size_t key, size_t def) {
 }
 
 // C++11 requres outer decl for ODR-used static constexpr data members (not needed in C++17).
-constexpr uint32_t Skeleton::DEFTAG;
+//constexpr uint32_t Skeleton::DEFTAG;
 
 } // namespace re2c

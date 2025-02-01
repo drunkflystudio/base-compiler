@@ -10,7 +10,7 @@
 namespace re2c {
 
 // maximum 29-bit (we have 30 bits, but highest must be non-negative)
-static constexpr int32_t MAX_RHO = 0x1fffFFFF;
+static const/*expr*/ int32_t MAX_RHO = 0x1fffFFFF;
 
 template<typename ctx_t> static void compute_prectable_naive(ctx_t& ctx) RE2C_ATTR((used));
 template<typename ctx_t> static void compute_prectable_complex(ctx_t& ctx) RE2C_ATTR((used));
@@ -170,7 +170,8 @@ void compute_prectable_complex(ctx_t& ctx) {
     // array of boundaries in the sorted configuration array.
     uint32_t maxfin = 0;
     sortcores.resize(newdim);
-    for (const typename ctx_t::conf_t& conf : state) {
+    for (auto it = state.begin(); it != state.end(); ++it) {
+        const typename ctx_t::conf_t& conf = *it;
         typename ctx_t::history_t::node_t& n = history.node(conf.thist);
         if (n.finidx >= USED) {
             n.finidx = maxfin++;

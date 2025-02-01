@@ -6,7 +6,7 @@
 
 namespace re2c {
 
-enum class Target: uint32_t {
+enum /*class*/ Target: uint32_t {
     CODE,
     DOT,
     SKELETON
@@ -27,30 +27,30 @@ enum class Lang: uint32_t {
     NONE // no language (no default syntax config will be loaded)
 };
 
-enum class Api: uint32_t {
+enum /*class*/ Api: uint32_t {
     SIMPLE,
     GENERIC,
     RECORD
 };
 
-enum class ApiStyle: uint32_t {
+enum /*class*/ ApiStyle: uint32_t {
     FUNCTIONS,
     FREEFORM
 };
 
-enum class CodeModel: uint32_t {
+enum /*class*/ CodeModel: uint32_t {
     GOTO_LABEL,
     LOOP_SWITCH,
     REC_FUNC
 };
 
-enum class FixedTags: uint32_t {
+enum /*class*/ FixedTags: uint32_t {
     NONE,
     TOPLEVEL,
     ALL
 };
 
-enum class InputBlock: uint32_t {
+enum /*class*/ InputBlock: uint32_t {
     END,
     GLOBAL,
     LOCAL,
@@ -86,7 +86,7 @@ enum class PosixPrectable: uint32_t {
 };
 
 // Different kinds of statements / expressions / blocks / etc. used in codegen.
-enum class CodeKind: uint32_t {
+enum /*class*/ CodeKind: uint32_t {
     EMPTY,
     IF_THEN_ELSE,
     SWITCH,
@@ -162,7 +162,7 @@ enum DirConf: uint32_t {
     DCONF_SEPARATOR = 2u
 };
 
-enum class CharLit {
+enum /*class*/ CharLit {
     CHAR,
     HEX,
     CHAR_OR_HEX
@@ -178,12 +178,12 @@ enum OpKind { // used as array indices => not a `enum class`
     OP_COUNT // number of elements
 };
 
-static constexpr uint32_t NOEOF = ~0u - 1;
+static const/*expr*/ uint32_t NOEOF = ~0u - 1;
 
-static constexpr size_t MAX_NFA_DEPTH  = 1000 * 1000;
-static constexpr size_t MAX_NFA_STATES = 1000 * 1000 * 100;
-static constexpr size_t MAX_DFA_STATES = 1000 * 100;
-static constexpr size_t MAX_DFA_SIZE   = 1000 * 1000 * 50;
+static const/*expr*/ size_t MAX_NFA_DEPTH  = 1000 * 1000;
+static const/*expr*/ size_t MAX_NFA_STATES = 1000 * 1000 * 100;
+static const/*expr*/ size_t MAX_DFA_STATES = 1000 * 100;
+static const/*expr*/ size_t MAX_DFA_SIZE   = 1000 * 1000 * 50;
 
 enum class StxGOpt {
     API_SIMPLE,
@@ -204,7 +204,7 @@ enum class StxGOpt {
     LOOP_LABEL
 };
 
-enum class StxLOpt {
+enum /*class*/ StxLOpt {
     CAST,
     CHAR_LITERALS,
     ARGS,
@@ -216,7 +216,7 @@ enum class StxLOpt {
     NESTED
 };
 
-enum class Ret: uint32_t {
+enum /*class*/ Ret: uint32_t {
     OK,   // all good
     EXIT, // all good, but exit immediately (used for options like help or version)
     FAIL  // failure

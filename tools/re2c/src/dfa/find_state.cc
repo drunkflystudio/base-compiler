@@ -128,7 +128,7 @@ bool do_find_state(ctx_t& ctx) {
     // empty closure corresponds to default state
     if (closure.size() == 0) {
         ctx.target = Tdfa::NIL;
-        ctx.actions = nullptr;
+        ctx.actions = /*nullptr*/NULL;
         return false;
     }
 
@@ -166,7 +166,7 @@ tcmd_t* final_actions(ctx_t& ctx, const clos_t& fin) {
     const hidx_t look = fin.thist;
     const typename ctx_t::history_t& thist = ctx.history;
     tcpool_t& tcpool = ctx.dfa.tcpool;
-    tcmd_t* copy = nullptr, *save = nullptr, **p;
+    tcmd_t* copy = /*nullptr*/NULL, *save = /*nullptr*/NULL, **p;
 
     for (size_t t = rule.ltag; t < rule.htag; ++t) {
         const Tag& tag = ctx.tags[t];
@@ -192,22 +192,22 @@ tcmd_t* final_actions(ctx_t& ctx, const clos_t& fin) {
 
 kernel_buffers_t::kernel_buffers_t()
     : maxsize(0),
-      kernel(nullptr),
+      kernel(/*nullptr*/NULL),
       cap(0),
       max(0),
-      memory(nullptr),
-      x2y(nullptr),
-      y2x(nullptr),
-      x2t(nullptr),
-      indegree(nullptr),
-      backup_actions(nullptr) {}
+      memory(/*nullptr*/NULL),
+      x2y(/*nullptr*/NULL),
+      y2x(/*nullptr*/NULL),
+      x2t(/*nullptr*/NULL),
+      indegree(/*nullptr*/NULL),
+      backup_actions(/*nullptr*/NULL) {}
 
 kernel_t* make_new_kernel(size_t size, IrAllocator& alc) {
     kernel_t* k = alc.alloct<kernel_t>(1);
     k->size = size;
     k->state = alc.alloct<TnfaState*>(size);
     k->thist = alc.alloct<hidx_t>(size);
-    k->prectbl = nullptr;
+    k->prectbl = /*nullptr*/NULL;
     k->tvers = alc.alloct<uint32_t>(size);
     return k;
 }
@@ -220,7 +220,7 @@ kernel_t* make_kernel_copy(const kernel_t* kernel, IrAllocator& alc) {
     memcpy(k->state, kernel->state, n * sizeof(void*));
     memcpy(k->thist, kernel->thist, n * sizeof(hidx_t));
 
-    prectable_t* ptbl = nullptr;
+    prectable_t* ptbl = /*nullptr*/NULL;
     if (kernel->prectbl) {
         ptbl = alc.alloct<prectable_t>(n * n);
         memcpy(ptbl, kernel->prectbl, n * n * sizeof(prectable_t));
@@ -414,7 +414,7 @@ bool kernel_map_t<ctx_t, regless>::operator()(const kernel_t* x, const kernel_t*
     if (regless) return true;
 
     // We have a bijective mapping; now try to create list of commands.
-    tcmd_t** pacts = &ctx.actions, *a, **pa, *copy = nullptr;
+    tcmd_t** pacts = &ctx.actions, *a, **pa, *copy = /*nullptr*/NULL;
     tcmd_t* b1 = bufs.backup_actions, *b2 = b1;
 
     // Backup 'save' commands: if topsort finds cycles, this mapping will be rejected and we'll have
@@ -445,7 +445,7 @@ bool kernel_map_t<ctx_t, regless>::operator()(const kernel_t* x, const kernel_t*
     *pacts = copy;
 
     // See note [topological ordering of copy commands].
-    tcmd_t** cycle = tcmd_t::topsort(pacts, nullptr, bufs.indegree);
+    tcmd_t** cycle = tcmd_t::topsort(pacts, /*nullptr*/NULL, bufs.indegree);
 
     // In the case of cycles restore 'save' commands and fail.
     if (cycle) {
@@ -454,7 +454,7 @@ bool kernel_map_t<ctx_t, regless>::operator()(const kernel_t* x, const kernel_t*
         }
     }
 
-    return cycle == nullptr;
+    return cycle == /*nullptr*/NULL;
 }
 
 } // namespace re2c

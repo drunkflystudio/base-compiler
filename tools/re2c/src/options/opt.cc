@@ -13,7 +13,7 @@ static const char* code_model_name(CodeModel model) {
         case CodeModel::REC_FUNC: return "recursive-functions";
     }
     UNREACHABLE();
-    return nullptr;
+    return /*nullptr*/NULL;
 }
 
 // This function should only change global options.
@@ -476,7 +476,8 @@ void Opt::set_##name(const std::vector<std::string>& list) { \
 } \
 Ret Opt::check_##name() { \
     static const std::unordered_set<std::string> alw allowed; \
-    for (const std::string& elem : glob.name) { \
+    for (auto it = glob.name.begin(); it != glob.name.end(); ++it) { \
+        const std::string& elem = *it; \
         if (std::find(alw.begin(), alw.end(), elem) == alw.end()) { \
             RET_FAIL(error("unknown element `%s` in list `%s`", elem.c_str(), #name)); \
         } \
@@ -498,7 +499,7 @@ RE2C_STX_OPTS
     const_cast<conopt_t&>(glob).code_##name = code; \
 } */ \
 Ret Opt::check_code_##name(Warn& warn) { \
-    if (glob.code_##name == nullptr) { \
+    if (glob.code_##name == /*nullptr*/NULL) { \
         /* we don't have a specific location => start of the current of syntax file */ \
         warn.undefined_syntax_config(ATSTART, "code:" #name); \
         const_cast<conopt_t&>(glob).code_##name = make_code_undefined(); \
@@ -569,6 +570,12 @@ Ret Opt::check_cond(StxLOpt opt, const char* conf, const std::unordered_set<StxL
     RET_FAIL(error("unknown conditional in configuration `%s`", conf));
 }
 
+struct XX {
+    StxVarId var;
+    XX(StxVarId v) : var(v) {}
+    bool operator()(const StxCode* x) const { return var == x->list.var; }
+};
+
 Ret Opt::check_var(
         StxVarId var,
         const char* conf,
@@ -584,7 +591,7 @@ Ret Opt::check_var(
 
     // this may be a list var; in that case it must be on the list stack
     bool is_list_var = std::find_if(stack_code_list.begin(), stack_code_list.end(),
-            [var](const StxCode* x) { return var == x->list.var; })
+            XX(var))
         != stack_code_list.end();
 
     // is this a known configuration-specific variable?
@@ -604,7 +611,7 @@ Ret Opt::validate_conf_code(
     stack_code_list.clear();
     stack_code_t& stack = stack_code;
     stack.clear();
-    for (const StxCode* x = code->head; x != nullptr; x = x->next) {
+    for (const StxCode* x = code->head; x != /*nullptr*/NULL; x = x->next) {
         stack.push_back({x, 0});
     }
 
@@ -635,11 +642,11 @@ Ret Opt::validate_conf_code(
         case StxCodeType::COND:
             if (n == 0) { // recurse into branches
                 stack.push_back({x, 1});
-                for (const StxCode* y = x->cond.then_code->head; y != nullptr; y = y->next) {
+                for (const StxCode* y = x->cond.then_code->head; y != /*nullptr*/NULL; y = y->next) {
                     stack.push_back({y, 0});
                 }
-                if (x->cond.else_code != nullptr) {
-                    for (const StxCode* y = x->cond.else_code->head; y != nullptr; y = y->next) {
+                if (x->cond.else_code != /*nullptr*/NULL) {
+                    for (const StxCode* y = x->cond.else_code->head; y != /*nullptr*/NULL; y = y->next) {
                         stack.push_back({y, 0});
                     }
                 }
@@ -653,7 +660,7 @@ Ret Opt::validate_conf_code(
                 stack_code_list.push_back(x);
                 CHECK_RET(check_var(x->list.var, conf, vars, list_vars));
                 stack.push_back({x, 1});
-                for (const StxCode* y = x->list.code->head; y != nullptr; y = y->next) {
+                for (const StxCode* y = x->list.code->head; y != /*nullptr*/NULL; y = y->next) {
                     stack.push_back({y, 0});
                 }
             } else { // check variable name and return
@@ -673,7 +680,7 @@ StxCodes* Opt::new_code_list() {
 StxCode* Opt::make_code(StxCodeType type) {
     StxCode* x = alc.alloct<StxCode>(1);
     x->type = type;
-    x->next = nullptr;
+    x->next = /*nullptr*/NULL;
     return x;
 }
 
@@ -780,7 +787,7 @@ StxCodes* Opt::make_api(const std::string& str) {
 }
 
 void opt_t::push_list_on_stack(const StxCode* x) const {
-    if (x == nullptr) return;
+    if (x == /*nullptr*/NULL) return;
     push_list_on_stack(x->next);
     stack_code.push_back({x, 0});
 }
@@ -799,7 +806,7 @@ static bool eval_cond(
         return eval_cond(id, cond->op.lhs, opts, callback)
             || eval_cond(id, cond->op.rhs, opts, callback);
     case StxOptKind::LOC:
-        DCHECK(callback != nullptr);
+        DCHECK(callback != /*nullptr*/NULL);
         return callback->eval_cond(cond->lopt);
     case StxOptKind::GLOB:
         switch (cond->gopt) {
@@ -888,7 +895,7 @@ class GenOpt : public RenderCallback {
     GenOpt(std::ostringstream& os, const opt_t* opts, StxCodeId id)
         : os(os), opts(opts), id(id) {}
 
-    void render_var(StxVarId var) override {
+    void render_var(StxVarId var) /*override*/ {
         switch (var) {
         case StxVarId::SIGIL:
             switch (id) {
@@ -916,7 +923,7 @@ class GenOpt : public RenderCallback {
 
 #define MUTCODE(name) \
 std::string opt_t::gen_##name(const StxCodes* code) const { \
-    if (code == nullptr) return "<undefined code:" #name ">"; \
+    if (code == /*nullptr*/NULL) return "<undefined code:" #name ">"; \
     std::ostringstream os; \
     GenOpt callback(os, this, StxCodeId::STX_##name); \
     eval_code_conf(StxCodeId::STX_##name, #name, code, os, callback); \
@@ -927,7 +934,7 @@ RE2C_MUTCODES
 
 void opt_t::eval_code_conf(StxCodeId id, const char* name, const StxCodes* code, std::ostream& os,
         RenderCallback& callback) const {
-    CHECK(code != nullptr);
+    CHECK(code != /*nullptr*/NULL);
 
     stack_code_t& stack = stack_code;
     size_t bottom = stack.size();
@@ -948,7 +955,7 @@ void opt_t::eval_code_conf(StxCodeId id, const char* name, const StxCodes* code,
         case StxCodeType::COND:
             if (eval_cond(id, x->cond.opt, this, &callback)) {
                 push_list_on_stack(x->cond.then_code->head);
-            } else if (x->cond.else_code != nullptr) {
+            } else if (x->cond.else_code != /*nullptr*/NULL) {
                 push_list_on_stack(x->cond.else_code->head);
             }
             break;
@@ -981,9 +988,9 @@ void opt_t::eval_code_conf(StxCodeId id, const char* name, const StxCodes* code,
 }
 
 bool is_undefined(const StxCodes* code) {
-    CHECK(code != nullptr);
-    return code->head != nullptr
-        && code->head->next == nullptr
+    CHECK(code != /*nullptr*/NULL);
+    return code->head != /*nullptr*/NULL
+        && code->head->next == /*nullptr*/NULL
         && code->head->type == StxCodeType::UD;
 }
 

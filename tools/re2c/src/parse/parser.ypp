@@ -9,7 +9,7 @@ namespace re2c {
 
 %{
 
-#pragma GCC diagnostic push
+//#pragma GCC diagnostic push
 #include "src/util/nowarn_in_bison.h"
 
 #include "src/msg/msg.h"
@@ -115,25 +115,29 @@ rule
     find_or_add_gram(grams, "").eofs.push_back($2);
 }
 | TOKEN_CLIST trailexpr ccode {
-    for (const std::string& cond : ast.temp_condlist) {
+    for (auto it = ast.temp_condlist.begin(); it != ast.temp_condlist.end(); ++it) {
+        const std::string& cond = *it;
         find_or_add_gram(grams, cond).rules.push_back(AstRule($2, $3));
     }
     ast.temp_condlist.clear();
 }
 | TOKEN_CLIST '*' ccode {
-    for (const std::string& cond : ast.temp_condlist) {
+    for (auto it = ast.temp_condlist.begin(); it != ast.temp_condlist.end(); ++it) {
+        const std::string& cond = *it;
         find_or_add_gram(grams, cond).defs.push_back($3);
     }
     ast.temp_condlist.clear();
 }
 | TOKEN_CLIST '$' ccode {
-    for (const std::string& cond : ast.temp_condlist) {
+    for (auto it = ast.temp_condlist.begin(); it != ast.temp_condlist.end(); ++it) {
+        const std::string& cond = *it;
         find_or_add_gram(grams, cond).eofs.push_back($3);
     }
     ast.temp_condlist.clear();
 }
 | TOKEN_CSETUP TOKEN_CODE {
-    for (const std::string& cond : ast.temp_condlist) {
+    for (auto it = ast.temp_condlist.begin(); it != ast.temp_condlist.end(); ++it) {
+        const std::string& cond = *it;
         find_or_add_gram(grams, cond).setup.push_back($2);
     }
     ast.temp_condlist.clear();
@@ -152,14 +156,14 @@ ccode
     const_cast<SemAct*>($$)->cond = $1; 
 }
 | TOKEN_CJUMP {
-    $$ = ast.sem_act(input.tok_loc(), nullptr, $1, true);
+    $$ = ast.sem_act(input.tok_loc(), /*nullptr*/NULL, $1, true);
 };
 
 trailexpr
 : expr { $$ = ast.cap($1, CAPTURE_IF_NOT_INVERTED); }
 | expr '/' expr {
     $$ = ast.cat(ast.cap($1, CAPTURE_IF_NOT_INVERTED),
-                 ast.cat(ast.tag(input.tok_loc(), nullptr, false), $3));
+                 ast.cat(ast.tag(input.tok_loc(), /*nullptr*/NULL, false), $3));
 };
 
 expr
@@ -183,10 +187,10 @@ factor
 | primary closes {
     switch($2) {
     case '*':
-        $$ = ast.iter($1, 0, Ast::MANY);
+        $$ = ast.iter($1, 0, Ast::MANY());
         break;
     case '+':
-        $$ = ast.iter($1, 1, Ast::MANY);
+        $$ = ast.iter($1, 1, Ast::MANY());
         break;
     case '?':
         $$ = ast.iter($1, 0, 1);
@@ -213,7 +217,7 @@ primary
 : TOKEN_REGEXP
 | TOKEN_ID {
     $$ = find_def(opts.symtab, $1);
-    if ($$ == nullptr) {
+    if ($$ == /*nullptr*/NULL) {
         input.error_at_tok("undefined symbol '%s'", $1);
         YYABORT;
     } else if (Ast::needs_wrap($$)) {

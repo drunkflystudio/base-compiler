@@ -79,7 +79,7 @@ void insert_fallback_tags(Tdfa& dfa) {
         find_overwritten_tags(dfa, i, been, owrt);
 
         tcmd_t* p = s->tcmd[nsym];
-        tcmd_t* save = nullptr, **ps = &save;
+        tcmd_t* save = /*nullptr*/NULL, **ps = &save;
         tcmd_t** pc = &s->tcmd[nsym + 1];
 
         for (; p; p = p->next) {
@@ -87,7 +87,7 @@ void insert_fallback_tags(Tdfa& dfa) {
 
             if (tcmd_t::iscopy(p)) { // 'copy' commands
                 if (!owrt[r]) {
-                    *pc = pool.make_copy(nullptr, l, r);
+                    *pc = pool.make_copy(/*nullptr*/NULL, l, r);
                     pc = &(*pc)->next;
                 } else {
                     backup(dfa, s, l, r);
@@ -97,9 +97,9 @@ void insert_fallback_tags(Tdfa& dfa) {
                 ps = &(*ps)->next;
             } else { // 'save with history' commands
                 if (!owrt[r]) {
-                    *ps = pool.copy_add(nullptr, l, r, h);
+                    *ps = pool.copy_add(/*nullptr*/NULL, l, r, h);
                 } else {
-                    *ps = pool.copy_add(nullptr, l, l, h);
+                    *ps = pool.copy_add(/*nullptr*/NULL, l, l, h);
                     backup(dfa, s, l, r);
                 }
                 ps = &(*ps)->next;

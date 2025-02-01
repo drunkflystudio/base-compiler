@@ -26,7 +26,7 @@ struct Tdfa;
 struct opt_t;
 struct State;
 
-static constexpr size_t NOSAVE = std::numeric_limits<size_t>::max();
+static /*constexpr*/ size_t NOSAVE() { return std::numeric_limits<size_t>::max(); }
 
 struct AcceptTrans {
     State* state;
@@ -39,7 +39,7 @@ struct AcceptTrans {
 
 class Action {
   public:
-    enum class Kind: uint32_t { MATCH, INITIAL, SAVE, MOVE, ACCEPT, RULE } kind;
+    enum /*class*/ Kind: uint32_t { MATCH, INITIAL, SAVE, MOVE, ACCEPT, RULE } kind;
     union {
         const uniq_vector_t<AcceptTrans>* accepts;
         size_t save;
@@ -151,7 +151,7 @@ inline void Action::set_initial() {
     if (kind == Kind::MATCH) {
         // ordinary state with no special action
         kind = Kind::INITIAL;
-        info.save = NOSAVE;
+        info.save = NOSAVE();
     } else if (kind == Kind::SAVE) {
         // fallback state: do not loose 'yyaccept'
         kind = Kind::INITIAL;
@@ -186,13 +186,13 @@ inline void Action::set_rule(size_t rule) {
 }
 
 inline State::State()
-    : next(nullptr),
-      prev(nullptr),
-      label(nullptr),
-      fill_state(nullptr),
-      fill_label(nullptr),
+    : next(/*nullptr*/NULL),
+      prev(/*nullptr*/NULL),
+      label(/*nullptr*/NULL),
+      fill_state(/*nullptr*/NULL),
+      fill_label(/*nullptr*/NULL),
       fill(0),
-      rule(Rule::NONE),
+      rule(Rule::NONE()),
       rule_tags(TCID0),
       fall_tags(TCID0),
       fallback(false),

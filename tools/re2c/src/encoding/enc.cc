@@ -60,9 +60,9 @@ uint32_t Enc::decode_unsafe(uint32_t c) const {
 // returns the newly constructed range.
 //
 Range* Enc::validate_range(RangeMgr& rm, uint32_t l, uint32_t h) const {
-    if (l >= cpoint_count() || h >= cpoint_count()) return nullptr;
+    if (l >= cpoint_count() || h >= cpoint_count()) return /*nullptr*/NULL;
 
-    Range* r = nullptr;
+    Range* r = /*nullptr*/NULL;
     switch (type_) {
     case Type::ASCII:
     case Type::EBCDIC:
@@ -76,7 +76,7 @@ Range* Enc::validate_range(RangeMgr& rm, uint32_t l, uint32_t h) const {
         if (l <= SURR_MAX && h >= SURR_MIN) {
             switch (policy_) {
             case Policy::FAIL:
-                r = nullptr;
+                r = /*nullptr*/NULL;
                 break;
             case Policy::SUBSTITUTE:
                 // exclude surrogates, add error code point
@@ -102,8 +102,8 @@ Range* Enc::full_range(RangeMgr& rm) const {
 }
 
 // C++11 requres outer decl for ODR-used static constexpr data members (not needed in C++17).
-constexpr uint32_t Enc::SURR_MIN;
-constexpr uint32_t Enc::SURR_MAX;
-constexpr uint32_t Enc::UNICODE_ERROR;
+//constexpr uint32_t Enc::SURR_MIN;
+//constexpr uint32_t Enc::SURR_MAX;
+//constexpr uint32_t Enc::UNICODE_ERROR;
 
 } // namespace re2c

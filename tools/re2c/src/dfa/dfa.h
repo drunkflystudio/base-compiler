@@ -30,9 +30,9 @@ struct TdfaState {
 
     explicit TdfaState(size_t nchars)
         : arcs(new size_t[nchars]),
-          tcmd(nullptr),
-          tcid(nullptr),
-          rule(Rule::NONE),
+          tcmd(/*nullptr*/NULL),
+          tcid(/*nullptr*/NULL),
+          rule(Rule::NONE()),
           fallthru(false),
           fallback(false) {
         size_t sz = nchars + 2; // +2 for final and fallback epsilon-transitions
@@ -50,7 +50,7 @@ struct TdfaState {
 };
 
 struct Tdfa {
-    static constexpr uint32_t NIL = ~0u;
+    static const/*expr*/ uint32_t NIL = ~0u;
 
     DfaAllocator& dfa_alc;
 

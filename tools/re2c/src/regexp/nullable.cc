@@ -21,7 +21,7 @@ static bool nullable(const RESpec& spec, std::vector<StackItem>& stack, const Re
     // the "nullable" status of the last sub-regexp visited by DFS
     bool null = false;
 
-    stack.push_back({re0, 0});
+    stack.push_back(StackItem{re0, 0});
 
     while (!stack.empty()) {
         const StackItem i = stack.back();
@@ -46,27 +46,27 @@ static bool nullable(const RESpec& spec, std::vector<StackItem>& stack, const Re
         } else if (re->kind == Regexp::Kind::ALT) {
             if (i.succ == 0) {
                 // recurse into the left sub-regexp
-                stack.push_back({re, 1});
-                stack.push_back({re->alt.re1, 0});
+                stack.push_back(StackItem{re, 1});
+                stack.push_back(StackItem{re->alt.re1, 0});
             } else if (!null) {
                 // if the left sub-regexp is nullable, so is alternative, so stop recursion;
                 // otherwise recurse into the right sub-regexp
-                stack.push_back({re->alt.re2, 0});
+                stack.push_back(StackItem{re->alt.re2, 0});
             }
         } else if (re->kind == Regexp::Kind::CAT) {
             if (i.succ == 0) {
                 // recurse into the left sub-regexp
-                stack.push_back({re, 1});
-                stack.push_back({re->cat.re1, 0});
+                stack.push_back(StackItem{re, 1});
+                stack.push_back(StackItem{re->cat.re1, 0});
             } else if (null) {
                 // if the left sub-regexp is not nullable, neither is concatenation, so stop
                 // recursion; otherwise recurse into the right sub-regexp
-                stack.push_back({re->cat.re2, 0});
+                stack.push_back(StackItem{re->cat.re2, 0});
             }
         } else if (re->kind == Regexp::Kind::ITER) {
             // iteration is nullable if the sub-regexp is nullable (zero repetitions is represented
             // with alternative)
-            stack.push_back({re->iter.re, 0});
+            stack.push_back(StackItem{re->iter.re, 0});
         }
     }
 

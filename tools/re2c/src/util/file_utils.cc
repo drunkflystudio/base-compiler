@@ -45,15 +45,15 @@ namespace re2c {
 // In C++17, all this could be substituted with fopen(..., "x")
 FILE* temp_file(std::string& fname) {
     // append "random enough" suffix to filename
-    const time_t t = time(nullptr);
+    const time_t t = time(/*nullptr*/NULL);
     char buffer[20]; // 20 = 5(".tmp.") + 4(%Y) + 2(%m) + 2(%d) + 2(%H) + 2(%M) + 2(%S) + 1(null)
     if (strftime(buffer, sizeof(buffer), ".tmp.%Y%m%d%H%M%S", localtime(&t)) == 0) {
-        return nullptr;
+        return /*nullptr*/NULL;
     }
     fname += buffer;
 
     // open file for writing, unless it exists already
-    FILE* f = nullptr;
+    FILE* f = /*nullptr*/NULL;
     int fd = OPEN(fname.c_str());
     if (fd != -1) {
         f = FDOPEN(fd);
@@ -74,8 +74,8 @@ bool overwrite_file(const char* srcname, const char* dstname) {
     if (rename(srcname, dstname) == 0) return true;
 
     // rename failed: try write
-    FILE* src = nullptr, *dst = nullptr;
-    static constexpr size_t BLK = 4096;
+    FILE* src = /*nullptr*/NULL, *dst = /*nullptr*/NULL;
+    static const/*expr*/ size_t BLK = 4096;
     char buf[BLK];
     bool ok = false;
     size_t n;

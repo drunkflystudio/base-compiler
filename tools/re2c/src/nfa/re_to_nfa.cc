@@ -43,7 +43,7 @@ static void estimate_nfa_params(
     // the estimated size and depth of the last sub-regexp visited by DFS
     uint32_t size = 0, depth = 0;
 
-    stack.push_back({re0, 0, 0, 0});
+    stack.push_back(DfsTnfaParams{re0, 0, 0, 0});
 
     while (!stack.empty()) {
         const DfsTnfaParams i = stack.back();
@@ -57,12 +57,12 @@ static void estimate_nfa_params(
         } else if (re->kind == Regexp::Kind::ALT) {
             if (i.succ == 0) {
                 // recurse into the left sub-regexp
-                stack.push_back({re, 0, 0, 1});
-                stack.push_back({re->alt.re1, 0, 0, 0});
+                stack.push_back(DfsTnfaParams{re, 0, 0, 1});
+                stack.push_back(DfsTnfaParams{re->alt.re1, 0, 0, 0});
             } else if (i.succ == 1) {
                 // recurse into the right sub-regexp
-                stack.push_back({re, size, depth, 2});
-                stack.push_back({re->alt.re2, 0, 0, 0});
+                stack.push_back(DfsTnfaParams{re, size, depth, 2});
+                stack.push_back(DfsTnfaParams{re->alt.re2, 0, 0, 0});
             } else {
                 // both sub-regexp visited, recursive return
                 // (left one is on stack, right one was just visited by DFS)
@@ -72,12 +72,12 @@ static void estimate_nfa_params(
         } else if (re->kind == Regexp::Kind::CAT) {
             if (i.succ == 0) {
                 // recurse into the left sub-regexp
-                stack.push_back({re, 0, 0, 1});
-                stack.push_back({re->cat.re1, 0, 0, 0});
+                stack.push_back(DfsTnfaParams{re, 0, 0, 1});
+                stack.push_back(DfsTnfaParams{re->cat.re1, 0, 0, 0});
             } else if (i.succ == 1) {
                 // recurse into the right sub-regexp
-                stack.push_back({re, size, depth, 2});
-                stack.push_back({re->cat.re2, 0, 0, 0});
+                stack.push_back(DfsTnfaParams{re, size, depth, 2});
+                stack.push_back(DfsTnfaParams{re->cat.re2, 0, 0, 0});
             } else {
                 // both sub-regexp visited, recursive return
                 // (left one is on stack, right one was just visited by DFS)
@@ -87,14 +87,14 @@ static void estimate_nfa_params(
         } else if (re->kind == Regexp::Kind::ITER) {
             if (i.succ == 0) {
                 // recurse into the sub-regexp
-                stack.push_back({re, 0, 0, 1});
-                stack.push_back({re->iter.re, 0, 0, 0});
+                stack.push_back(DfsTnfaParams{re, 0, 0, 1});
+                stack.push_back(DfsTnfaParams{re->iter.re, 0, 0, 0});
             } else {
                 // sub-regexp visited, recursive return
                 // formula is the same for size and depth (it reflects NFA construction)
                 const uint32_t min = re->iter.min, max = re->iter.max;
-                size = max == Ast::MANY ? size * min + 1 : size * max + (max - min);
-                depth = max == Ast::MANY ? depth * min + 1 : depth * max + (max - min);
+                size = max == Ast::MANY() ? size * min + 1 : size * max + (max - min);
+                depth = max == Ast::MANY() ? depth * min + 1 : depth * max + (max - min);
             }
         }
     }
@@ -115,7 +115,7 @@ static uint32_t nfa_stats(TnfaState* root) {
     uint32_t topord = 0;
     uint32_t ncores = 0;
 
-    stack.push_back({root, 0});
+    stack.push_back(DfsTnfaStats{root, 0});
 
     while (!stack.empty()) {
         // Don't store references to stack as it may grow and get reallocated.
@@ -137,20 +137,20 @@ static uint32_t nfa_stats(TnfaState* root) {
         switch (state->kind) {
         case TnfaState::Kind::ALT:
             if (next == 0) {
-                stack.push_back({state->out1, 0});
+                stack.push_back(DfsTnfaStats{state->out1, 0});
             } else if (next == 1) {
-                stack.push_back({state->out2, 0});
+                stack.push_back(DfsTnfaStats{state->out2, 0});
             }
             break;
         case TnfaState::Kind::TAG:
             if (next == 0) {
-                stack.push_back({state->out1, 0});
+                stack.push_back(DfsTnfaStats{state->out1, 0});
             }
             break;
         case TnfaState::Kind::RAN:
             if (next == 0) {
                 ++ncores;
-                stack.push_back({state->out1, 0});
+                stack.push_back(DfsTnfaStats{state->out1, 0});
             }
             break;
         case TnfaState::Kind::FIN:
@@ -188,10 +188,10 @@ static void one_re_to_nfa(
         Tnfa& nfa, const RESpec& spec, uint32_t rule, std::vector<DfsReToTnfa>& stack) {
     // Start state of the last constructed sub-NFA (available after the stack item for it has been
     // popped off stack and the preceding stack item is being processed).
-    TnfaState* start = nullptr;
+    TnfaState* start = /*nullptr*/NULL;
 
     DCHECK(stack.empty());
-    stack.push_back({*spec.res[rule], nullptr, nfa.make_fin(rule)});
+    stack.push_back(DfsReToTnfa{*spec.res[rule], /*nullptr*/NULL, nfa.make_fin(rule)});
 
     while (!stack.empty()) {
         // Refs to top of stack are invalidated after popping or pushing anything (backing storage
@@ -199,7 +199,7 @@ static void one_re_to_nfa(
         DfsReToTnfa& x = stack.back();
         Regexp& re = x.re;
 
-        DCHECK(x.end != nullptr);
+        DCHECK(x.end != /*nullptr*/NULL);
 
         switch (re.kind) {
         case Regexp::Kind::NIL:
@@ -220,12 +220,12 @@ static void one_re_to_nfa(
         }
 
         case Regexp::Kind::ALT:
-            if (x.start == nullptr) {
-                x.start = nfa.make_alt(rule, nullptr, nullptr);
-                stack.push_back({*re.alt.re1, nullptr, x.end});
-            } else if (x.start->out1 == nullptr) {
+            if (x.start == /*nullptr*/NULL) {
+                x.start = nfa.make_alt(rule, /*nullptr*/NULL, /*nullptr*/NULL);
+                stack.push_back(DfsReToTnfa{*re.alt.re1, /*nullptr*/NULL, x.end});
+            } else if (x.start->out1 == /*nullptr*/NULL) {
                 x.start->out1 = start;
-                stack.push_back({*re.alt.re2, nullptr, x.end});
+                stack.push_back(DfsReToTnfa{*re.alt.re2, /*nullptr*/NULL, x.end});
             } else {
                 x.start->out2 = start;
                 start = x.start;
@@ -234,22 +234,22 @@ static void one_re_to_nfa(
             break;
 
         case Regexp::Kind::CAT:
-            if (x.start == nullptr) {
+            if (x.start == /*nullptr*/NULL) {
                 x.start = x.end; // needed only to distinguish the 1st and the 2nd visit
-                stack.push_back({*re.cat.re2, nullptr, x.end});
+                stack.push_back(DfsReToTnfa{*re.cat.re2, /*nullptr*/NULL, x.end});
             } else {
                 // no need to revisit the parent node, replace it on stack with the child
-                stack.back() = {*re.cat.re1, nullptr, start};
+                stack.back() = DfsReToTnfa{*re.cat.re1, /*nullptr*/NULL, start};
             }
             break;
 
         case Regexp::Kind::ITER:
             // see note [counted repetition and iteration expansion]
-            if (re.iter.max == Ast::MANY) {
+            if (re.iter.max == Ast::MANY()) {
                 // Unbounded repetition `r{n,}`, unfold as `r{n-1} r*`.
-                if (x.start == nullptr) {
-                    x.start = nfa.make_alt(rule, nullptr, x.end);
-                    stack.push_back({*re.iter.re, nullptr, x.start});
+                if (x.start == /*nullptr*/NULL) {
+                    x.start = nfa.make_alt(rule, /*nullptr*/NULL, x.end);
+                    stack.push_back(DfsReToTnfa{*re.iter.re, /*nullptr*/NULL, x.start});
                 } else {
                     re.iter.max = re.iter.min -= 1;
                     x.start->out1 = start;
@@ -257,7 +257,7 @@ static void one_re_to_nfa(
             } else if (re.iter.min < re.iter.max) {
                 // Bounded repetition `r{n,m}`, unfold as `r{n-1} r{1,m}` and further unfold
                 // `r{1,m}` as `r{1,m-1} r | <empty>`.
-                if (x.start == nullptr) {
+                if (x.start == /*nullptr*/NULL) {
                     start = x.end;
                 } else {
                     --re.iter.max;
@@ -271,16 +271,16 @@ static void one_re_to_nfa(
                     }
                 }
                 if (re.iter.max != re.iter.min) {
-                    x.start = nfa.make_alt(rule, nullptr, x.end);
-                    stack.push_back({*re.iter.re, nullptr, start});
+                    x.start = nfa.make_alt(rule, /*nullptr*/NULL, x.end);
+                    stack.push_back(DfsReToTnfa{*re.iter.re, /*nullptr*/NULL, start});
                 }
             } else if (re.iter.min > 0) {
                 // Bounded repetition `r{n}`, unfold as `r{n-1} r`.
                 re.iter.max = re.iter.min -= 1;
-                if (x.start == nullptr) {
+                if (x.start == /*nullptr*/NULL) {
                     start = x.start = x.end;
                 }
-                stack.push_back({*re.iter.re, nullptr, start});
+                stack.push_back(DfsReToTnfa{*re.iter.re, /*nullptr*/NULL, start});
             } else {
                 stack.pop_back();
             }
@@ -288,7 +288,7 @@ static void one_re_to_nfa(
         }
     }
 
-    nfa.root = (nfa.root == nullptr) ? start : nfa.make_alt(rule, nfa.root, start);
+    nfa.root = (nfa.root == /*nullptr*/NULL) ? start : nfa.make_alt(rule, nfa.root, start);
 }
 
 } // anonymous namespace
@@ -307,7 +307,8 @@ Ret re_to_nfa(Tnfa& nfa, RESpec&& spec) {
     std::vector<DfsTnfaParams> stack_nfa_params;
     size_t size = spec.res.size() - 1;
     size_t depth = 0;
-    for (const Regexp* re : spec.res) {
+    for (auto it = spec.res.begin(); it != spec.res.end(); ++it) {
+        const Regexp* re = *it;
         estimate_nfa_params(re, stack_nfa_params, &size, &depth);
     }
     if (size > MAX_NFA_STATES) {
@@ -333,8 +334,8 @@ Ret re_to_nfa(Tnfa& nfa, RESpec&& spec) {
 }
 
 Tnfa::Tnfa()
-    : states(nullptr),
-      root(nullptr),
+    : states(/*nullptr*/NULL),
+      root(/*nullptr*/NULL),
       nstates(0),
       ncores(0),
       ir_alc(),

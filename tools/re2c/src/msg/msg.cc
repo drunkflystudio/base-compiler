@@ -65,7 +65,7 @@ void Msg::warning_start(const loc_t& loc, bool error) {
 }
 
 void Msg::warning_end(const char* type, bool error) {
-    if (type != nullptr) {
+    if (type != /*nullptr*/NULL) {
         const char* prefix = error ? "error-" : "";
         fprintf(stderr, " [-W%s%s]", prefix, type);
     }

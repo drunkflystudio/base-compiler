@@ -79,9 +79,9 @@ struct RevDfa {
         // init states
         for (size_t i = 0; i < nstates; ++i) {
             state_t& s = states[i];
-            s.arcs = nullptr;
+            s.arcs = /*nullptr*/NULL;
             const size_t r = dfa.states[i]->rule;
-            s.rule = r == Rule::NONE ? nrules : r;
+            s.rule = r == Rule::NONE() ? nrules : r;
             s.fallthru = false;
         }
         // init arcs
@@ -122,7 +122,7 @@ static void liveness_analysis(const RevDfa& rdfa, bool* live) {
         if (!s.fallthru) continue;
 
         // Backward-propagate liveness from fallthrough state, following reversed DFA arcs.
-        stack.push_back({i, s.rule, nullptr});
+        stack.push_back(DfsBackprop{i, s.rule, /*nullptr*/NULL});
         while (!stack.empty()) {
             // Ensure that the reference to stack top won't be accidentally invalidated on push.
             if (stack.size() == stack.capacity()) stack.reserve(stack.size() * 2);
@@ -130,7 +130,7 @@ static void liveness_analysis(const RevDfa& rdfa, bool* live) {
 
             const RevDfa::state_t& t = rdfa.states[x.state];
 
-            if (x.arc == nullptr) {
+            if (x.arc == /*nullptr*/NULL) {
                 // "none-rule" is unreachable from final states: mask it before propagating.
                 if (x.rule == rdfa.nrules) {
                     x.rule = t.rule;
@@ -147,10 +147,10 @@ static void liveness_analysis(const RevDfa& rdfa, bool* live) {
                 x.arc = x.arc->next;
             }
 
-            if (x.arc == nullptr) {
+            if (x.arc == /*nullptr*/NULL) {
                 stack.pop_back(); // all arcs followed, this state is finished
             } else {
-                stack.push_back({x.arc->dest, x.rule, nullptr}); // follow next arc
+                stack.push_back(DfsBackprop{x.arc->dest, x.rule, /*nullptr*/NULL}); // follow next arc
             }
         }
     }
@@ -162,7 +162,7 @@ static void warn_dead_rules(Tdfa& dfa, const std::string& cond, const bool* live
 
     for (size_t i = 0; i < nstates; ++i) {
         const size_t r = dfa.states[i]->rule;
-        if (r != Rule::NONE && !live[r * nstates + i]) {
+        if (r != Rule::NONE() && !live[r * nstates + i]) {
             // skip last rule (it's the NONE-rule)
             for (size_t j = 0; j < nrules; ++j) {
                 if (live[j * nstates + i]) {
@@ -228,8 +228,9 @@ static void warn_sentinel_in_midrule(
 static void remove_dead_final_states(Tdfa& dfa, const bool* fallthru) {
     const size_t nsym = dfa.nchars;
 
-    for (TdfaState* s : dfa.states) {
-        if (s->rule == Rule::NONE) continue;
+    for (auto it = dfa.states.begin(); it != dfa.states.end(); ++it) {
+        TdfaState* s = *it;
+        if (s->rule == Rule::NONE()) continue;
 
         // final state is useful iff there is at least one non-accepting path from this state
         bool shadowed = true;
@@ -242,8 +243,8 @@ static void remove_dead_final_states(Tdfa& dfa, const bool* fallthru) {
         }
 
         if (shadowed) {
-            s->rule = Rule::NONE;
-            s->tcmd[nsym] = nullptr;
+            s->rule = Rule::NONE();
+            s->tcmd[nsym] = /*nullptr*/NULL;
         }
     }
 }
@@ -255,7 +256,7 @@ static void find_fallback_states(Tdfa& dfa, const bool* fallthru) {
     for (size_t i = 0; i < nstate; ++i) {
         TdfaState* s = dfa.states[i];
         s->fallthru = fallthru[i];
-        if (s->rule == Rule::NONE) continue;
+        if (s->rule == Rule::NONE()) continue;
 
         // A final state is a fallback state if there are non-accepting paths from it (i.e. paths
         // that end with a transition to default state).
@@ -272,8 +273,9 @@ static void find_fallback_states(Tdfa& dfa, const bool* fallthru) {
 static void find_fallback_states_with_eof_rule(Tdfa& dfa) {
     const size_t nsym = dfa.nchars;
 
-    for (TdfaState* s : dfa.states) {
-        if (s->rule == Rule::NONE || s->rule == dfa.eof_rule) continue;
+    for (auto it = dfa.states.begin(); it != dfa.states.end(); ++it) {
+        TdfaState* s = *it;
+        if (s->rule == Rule::NONE() || s->rule == dfa.eof_rule) continue;
 
         // With the end-of-input rule $ a final state is a fallback state if it has outgoing
         // transitions to any non-accepting states (even if all possible paths on those transitions
@@ -281,7 +283,7 @@ static void find_fallback_states_with_eof_rule(Tdfa& dfa) {
         // default quasi-transition).
         for (size_t c = 0; c < nsym; ++c) {
             const size_t j = s->arcs[c];
-            if (j != Tdfa::NIL && dfa.states[j]->rule == Rule::NONE) {
+            if (j != Tdfa::NIL && dfa.states[j]->rule == Rule::NONE()) {
                 s->fallback = true;
                 break;
             }
@@ -297,7 +299,7 @@ static void remove_dead_final_states_with_eof_rule(Tdfa& dfa) {
     // state, then the $ rule takes priority, otherwise one of the longer rules will match).
     DCHECK(!dfa.states.empty());
     TdfaState* s0 = dfa.states[0];
-    if (s0->rule != Rule::NONE && s0->rule != dfa.eof_rule && !s0->fallback) {
+    if (s0->rule != Rule::NONE() && s0->rule != dfa.eof_rule && !s0->fallback) {
         s0->rule = dfa.eof_rule;
     }
 }

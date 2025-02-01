@@ -77,13 +77,20 @@ void combine_code(Code* code) {
 }
 
 void codegen_fixup(Output& output) {
-    for (const blocks_t& bs : {output.cblocks, output.hblocks}) {
-        for (OutputBlock* b : bs) {
+    //for (const blocks_t& bs : {output.cblocks, output.hblocks}) {
+        for (auto it = output.cblocks.begin(); it != output.cblocks.end(); ++it) {
+            OutputBlock* b = *it;
             if (b->opts->api == Api::SIMPLE && b->opts->specialize_skip_peek_backup()) {
                 combine_list(b->code);
             }
         }
-    }
+        for (auto it = output.hblocks.begin(); it != output.hblocks.end(); ++it) {
+            OutputBlock* b = *it;
+            if (b->opts->api == Api::SIMPLE && b->opts->specialize_skip_peek_backup()) {
+                combine_list(b->code);
+            }
+        }
+    //}
 }
 
 } // namespace re2c

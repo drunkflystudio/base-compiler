@@ -70,7 +70,7 @@ namespace re2c {
 namespace re2c {
 
 struct LexerState {
-    enum class LexMode: uint32_t { NORMAL, FLEX_NAME };
+    enum /*class*/ LexMode: uint32_t { NORMAL, FLEX_NAME };
 
     LexMode mode;
     size_t BSIZE;
@@ -88,7 +88,7 @@ struct LexerState {
           tok(lim),
           ptr(lim),
           pos(lim),
-          eof(nullptr)
+          eof(/*nullptr*/NULL)
           /*!stags:re2c format = ", @@(lim)"; */ {
         memset(lim, 0, maxfill());
     }
@@ -101,7 +101,7 @@ struct LexerState {
         // reset lexer back to its initial state
         cur = mar = ctx = tok = ptr = pos = lim = bot + BSIZE;
         memset(lim, 0, maxfill());
-        eof = nullptr;
+        eof = /*nullptr*/NULL;
     }
 
     inline void shift_ptrs(ptrdiff_t offs) {
@@ -322,12 +322,12 @@ loop:
                 "followed by a list of colon-separated block names, or the end of block"));
     }
 
-    "" / ws_or_eoc { *ptail = nullptr; return Ret::OK; }
+    "" / ws_or_eoc { *ptail = NULL; return Ret::OK; } // nullptr
 
     ":" name {
         BlockNameList *l = alc.alloct<BlockNameList>(1);
         l->name = newcstr(tok + 1, cur, alc);
-        l->next = nullptr;
+        l->next = NULL; // nullptr
         *ptail = l;
         ptail = &l->next;
 
@@ -363,7 +363,7 @@ loop: /*!local:re2c
 }
 
 Ret Input::lex_special_block(Output& out, CodeKind kind, uint32_t mask) {
-    const char* fmt = nullptr, *sep = nullptr;
+    const char* fmt = /*nullptr*/NULL, *sep = /*nullptr*/NULL;
     BlockNameList* blocks;
 
     out.gen_raw(tok, ptr, globopts->line_dirs);
@@ -500,7 +500,7 @@ scan:
         // consume one character, otherwise we risk breaking operator precedence in cases like
         // `ab*`: it should be `a(b)*`, not `(ab)*`
         cur = tok + 1;
-        ast.temp_chars.push_back({tok[0], tok_loc()});
+        ast.temp_chars.push_back(AstChar{tok[0], tok_loc()});
         yylval->regexp = ast.str(tok_loc(), false);
         RET_TOK(TOKEN_REGEXP);
     }
@@ -509,7 +509,7 @@ scan:
         if (!globopts->flex_syntax) {
             RET_FAIL(error_at_tok("unexpected character: '%c'", *tok));
         }
-        ast.temp_chars.push_back({*tok, tok_loc()});
+        ast.temp_chars.push_back(AstChar{*tok, tok_loc()});
         yylval->regexp = ast.str(tok_loc(), false);
         RET_TOK(TOKEN_REGEXP);
     }
@@ -560,7 +560,7 @@ scan:
             --cur;
             uint32_t c;
             CHECK_RET(lex_cls_chr(c));
-            ast.temp_chars.push_back({c, tok_loc()});
+            ast.temp_chars.push_back(AstChar{c, tok_loc()});
             yylval->regexp = ast.str(tok_loc(), false);
             RET_TOK(TOKEN_REGEXP);
         }
@@ -616,6 +616,12 @@ error:
     RET_FAIL(error_at_cur("syntax error in condition list"));
 }
 
+static bool is_blank(const uint8_t* s, const uint8_t* e)
+{
+    while (s < e && is_space(*s)) ++s;
+    return s == e;
+}
+
 Ret Input::process_semact(RE2C_STYPE* yylval, Ast& ast, const uint8_t* p, const uint8_t* q) {
     const char* text = "";
     if (globopts->indentation_sensitive) {
@@ -626,10 +632,6 @@ Ret Input::process_semact(RE2C_STYPE* yylval, Ast& ast, const uint8_t* p, const 
         if (p <= q) {
             // Split semantic action by newlines (note: last character `*q` is not a newline).
             // Drop blank lines (this simplifies the code below that removes indentation).
-            auto is_blank = [](const uint8_t* s, const uint8_t* e) {
-                while (s < e && is_space(*s)) ++s;
-                return s == e;
-            };
             tmp_list.clear();
             for (const uint8_t* s = p; s < q; ++s) {
                 if (*s == '\n') {
@@ -648,7 +650,8 @@ Ret Input::process_semact(RE2C_STYPE* yylval, Ast& ast, const uint8_t* p, const 
 
                 // Cut off base indentation from every line and glue them together.
                 tmp_str.clear();
-                for (std::string& line: tmp_list) {
+                for (auto it = tmp_list.begin(); it != tmp_list.end(); ++it) {
+                    std::string& line = *it;
                     if (line.compare(0, indent, indstr) == 0) {
                         tmp_str += line.substr(indent, std::string::npos); // remove indent
                     } else {
@@ -663,7 +666,7 @@ Ret Input::process_semact(RE2C_STYPE* yylval, Ast& ast, const uint8_t* p, const 
         text = ast.cstr_global(p, q + 1);
     }
 
-    yylval->semact = ast.sem_act(tok_loc(), text, nullptr, false);
+    yylval->semact = ast.sem_act(tok_loc(), text, /*nullptr*/NULL, false);
     return Ret::OK;
 }
 
@@ -854,16 +857,16 @@ Ret Input::lex_cls_chr(uint32_t& c) {
     . \ esc     { c = decode(tok); return Ret::OK; }
     esc_hex     { c = unesc_hex(tok, cur); return Ret::OK; }
     esc_oct     { c = unesc_oct(tok, cur); return Ret::OK; }
-    esc "a"     { c = '\a'_u8; return Ret::OK; }
-    esc "b"     { c = '\b'_u8; return Ret::OK; }
-    esc "f"     { c = '\f'_u8; return Ret::OK; }
-    esc "n"     { c = '\n'_u8; return Ret::OK; }
-    esc "r"     { c = '\r'_u8; return Ret::OK; }
-    esc "t"     { c = '\t'_u8; return Ret::OK; }
-    esc "v"     { c = '\v'_u8; return Ret::OK; }
-    esc "\\"    { c = '\\'_u8; return Ret::OK; }
-    esc "-"     { c = '-'_u8; return Ret::OK; }
-    esc "]"     { c = ']'_u8; return Ret::OK; }
+    esc "a"     { c = (uint8_t)'\a'; return Ret::OK; }
+    esc "b"     { c = (uint8_t)'\b'; return Ret::OK; }
+    esc "f"     { c = (uint8_t)'\f'; return Ret::OK; }
+    esc "n"     { c = (uint8_t)'\n'; return Ret::OK; }
+    esc "r"     { c = (uint8_t)'\r'; return Ret::OK; }
+    esc "t"     { c = (uint8_t)'\t'; return Ret::OK; }
+    esc "v"     { c = (uint8_t)'\v'; return Ret::OK; }
+    esc "\\"    { c = (uint8_t)'\\'; return Ret::OK; }
+    esc "-"     { c = (uint8_t)'-'; return Ret::OK; }
+    esc "]"     { c = (uint8_t)']'; return Ret::OK; }
     esc (.\eof) {
         msg.warn.useless_escape(loc, tok, cur);
         c = decode(tok + 1);
@@ -891,14 +894,14 @@ Ret Input::lex_str_chr(uint8_t quote, AstChar& ast, bool& stop) {
     . \ esc     { ast.chr = decode(tok); stop = (tok[0] == quote); return Ret::OK; }
     esc_hex     { ast.chr = unesc_hex(tok, cur); return Ret::OK; }
     esc_oct     { ast.chr = unesc_oct(tok, cur); return Ret::OK; }
-    esc "a"     { ast.chr = '\a'_u8; return Ret::OK; }
-    esc "b"     { ast.chr = '\b'_u8; return Ret::OK; }
-    esc "f"     { ast.chr = '\f'_u8; return Ret::OK; }
-    esc "n"     { ast.chr = '\n'_u8; return Ret::OK; }
-    esc "r"     { ast.chr = '\r'_u8; return Ret::OK; }
-    esc "t"     { ast.chr = '\t'_u8; return Ret::OK; }
-    esc "v"     { ast.chr = '\v'_u8; return Ret::OK; }
-    esc "\\"    { ast.chr = '\\'_u8; return Ret::OK; }
+    esc "a"     { ast.chr = (uint8_t)'\a'; return Ret::OK; }
+    esc "b"     { ast.chr = (uint8_t)'\b'; return Ret::OK; }
+    esc "f"     { ast.chr = (uint8_t)'\f'; return Ret::OK; }
+    esc "n"     { ast.chr = (uint8_t)'\n'; return Ret::OK; }
+    esc "r"     { ast.chr = (uint8_t)'\r'; return Ret::OK; }
+    esc "t"     { ast.chr = (uint8_t)'\t'; return Ret::OK; }
+    esc "v"     { ast.chr = (uint8_t)'\v'; return Ret::OK; }
+    esc "\\"    { ast.chr = (uint8_t)'\\'; return Ret::OK; }
     esc (.\eof) {
         ast.chr = decode(tok + 1);
         if (tok[1] != quote) msg.warn.useless_escape(ast.loc, tok, cur);

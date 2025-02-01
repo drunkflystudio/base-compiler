@@ -21,7 +21,7 @@ struct CodeGoIf;
 struct State;
 
 struct Label {
-    static constexpr uint32_t NONE = ~0u;
+    static const/*expr*/ uint32_t NONE = ~0u;
 
     uint32_t index;
     bool used;
@@ -34,7 +34,7 @@ inline Label* new_label(OutAllocator& alc, uint32_t index) {
     return l;
 }
 
-using CodeList = list_t<Code>;
+typedef list_t<Code> CodeList; /*using CodeList = list_t<Code>;*/
 
 struct CodeJump {
     const State* to;
@@ -52,7 +52,7 @@ struct CodeBmState {
     CodeBmState* next;
 };
 
-using CodeBmStates = list_t<CodeBmState>;
+typedef list_t<CodeBmState> CodeBmStates; /*using CodeBmStates = list_t<CodeBmState>;*/
 
 struct CodeBitmap {
     CodeBmStates* states;
@@ -90,7 +90,7 @@ struct CodeGoSwIf {
         CodeGoSw* gosw;
         CodeGoIf* goif;
     };
-    enum class Kind: uint32_t {
+    enum /*class*/ Kind: uint32_t {
         SWITCH,
         IF
     } kind;
@@ -109,7 +109,7 @@ struct CodeGoBranch {
         CodeJump jump;
         CodeGoSwIf* swif;
     };
-    enum class Kind: uint32_t {
+    enum /*class*/ Kind: uint32_t {
         JUMP,
         SWIF
     } kind;
@@ -127,14 +127,14 @@ struct CodeGoIf {
         CodeGoIfB* goifb;
         CodeGoIfL* goifl;
     };
-    enum class Kind: uint32_t {
+    enum /*class*/ Kind: uint32_t {
         BINARY,
         LINEAR
     } kind;
 };
 
 struct CodeGoCpTable {
-    static constexpr uint32_t TABLE_SIZE = 0x100;
+    static const/*expr*/ uint32_t TABLE_SIZE = 0x100;
 
     State** table;
 };
@@ -145,7 +145,7 @@ struct CodeGoCp {
 };
 
 struct CodeGo {
-    enum class Kind: uint32_t {
+    enum /*class*/ Kind: uint32_t {
         EMPTY,
         SWITCH_IF,
         LINEAR_IF,
@@ -172,10 +172,10 @@ struct CodeBranch {
     CodeBranch* next;
 };
 
-using CodeBranches = list_t<CodeBranch>;
+typedef list_t<CodeBranch> CodeBranches; /*using CodeBranches = list_t<CodeBranch>;*/
 
 struct CodeCase {
-    enum class Kind: uint32_t {
+    enum /*class*/ Kind: uint32_t {
         RANGES,
         NUMBER,
         STRING,
@@ -191,7 +191,7 @@ struct CodeCase {
     CodeCase* next;
 };
 
-using CodeCases = list_t<CodeCase>;
+typedef list_t<CodeCase> CodeCases; /*using CodeCases = list_t<CodeCase>;*/
 
 struct CodeSwitch {
     const char* expr;
@@ -244,14 +244,14 @@ struct CodeParam {
     CodeParam* next;
 };
 
-using CodeParams = list_t<CodeParam>;
+typedef list_t<CodeParam> CodeParams; /*using CodeParams = list_t<CodeParam>;*/
 
 struct CodeArg {
     const char* arg;
     CodeArg* next;
 };
 
-using CodeArgs = list_t<CodeArg>;
+typedef list_t<CodeArg> CodeArgs; /*using CodeArgs = list_t<CodeArg>;*/
 
 struct CodeFnDef {
     const char* name;
@@ -268,7 +268,7 @@ struct CodeFnCall {
 };
 
 struct CodeLabel {
-    enum class Kind: uint32_t {
+    enum /*class*/ Kind: uint32_t {
         NLABEL,
         SLABEL
     } kind;
@@ -341,16 +341,17 @@ struct Code {
 struct CodeFnCommon {
     const char* name;
     const char* type;
-    CodeParams* params = nullptr;
-    CodeParams* params_yych = nullptr; // same as `params`, but with `yych` at the end
-    CodeArgs* args = nullptr;
-    CodeArgs* args_yych = nullptr; // same as `args`, but with `yych` at the end
+    CodeParams* params /*= nullptr*/;
+    CodeParams* params_yych /*= nullptr*/; // same as `params`, but with `yych` at the end
+    CodeArgs* args /*= nullptr*/;
+    CodeArgs* args_yych /*= nullptr*/; // same as `args`, but with `yych` at the end
+    CodeFnCommon() : name(NULL), type(NULL), params(NULL), params_yych(NULL), args(NULL), args_yych(NULL) {}
 };
 
 inline Code* new_code(OutAllocator& alc, CodeKind kind) {
     Code* x = alc.alloct<Code>(1);
     x->kind = kind;
-    x->next = nullptr;
+    x->next = /*nullptr*/NULL;
     return x;
 }
 
@@ -506,15 +507,15 @@ inline Code* code_restore_ctx(OutAllocator& alc) {
 inline Code* code_restore_tag(OutAllocator& alc, const char* tag) {
     Code* x = new_code(alc, CodeKind::RESTORETAG);
     x->tag.tag1 = tag;
-    x->tag.tag2 = nullptr;
+    x->tag.tag2 = /*nullptr*/NULL;
     x->tag.dist = 0;
     return x;
 }
 
 inline Code* code_shift(OutAllocator& alc, int32_t dist) {
     Code* x = new_code(alc, CodeKind::SHIFT);
-    x->tag.tag1 = nullptr;
-    x->tag.tag2 = nullptr;
+    x->tag.tag1 = /*nullptr*/NULL;
+    x->tag.tag2 = /*nullptr*/NULL;
     x->tag.dist = dist;
     return x;
 }
@@ -533,7 +534,7 @@ inline Code* code_set_tag(OutAllocator& alc, const char* tag, bool is_mtag, bool
         ? (is_negative ? CodeKind::MTAGN : CodeKind::MTAGP)
         : (is_negative ? CodeKind::STAGN : CodeKind::STAGP));
     x->tag.tag1 = tag;
-    x->tag.tag2 = nullptr;
+    x->tag.tag2 = /*nullptr*/NULL;
     x->tag.dist = 0;
     return x;
 }
@@ -579,7 +580,7 @@ inline CodeBranch* code_branch(OutAllocator& alc, const char* cond, CodeList* co
     CodeBranch* x = alc.alloct<CodeBranch>(1);
     x->cond = cond;
     x->code = code;
-    x->next = nullptr;
+    x->next = /*nullptr*/NULL;
     return x;
 }
 
@@ -598,7 +599,7 @@ inline Code* code_if_then_else(
     Code* x = new_code(alc, CodeKind::IF_THEN_ELSE);
     x->ifte = code_branches(alc);
     append(x->ifte, code_branch(alc, if_cond, if_code));
-    if (else_code) append(x->ifte, code_branch(alc, nullptr, else_code));
+    if (else_code) append(x->ifte, code_branch(alc, /*nullptr*/NULL, else_code));
     return x;
 }
 
@@ -618,7 +619,7 @@ inline CodeCase* code_case(OutAllocator& alc, CodeList* body, CodeCase::Kind kin
     CodeCase* x = alc.alloct<CodeCase>(1);
     x->kind = kind;
     x->body = body;
-    x->next = nullptr;
+    x->next = /*nullptr*/NULL;
     return x;
 }
 
@@ -660,7 +661,7 @@ inline CodeParam* code_param(OutAllocator& alc, const char* name, const char* ty
     CodeParam* x = alc.alloct<CodeParam>(1);
     x->name = name;
     x->type = type;
-    x->next = nullptr;
+    x->next = /*nullptr*/NULL;
     return x;
 }
 
@@ -671,7 +672,7 @@ inline CodeParams* code_params(OutAllocator& alc) {
 inline CodeArg* code_arg(OutAllocator& alc, const char* arg) {
     CodeArg* x = alc.alloct<CodeArg>(1);
     x->arg = arg;
-    x->next = nullptr;
+    x->next = /*nullptr*/NULL;
     return x;
 }
 
@@ -714,7 +715,7 @@ inline Code* code_fncall(
 
 inline Code* code_tailcall(OutAllocator& alc, const char* name, CodeArgs* args, bool have_retval) {
     // tailcall returns immediately so the `retval` string won't be used
-    const char* retval = have_retval ? "<unused-retval>" : nullptr;
+    const char* retval = have_retval ? "<unused-retval>" : /*nullptr*/NULL;
     return code_fncall(alc, name, retval, args, true);
 }
 
@@ -741,7 +742,7 @@ inline CodeBmState* code_bmstate(OutAllocator& alc, const CodeGo* go, const Stat
     x->state = s;
     x->offset = 0;
     x->mask = 0;
-    x->next = nullptr;
+    x->next = /*nullptr*/NULL;
     return x;
 }
 
@@ -750,7 +751,7 @@ inline CodeBitmap* code_bitmap(OutAllocator& alc, uint32_t nchars) {
     x->states = new_list<CodeBmState>(alc);
     x->nchars = nchars;
     x->nelems = 0;
-    x->elems = nullptr;
+    x->elems = /*nullptr*/NULL;
     x->used = false;
     return x;
 }

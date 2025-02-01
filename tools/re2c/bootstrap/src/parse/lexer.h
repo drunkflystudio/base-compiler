@@ -10,7 +10,7 @@
 namespace re2c {
 
 struct LexerState {
-    enum class LexMode: uint32_t { NORMAL, FLEX_NAME };
+    enum /*class*/ LexMode: uint32_t { NORMAL, FLEX_NAME };
 
     LexMode mode;
     size_t BSIZE;
@@ -32,7 +32,7 @@ uint8_t* yyt1;uint8_t* yyt2;uint8_t* yyt3;
           tok(lim),
           ptr(lim),
           pos(lim),
-          eof(nullptr)
+          eof(/*nullptr*/NULL)
           
 #line 38 "src/parse/lexer.h"
 , yyt1(lim), yyt2(lim), yyt3(lim)
@@ -41,7 +41,7 @@ uint8_t* yyt1;uint8_t* yyt2;uint8_t* yyt3;
         memset(lim, 0, maxfill());
     }
 
-    inline ~LexerState() {
+    ~LexerState() {
         delete[] bot;
     }
 
@@ -49,7 +49,7 @@ uint8_t* yyt1;uint8_t* yyt2;uint8_t* yyt3;
         // reset lexer back to its initial state
         cur = mar = ctx = tok = ptr = pos = lim = bot + BSIZE;
         memset(lim, 0, maxfill());
-        eof = nullptr;
+        eof = /*nullptr*/NULL;
     }
 
     inline void shift_ptrs(ptrdiff_t offs) {

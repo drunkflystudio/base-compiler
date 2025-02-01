@@ -11,32 +11,32 @@ struct RESpec;
 
 namespace utf8 {
 
-using rune = uint32_t;
+typedef uint32_t rune; /*using rune = uint32_t;*/
 
 // Maximum characters per code point (rune).
-static constexpr uint32_t MAX_RUNE_LENGTH = 4u;
+static const/*expr*/ uint32_t MAX_RUNE_LENGTH = 4u;
 
 // Decoding error.
-static constexpr uint32_t ERROR = 0xFFFDu;
+static const/*expr*/ uint32_t ERROR = 0xFFFDu;
 
 // Maximum values for UTF8 code points of length 1-4 bytes.
-static constexpr rune MAX_1BYTE_RUNE = 0x7Fu;     // 0000 0000  0000 0000  0111 1111
-static constexpr rune MAX_2BYTE_RUNE = 0x7FFu;    // 0000 0000  0000 0111  1111 1111
-static constexpr rune MAX_3BYTE_RUNE = 0xFFFFu;   // 0000 0000  1111 1111  1111 1111
-static constexpr rune MAX_4BYTE_RUNE = 0x1FFFFFu; // 0001 1111  1111 1111  1111 1111
+static const/*expr*/ rune MAX_1BYTE_RUNE = 0x7Fu;     // 0000 0000  0000 0000  0111 1111
+static const/*expr*/ rune MAX_2BYTE_RUNE = 0x7FFu;    // 0000 0000  0000 0111  1111 1111
+static const/*expr*/ rune MAX_3BYTE_RUNE = 0xFFFFu;   // 0000 0000  1111 1111  1111 1111
+static const/*expr*/ rune MAX_4BYTE_RUNE = 0x1FFFFFu; // 0001 1111  1111 1111  1111 1111
 
 // Maximum Unicode code point is U+10FFFF (it is less than the maximum 4-byte UTF8 code point).
-static constexpr rune MAX_RUNE = 0x10FFFFu;
+static const/*expr*/ rune MAX_RUNE = 0x10FFFFu;
 
-static constexpr uint32_t PREFIX_1BYTE = 0u;    // 0000 0000
-static constexpr uint32_t INFIX        = 0x80u; // 1000 0000
-static constexpr uint32_t PREFIX_2BYTE = 0xC0u; // 1100 0000
-static constexpr uint32_t PREFIX_3BYTE = 0xE0u; // 1110 0000
-static constexpr uint32_t PREFIX_4BYTE = 0xF0u; // 1111 0000
-static constexpr uint32_t PREFIX_5BYTE = 0xF8u; // 1111 1000
+static const/*expr*/ uint32_t PREFIX_1BYTE = 0u;    // 0000 0000
+static const/*expr*/ uint32_t INFIX        = 0x80u; // 1000 0000
+static const/*expr*/ uint32_t PREFIX_2BYTE = 0xC0u; // 1100 0000
+static const/*expr*/ uint32_t PREFIX_3BYTE = 0xE0u; // 1110 0000
+static const/*expr*/ uint32_t PREFIX_4BYTE = 0xF0u; // 1111 0000
+static const/*expr*/ uint32_t PREFIX_5BYTE = 0xF8u; // 1111 1000
 
-static constexpr uint32_t SHIFT = 6u;
-static constexpr uint32_t MASK = 0x3Fu; // 0011 1111
+static const/*expr*/ uint32_t SHIFT = 6u;
+static const/*expr*/ uint32_t MASK = 0x3Fu; // 0011 1111
 
 // UTF-8 bytestring for given Unicode code point.
 uint32_t rune_to_bytes(uint32_t* s, rune r);

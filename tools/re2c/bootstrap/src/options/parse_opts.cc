@@ -17,7 +17,7 @@ namespace re2c {
 
 static inline bool next(char*& arg, char**& argv) {
     arg = *++argv;
-    return arg != nullptr;
+    return arg != /*nullptr*/NULL;
 }
 
 LOCAL_NODISCARD(inline Ret set_source_file(conopt_t& global, const char* source)) {
@@ -5060,8 +5060,10 @@ end:
     }
 
     // Append directory separator '/' to all include paths that don't have it.
-    for (std::string& p : const_cast<std::vector<std::string>&>(global.include_paths)) {
-        const char c = p.empty() ? 0 : *p.rbegin();
+    auto& vec = const_cast<std::vector<std::string>&>(global.include_paths);
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        std::string& p = *it;
+        const char c = p.empty() ? (char)0 : *p.rbegin();
         if (c != '/' && c != '\\') {
             p.push_back('/');
         }
