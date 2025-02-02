@@ -23,7 +23,7 @@ endif()
 if(CMAKE_COMPILER_IS_GNUCC)
     set(re2c_flags ${re2c_flags}
         --case-ranges
-        --computed-gotos
+        #--computed-gotos
         )
 endif()
 
