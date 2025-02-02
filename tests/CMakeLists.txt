@@ -48,18 +48,32 @@ maybe_write_file("${testlist_h}" "{\n${includes}${code}}\n")
 
 enable_warnings()
 
+set(gen
+    "${CMAKE_CURRENT_BINARY_DIR}/conf.h"
+    ${gen}
+    )
+
 set(src
     main.c
     test.c
     tests.h
     util.c
+    conf-in.h
     )
 
 source_group("Source Files" FILES ${src} ${tests})
 source_group("Generated Files" FILES ${gen} "${testlist_h}")
 
+if(WIN32)
+    set(DIFF_EXE "${PROJECT_DIR}/_tools/gnuwin32/diff.exe")
+else()
+    unset(DIFF_EXE)
+endif()
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/conf-in.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/conf.h")
+
 add_executable(CompilerTests ${src} ${gen} ${tests} "${testlist_h}")
-target_include_directories(CompilerTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(CompilerTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(CompilerTests LuaParser FlyCompilerCore)
 set_target_properties(CompilerTests PROPERTIES
     FOLDER "Tests"

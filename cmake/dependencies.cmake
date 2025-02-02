@@ -1,4 +1,6 @@
 
+require_gnu_tools()
+
 build_host_tool(re2c
     DIRECTORY "${CURRENT_PROJECT_DIR}/tools/re2c"
     OPTIONS

@@ -127,8 +127,7 @@ bool compilerGetToken(Compiler* compiler)
     switch (compiler->lexer.state) {
         default:
             assert(false);
-            luaL_error(compiler->L, "invalid lexer state.");
-            return false;
+            return (bool)luaL_error(compiler->L, "invalid lexer state.");
 
         case LEXER_MULTILINE_COMMENT:
             emitComment = (compiler->lexer.curChar != END_MARKER);
@@ -177,6 +176,7 @@ bool compilerGetToken(Compiler* compiler)
 
             re2c:api = custom;
             re2c:api:style = free-form;
+            re2c:encoding:utf32 = 1;
             re2c:yyfill:enable = 0;
             re2c:define:YYCTYPE = uint32_t;
             re2c:define:YYPEEK = compiler->lexer.curChar;

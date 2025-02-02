@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "conf.h"
 
 static const char* g_testName;
 
@@ -29,18 +30,8 @@ static bool compare(lua_State* L, const char* expected, const char* actual)
             "###########################\n",
             g_testName);
         if (writeFile("expected", expected) && writeFile("actual", actual)) {
-          #ifdef _WIN32
-            char path[] = __FILE__, *p, *lastSlash = NULL;
-            const char* diff;
-            for (p = path; *p; ++p) {
-                if (*p == '/')
-                    *p = '\\';
-                if (*p == '\\')
-                    lastSlash = p;
-            }
-            if (lastSlash)
-                *lastSlash = 0;
-            diff = lua_pushfstring(L, "%s\\..\\..\\_tools\\gnuwin32\\diff.exe", path);
+          #ifdef DIFF_EXE
+            const char* diff = DIFF_EXE;
           #else
             const char* diff = "diff";
           #endif

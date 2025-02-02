@@ -789,7 +789,7 @@ static CodeList* gen_gocp(Output& output, const Adfa& dfa, const CodeGoCp* go, c
 
     if (go->hgo != /*nullptr*/NULL) {
         const char* cond =
-                buf.str(opts->var_char).cstr(" & ~0xFF").flush();
+                buf.str(opts->var_char).cstr(" & ~0xFFu").flush();
         CodeList* if_then = gen_goswif(output, dfa, go->hgo, from);
         append(stmts, code_if_then_else(alc, cond, if_then, if_else));
     } else {

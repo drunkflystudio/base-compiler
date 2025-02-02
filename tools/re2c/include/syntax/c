@@ -436,6 +436,6 @@ code:yylessthan =
             ? "(" YYLIMIT " - " YYCURSOR ") < " need
             : YYLIMIT " <= " YYCURSOR));
 
-code:yybm_filter = yych " & ~0xFF";
+code:yybm_filter = yych " & ~0xFFu";
 
 code:yybm_match = yybm "[" offset "+" yych "] & " mask;

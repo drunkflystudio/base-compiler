@@ -437,7 +437,7 @@ static /*constexpr*/ const char* DEFAULT_SYNTAX_C =
     "            ? \"(\" YYLIMIT \" - \" YYCURSOR \") < \" need\n"
     "            : YYLIMIT \" <= \" YYCURSOR));\n"
     "\n"
-    "code:yybm_filter = yych \" & ~0xFF\";\n"
+    "code:yybm_filter = yych \" & ~0xFFu\";\n"
     "\n"
     "code:yybm_match = yybm \"[\" offset \"+\" yych \"] & \" mask;\n"
     ;
