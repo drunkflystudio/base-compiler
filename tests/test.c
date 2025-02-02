@@ -2,6 +2,16 @@
 
 static const char* g_testName;
 
+struct SourceFile
+{
+    const char* name;
+};
+
+struct SourceLine
+{
+    int number;
+};
+
 static void pushTestName(lua_State* L)
 {
     lua_Debug ar;
@@ -12,17 +22,117 @@ static void pushTestName(lua_State* L)
     g_testName = lua_pushfstring(L, "%s(%d)", g_testFileName, line);
 }
 
+static bool compare(lua_State* L, const char* expected, const char* actual)
+{
+    if (strcmp(expected, actual) != 0) {
+        logPrintf("%s: TEST FAILURE!\n"
+            "###########################\n",
+            g_testName);
+        if (writeFile("expected", expected) && writeFile("actual", actual)) {
+          #ifdef _WIN32
+            char path[] = __FILE__, *p, *lastSlash = NULL;
+            const char* diff;
+            for (p = path; *p; ++p) {
+                if (*p == '/')
+                    *p = '\\';
+                if (*p == '\\')
+                    lastSlash = p;
+            }
+            if (lastSlash)
+                *lastSlash = 0;
+            diff = lua_pushfstring(L, "%s\\..\\..\\_tools\\gnuwin32\\diff.exe", path);
+          #else
+            const char* diff = "diff";
+          #endif
+            system(lua_pushfstring(L, "%s -u expected actual", diff));
+        }
+        logPrintf(
+            "################## EXPECTED\n%s"
+            "################## ACTUAL\n%s",
+            expected, actual);
+        return false;
+    }
+    return true;
+}
+
+static const char* pushHex(lua_State* L, uint_value_t value)
+{
+    char buf[64];
+    char* dst = buf + sizeof(buf);
+
+    *--dst = 0;
+
+    do {
+        *--dst = luastr_hex[1 + (value & 0xf)];
+        value >>= 4;
+    } while (value);
+
+    *--dst = 'x';
+    *--dst = '0';
+
+    return lua_pushstring(L, dst);
+}
+
 int test_lexer(lua_State* L)
 {
     const char* fileContents = luaL_checkstring(L, 1);
     const char* expected = replaceCRLF(L, luaL_checkstring(L, 2));
+    const char* actual;
+    SourceFile* file;
+    int lineNumber = 1;
 
     Compiler* compiler = compilerPushNew(L);
     pushTestName(L);
+    beginPrint(L);
 
-    UNUSED(compiler);
-    UNUSED(fileContents);
-    UNUSED(expected);
+    file = (SourceFile*)compilerTempAlloc(compiler, sizeof(SourceFile));
+    file->name = g_testName;
+
+    compiler->lexer.state = LEXER_NORMAL;
+
+    for (;;) {
+        const char* lineStart;
+        size_t lineLength;
+        bool eof = !compilerReadLine(&fileContents, &lineStart, &lineLength);
+
+        SourceLine* line = (SourceLine*)compilerTempAlloc(compiler, sizeof(SourceLine));
+        line->number = lineNumber++;
+
+        compilerBeginLine(compiler, file, line, lineStart, lineLength, compiler->lexer.state);
+
+        if (compiler->lexer.token.location.file != file)
+            return luaL_error(L, "invalid location file.");
+
+        while (compilerGetToken(compiler)) {
+            printF("(%d,%d-%d,%d): %s",
+                compiler->lexer.token.location.startLine->number,
+                compiler->lexer.token.location.startColumn,
+                compiler->lexer.token.location.endLine->number,
+                compiler->lexer.token.location.endColumn,
+                compiler->lexer.token.name);
+            if (compiler->lexer.token.text)
+                printF(" \"%s\"", compiler->lexer.token.text);
+            if (compiler->lexer.token.id == T_INTEGER_LITERAL) {
+                printF(" (%s)", pushHex(L, compiler->lexer.token.integer));
+                lua_pop(L, 1);
+            }
+            if (compiler->lexer.token.overflow)
+                printF(" <overflow>");
+            printC('\n');
+        }
+
+        if (eof) {
+            if (compiler->lexer.state == LEXER_MULTILINE_COMMENT)
+                printF("(%d,%d): unterminated comment\n", line->number, compiler->lexer.column);
+            printF("(%d,%d): <end of file>\n", line->number, compiler->lexer.column);
+            break;
+        }
+    }
+
+    actual = endPrint();
+
+    if (!compare(L, expected, actual))
+        return luaL_error(L, "Test failed.");
 
     return 0;
 }

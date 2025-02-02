@@ -70,3 +70,20 @@ void logPrintf(const char* fmt, ...)
 
     va_end(args);
 }
+
+bool writeFile(const char* name, const char* contents)
+{
+    FILE* f = fopen(name, "wb");
+    if (!f) {
+        fprintf(stderr, "error: can't write file \"%s\": %s", name, strerror(errno));
+        return false;
+    }
+    fwrite(contents, 1, strlen(contents), f);
+    if (ferror(f)) {
+        fclose(f);
+        fprintf(stderr, "error: can't write file \"%s\": %s", name, strerror(errno));
+        return false;
+    }
+    fclose(f);
+    return true;
+}

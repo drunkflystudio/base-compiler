@@ -7,7 +7,6 @@
 #include "y.tab.h"
 
 typedef uint32_t uint_value_t;
-typedef unsigned long uint_value_fmt;
 #define UINT_VALUE_FMT "%" PRINTF_INT32_MODIFIER "u"
 
 struct CompilerToken {
