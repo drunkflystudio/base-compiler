@@ -74,7 +74,7 @@ static void compilerReadChar(Compiler* compiler)
         }
     } else {
         /* FIXME: implement UTF-8 */
-        compiler->lexer.curChar = *compiler->lexer.cursor++;
+        compiler->lexer.curChar = (uint32_t)*compiler->lexer.cursor++;
         ++compiler->lexer.column;
     }
 }
