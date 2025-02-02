@@ -1,4 +1,4 @@
-#include <drunkfly/compiler/lexer.h>
+#include <drunkfly/compiler/private.h>
 #include <drunkfly/compiler/arena.h>
 #include <assert.h>
 #include <lauxlib.h>
@@ -33,14 +33,14 @@ static unsigned int digitToNumber(char ch, bool* error)
     return 0;
 }
 
-void compilerInitLexer(CompilerLexer* lexer, SourceFile* file, SourceLine* line, const char* text, int state)
+void compilerInitLexer(Compiler* compiler, SourceFile* file, SourceLine* line, const char* text, int state)
 {
-    lexer->token.location.file = file;
-    lexer->token.location.startLine = line;
-    lexer->token.location.endLine = line;
-    lexer->start = text;
-    lexer->cursor = text;
-    lexer->state = state;
+    compiler->lexer.token.location.file = file;
+    compiler->lexer.token.location.startLine = line;
+    compiler->lexer.token.location.endLine = line;
+    compiler->lexer.start = text;
+    compiler->lexer.cursor = text;
+    compiler->lexer.state = state;
 }
 
 #if defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))
@@ -53,79 +53,79 @@ void compilerInitLexer(CompilerLexer* lexer, SourceFile* file, SourceLine* line,
 # endif
 #endif
 
-bool compilerGetToken(Compiler* compiler, lua_State* L, CompilerLexer* lexer)
+bool compilerGetToken(Compiler* compiler)
 {
     const char* tokenStart;
     bool emitComment;
 
     #define EMIT(NAME, TEXT) \
-        (lexer->token.id = (short)T_##NAME, \
-         lexer->token.location.endColumn = (int)(lexer->cursor - lexer->start), \
-         lexer->token.name = "'" TEXT "'", \
+        (compiler->lexer.token.id = (short)T_##NAME, \
+         compiler->lexer.token.location.endColumn = (int)(compiler->lexer.cursor - compiler->lexer.start), \
+         compiler->lexer.token.name = "'" TEXT "'", \
          true)
     #define EMIT_SPECIAL(NAME, TEXT) \
-        (lexer->token.id = (short)T_##NAME, \
-         lexer->token.location.endColumn = (int)(lexer->cursor - lexer->start), \
-         lexer->token.name = TEXT, \
+        (compiler->lexer.token.id = (short)T_##NAME, \
+         compiler->lexer.token.location.endColumn = (int)(compiler->lexer.cursor - compiler->lexer.start), \
+         compiler->lexer.token.name = TEXT, \
          true)
     #define EMIT_KEYWORD(NAME) \
-        (lexer->token.id = (short)KW_##NAME, \
-         lexer->token.location.endColumn = (int)(lexer->cursor - lexer->start), \
-         lexer->token.name = "'" #NAME "'", \
+        (compiler->lexer.token.id = (short)KW_##NAME, \
+         compiler->lexer.token.location.endColumn = (int)(compiler->lexer.cursor - compiler->lexer.start), \
+         compiler->lexer.token.name = "'" #NAME "'", \
          true)
 
-    switch (lexer->state) {
+    switch (compiler->lexer.state) {
         default:
             assert(false);
-            luaL_error(L, "invalid lexer state.");
+            luaL_error(compiler->L, "invalid lexer state.");
             return false;
 
         case MULTILINE_COMMENT:
-            emitComment = (*lexer->cursor != 0);
-            lexer->token.integer = 0;
-            lexer->token.text = NULL;
-            lexer->token.location.startColumn = (int)(lexer->cursor - lexer->start);
+            emitComment = (*compiler->lexer.cursor != 0);
+            compiler->lexer.token.integer = 0;
+            compiler->lexer.token.text = NULL;
+            compiler->lexer.token.location.startColumn = (int)(compiler->lexer.cursor - compiler->lexer.start);
           multiline_comment:
             for (;;) {
                 /* End of line or file */
-                if (*lexer->cursor == 0) {
+                if (*compiler->lexer.cursor == 0) {
                     if (emitComment)
                         return EMIT_SPECIAL(MULTI_LINE_COMMENT, "comment");
                     return false;
                 }
 
                 /* End of comment */
-                if (lexer->cursor[0] == '*' && lexer->cursor[1] == '/') {
-                    lexer->cursor += 2;
-                    lexer->state = NORMAL;
+                if (compiler->lexer.cursor[0] == '*' && compiler->lexer.cursor[1] == '/') {
+                    compiler->lexer.cursor += 2;
+                    compiler->lexer.state = NORMAL;
                     return EMIT_SPECIAL(MULTI_LINE_COMMENT, "comment");
                 }
 
-                ++lexer->cursor;
+                ++compiler->lexer.cursor;
             }
 
         case NORMAL:
         normal:
-            lexer->token.integer = 0;
-            lexer->token.text = NULL;
-            lexer->token.location.startColumn = (int)(lexer->cursor - lexer->start);
-            lexer->token.overflow = false;
-            tokenStart = lexer->cursor;
+            compiler->lexer.token.integer = 0;
+            compiler->lexer.token.text = NULL;
+            compiler->lexer.token.location.startColumn = (int)(compiler->lexer.cursor - compiler->lexer.start);
+            compiler->lexer.token.overflow = false;
+            tokenStart = compiler->lexer.cursor;
 
             /*!re2c
 
             re2c:yyfill:enable = 0;
-            re2c:define:YYCURSOR = lexer->cursor;
+            re2c:define:YYCURSOR = compiler->lexer.cursor;
             re2c:define:YYCTYPE = char;
 
             "\x00"                      { return false; }
             [ \t\v\f]                   { goto normal; }
 
-            "//"                        { while (*lexer->cursor)
-                                              ++lexer->cursor;
+            "//"                        { while (*compiler->lexer.cursor)
+                                              ++compiler->lexer.cursor;
                                           return EMIT_SPECIAL(SINGLE_LINE_COMMENT, "comment");
                                         }
-            "/*"                        { lexer->state = MULTILINE_COMMENT;
+            "/*"                        { compiler->lexer.state = MULTILINE_COMMENT;
                                           emitComment = true;
                                           goto multiline_comment;
                                         }
@@ -229,8 +229,8 @@ bool compilerGetToken(Compiler* compiler, lua_State* L, CompilerLexer* lexer)
             ","                         { return EMIT(COMMA, ","); }
             "@"                         { return EMIT(ATSIGN, "@"); }
 
-            [a-zA-Z_][a-zA-Z0-9_]*      { size_t len = (size_t)(lexer->cursor - tokenStart);
-                                          lexer->token.text = compilerTempDupStrN(compiler, tokenStart, len);
+            [a-zA-Z_][a-zA-Z0-9_]*      { size_t len = (size_t)(compiler->lexer.cursor - tokenStart);
+                                          compiler->lexer.token.text = compilerTempDupStrN(compiler, tokenStart, len);
                                           return EMIT_SPECIAL(IDENTIFIER, "identifier");
                                         }
 
@@ -246,12 +246,12 @@ bool compilerGetToken(Compiler* compiler, lua_State* L, CompilerLexer* lexer)
                                               if (value < old)
                                                   overflow = true;
                                               value |= digit;
-                                          } while (p != lexer->cursor);
+                                          } while (p != compiler->lexer.cursor);
                                           if (overflow)
-                                              lexer->token.overflow = true;
+                                              compiler->lexer.token.overflow = true;
                                           if (error)
                                               return EMIT_SPECIAL(INVALID_BINARY_LITERAL, "binary constant");
-                                          lexer->token.integer = value;
+                                          compiler->lexer.token.integer = value;
                                           return EMIT_SPECIAL(INTEGER_LITERAL, "binary constant");
                                         }
 
@@ -267,12 +267,12 @@ bool compilerGetToken(Compiler* compiler, lua_State* L, CompilerLexer* lexer)
                                               if (value < old)
                                                   overflow = true;
                                               value |= digit;
-                                          } while (p != lexer->cursor);
+                                          } while (p != compiler->lexer.cursor);
                                           if (overflow)
-                                              lexer->token.overflow = true;
+                                              compiler->lexer.token.overflow = true;
                                           if (error)
                                               return EMIT_SPECIAL(INVALID_OCTAL_LITERAL, "octal constant");
-                                          lexer->token.integer = value;
+                                          compiler->lexer.token.integer = value;
                                           return EMIT_SPECIAL(INTEGER_LITERAL, "octal constant");
                                         }
 
@@ -285,12 +285,12 @@ bool compilerGetToken(Compiler* compiler, lua_State* L, CompilerLexer* lexer)
                                               if (value < old)
                                                   overflow = true;
                                               value |= digitToNumber(*p++, &error);
-                                          } while (p != lexer->cursor);
+                                          } while (p != compiler->lexer.cursor);
                                           if (overflow)
-                                              lexer->token.overflow = true;
+                                              compiler->lexer.token.overflow = true;
                                           if (error)
                                               return EMIT_SPECIAL(INVALID_HEXADECIMAL_LITERAL, "hexadecimal constant");
-                                          lexer->token.integer = value;
+                                          compiler->lexer.token.integer = value;
                                           return EMIT_SPECIAL(INTEGER_LITERAL, "hexadecimal constant");
                                         }
 
@@ -306,12 +306,12 @@ bool compilerGetToken(Compiler* compiler, lua_State* L, CompilerLexer* lexer)
                                               if (value < old)
                                                   overflow = true;
                                               value += digit;
-                                          } while (p != lexer->cursor);
+                                          } while (p != compiler->lexer.cursor);
                                           if (overflow)
-                                              lexer->token.overflow = true;
+                                              compiler->lexer.token.overflow = true;
                                           if (error)
                                               return EMIT_SPECIAL(INVALID_DECIMAL_LITERAL, "decimal constant");
-                                          lexer->token.integer = value;
+                                          compiler->lexer.token.integer = value;
                                           return EMIT_SPECIAL(INTEGER_LITERAL, "decimal constant");
                                         }
 

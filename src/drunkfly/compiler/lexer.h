@@ -11,7 +11,7 @@ STRUCT(CompilerLexer)
     int state;
 };
 
-void compilerInitLexer(CompilerLexer* lexer, SourceFile* file, SourceLine* line, const char* text, int state);
-bool compilerGetToken(Compiler* compiler, lua_State* L, CompilerLexer* lexer);
+void compilerInitLexer(Compiler* compiler, SourceFile* file, SourceLine* line, const char* text, int state);
+bool compilerGetToken(Compiler* compiler);
 
 #endif

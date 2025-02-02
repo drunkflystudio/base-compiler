@@ -36,6 +36,7 @@ Compiler* compilerPushNew(lua_State* L)
 
     compiler->arenas = NULL;
     compiler->largeBlocks = NULL;
+    compiler->L = L;
 
     return compiler;
 }
