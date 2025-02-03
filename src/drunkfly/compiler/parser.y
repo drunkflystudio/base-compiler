@@ -83,7 +83,7 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %token <token> T_IDENTIFIER
 %token <token> T_INTEGER_LITERAL
 %token <token> T_DOT
-%token <token> T_2xDOT
+%token <token> T_DBLDOT
 %token <token> T_LBRACKET
 %token <token> T_RBRACKET
 %token <token> T_INCR
@@ -109,8 +109,8 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %token <token> T_NOT_EQUAL
 %token <token> T_CARET
 %token <token> T_VBAR
-%token <token> T_2xAMPERSAND
-%token <token> T_2xVBAR
+%token <token> T_DBLAMPERSAND
+%token <token> T_DBLVBAR
 %token <token> T_QUESTION
 %token <token> T_COLON
 %token <token> T_ASSIGN
@@ -271,12 +271,12 @@ inclusive_or_expression
 
 logical_and_expression
     : inclusive_or_expression { $$ = $1; }
-    | logical_and_expression T_2xAMPERSAND inclusive_or_expression { $$ = CB.exprLogicAnd(UD, merge(@1, @3), $1, $3); }
+    | logical_and_expression T_DBLAMPERSAND inclusive_or_expression { $$ = CB.exprLogicAnd(UD, merge(@1, @3), $1, $3); }
     ;
 
 logical_or_expression
     : logical_and_expression { $$ = $1; }
-    | logical_or_expression T_2xVBAR logical_and_expression { $$ = CB.exprLogicOr(UD, merge(@1, @3), $1, $3); }
+    | logical_or_expression T_DBLVBAR logical_and_expression { $$ = CB.exprLogicOr(UD, merge(@1, @3), $1, $3); }
     ;
 
 conditional_expression
@@ -373,7 +373,7 @@ statement_list_switch
     : /* empty */
     | statement_list_switch KW_default T_COLON { CB.stmtSwitchDefault(UD, &@2); }
     | statement_list_switch KW_case expression T_COLON { CB.stmtSwitchCase(UD, &@2, $3); }
-    | statement_list_switch KW_case expression T_2xDOT expression T_COLON { CB.stmtSwitchCaseRange(UD, &@2, $3, $5); }
+    | statement_list_switch KW_case expression T_DBLDOT expression T_COLON { CB.stmtSwitchCaseRange(UD, &@2, $3, $5); }
     | statement_list_switch statement
     ;
 
