@@ -35,7 +35,8 @@ static bool compare(lua_State* L, const char* expected, const char* actual)
           #else
             const char* diff = "diff";
           #endif
-            system(lua_pushfstring(L, "%s -u expected actual", diff));
+            int r = system(lua_pushfstring(L, "%s -u expected actual", diff));
+            (void)r; /* silence compiler warning of unused system() return value */
         }
         logPrintf(
             "################## EXPECTED\n%s"
