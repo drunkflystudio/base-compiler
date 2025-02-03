@@ -40,3 +40,43 @@ Compiler* compilerPushNew(lua_State* L)
 
     return compiler;
 }
+
+CompilerLocation* compilerMergeLocationsInto(Compiler* compiler,
+    CompilerLocation* dst, const CompilerLocation* loc1, const CompilerLocation* loc2)
+{
+    if (!loc1 || !loc1->file) {
+        if (loc2 && loc2->file) {
+            *dst = *loc2;
+            return dst;
+        }
+
+        dst->file = NULL;
+        dst->startLine = NULL;
+        dst->endLine = NULL;
+        dst->startColumn = 0;
+        dst->endColumn = 0;
+        return dst;
+    }
+
+    if (!loc2 || !loc2->file) {
+        *dst = *loc1;
+        return dst;
+    }
+
+    if (loc1->file != loc2->file)
+        luaL_error(compiler->L, "attempted to merge locations from different files.");
+
+    dst->file = loc1->file;
+    dst->startLine = loc1->startLine;
+    dst->endLine = loc2->endLine;
+    dst->startColumn = loc1->startColumn;
+    dst->endColumn = loc2->endColumn;
+
+    return dst;
+}
+
+CompilerLocation* compilerMergeLocations(Compiler* compiler, const CompilerLocation* lo1, const CompilerLocation* lo2)
+{
+    CompilerLocation* result = (CompilerLocation*)compilerTempAlloc(compiler, sizeof(CompilerLocation));
+    return compilerMergeLocationsInto(compiler, result, lo1, lo2);
+}

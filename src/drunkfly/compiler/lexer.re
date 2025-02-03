@@ -246,7 +246,7 @@ bool compilerGetToken(Compiler* compiler)
             "word"                      { return EMIT_KEYWORD(word); }
 
             "."                         { return EMIT(DOT, "."); }
-            ".."                        { return EMIT(DOUBLE_DOT, ".."); }
+            ".."                        { return EMIT(2xDOT, ".."); }
             "["                         { return EMIT(LBRACKET, "["); }
             "]"                         { return EMIT(RBRACKET, "]"); }
             "++"                        { return EMIT(INCR, "++"); }
@@ -272,8 +272,8 @@ bool compilerGetToken(Compiler* compiler)
             "!="                        { return EMIT(NOT_EQUAL, "!="); }
             "^"                         { return EMIT(CARET, "^"); }
             "|"                         { return EMIT(VBAR, "|"); }
-            "&&"                        { return EMIT(DOUBLE_AMPERSAND, "&&"); }
-            "||"                        { return EMIT(DOUBLE_VBAR, "||"); }
+            "&&"                        { return EMIT(2xAMPERSAND, "&&"); }
+            "||"                        { return EMIT(2xVBAR, "||"); }
             "?"                         { return EMIT(QUESTION, "?"); }
             ":"                         { return EMIT(COLON, ":"); }
             "="                         { return EMIT(ASSIGN, "="); }
