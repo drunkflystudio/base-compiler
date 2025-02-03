@@ -297,6 +297,7 @@ bool compilerGetToken(Compiler* compiler)
                                           return EMIT_SPECIAL(IDENTIFIER, "identifier");
                                         }
 
+            "0b"                        { return EMIT_SPECIAL(INVALID_BINARY_LITERAL, "invalid binary constant"); }
             "0b" [0-9a-zA-Z_]+          { uint_value_t value = 0, old;
                                           const char* p = tokenStart + 2;
                                           bool error = false, overflow = false;
@@ -318,6 +319,7 @@ bool compilerGetToken(Compiler* compiler)
                                           return EMIT_SPECIAL(INTEGER_LITERAL, "binary constant");
                                         }
 
+            "0o"                        { return EMIT_SPECIAL(INVALID_OCTAL_LITERAL, "invalid octal constant"); }
             "0o" [0-9a-zA-Z_]+          { uint_value_t value = 0, old;
                                           const char* p = tokenStart + 2;
                                           bool error = false, overflow = false;
@@ -339,6 +341,9 @@ bool compilerGetToken(Compiler* compiler)
                                           return EMIT_SPECIAL(INTEGER_LITERAL, "octal constant");
                                         }
 
+            "0x"                        { return EMIT_SPECIAL(
+                                              INVALID_HEXADECIMAL_LITERAL, "invalid hexadecimal constant");
+                                        }
             "0x" [0-9a-zA-Z_]+          { uint_value_t value = 0, old;
                                           const char* p = tokenStart + 2;
                                           bool error = false, overflow = false;
@@ -368,9 +373,9 @@ bool compilerGetToken(Compiler* compiler)
                                                   error = true;
                                               old = value;
                                               value *= 10;
+                                              value += digit;
                                               if (value < old)
                                                   overflow = true;
-                                              value += digit;
                                           } while (p != compiler->lexer.cursor);
                                           if (overflow)
                                               compiler->lexer.token.overflow = true;

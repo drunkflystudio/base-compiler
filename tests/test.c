@@ -92,8 +92,10 @@ int test_lexer(lua_State* L)
 
         compilerBeginLine(compiler, file, line, lineStart, lineLength, compiler->lexer.state);
 
-        if (compiler->lexer.token.location.file != file)
-            return luaL_error(L, "invalid location file.");
+        if (compiler->lexer.token.location.file != file) {
+            logPrintf("%s: TEST FAILURE: invalid file in token location.\n", g_testName);
+            ++g_testFailCount;
+        }
 
         while (compilerGetToken(compiler)) {
             printF("(%d,%d-%d,%d): %s",
@@ -124,7 +126,9 @@ int test_lexer(lua_State* L)
     actual = endPrint();
 
     if (!compare(L, expected, actual))
-        return luaL_error(L, "Test failed.");
+        ++g_testFailCount;
+    else
+        ++g_testSuccessCount;
 
     return 0;
 }

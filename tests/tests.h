@@ -13,6 +13,7 @@
 
 extern const char* g_testFileName;
 extern int g_testFailCount;
+extern int g_testSuccessCount;
 
 /* test.c */
 

@@ -10,7 +10,10 @@ endif()
 
 set(tests
     l_main.lua
-    l_octal.lua
+    l_num1.lua
+    l_num8.lua
+    l_num10.lua
+    l_num16.lua
     )
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")

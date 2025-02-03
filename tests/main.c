@@ -6,6 +6,7 @@
 lua_State* g_L;
 const char* g_testFileName;
 int g_testFailCount;
+int g_testSuccessCount;
 
 static void printMessage(VMMSGTYPE type, const char* message)
 {
@@ -53,7 +54,7 @@ static int runTests(lua_State* L)
     #include "testlist.h"
 
     if (g_testFailCount == 0) {
-        logPrintf("=== COMPILER TESTS SUCCEEDED ===\n");
+        logPrintf("=== %d COMPILER TEST%s SUCCEEDED ===\n", g_testSuccessCount, (g_testSuccessCount == 1 ? "" : "S"));
         lua_pushboolean(L, 1);
     } else {
         logPrintf("=== %d COMPILER TEST%s FAILED ===\n", g_testFailCount, (g_testFailCount == 1 ? "" : "S"));

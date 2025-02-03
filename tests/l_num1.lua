@@ -1,5 +1,12 @@
 
 test_lexer([[
+0b
+]], [[
+(1,1-1,2): invalid binary constant
+(2,1): <end of file>
+]])
+
+test_lexer([[
 0b0
 0b1
 0b00
