@@ -14,6 +14,7 @@ set(tests
     l_num8.lua
     l_num10.lua
     l_num16.lua
+    p_class.lua
     )
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")

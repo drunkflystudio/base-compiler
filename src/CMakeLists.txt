@@ -43,6 +43,8 @@ set(parser_y "${CMAKE_CURRENT_SOURCE_DIR}/drunkfly/compiler/parser.y")
 set(parser_c "${CMAKE_CURRENT_BINARY_DIR}/y.tab.c")
 set(parser_h "${CMAKE_CURRENT_BINARY_DIR}/y.tab.h")
 
+set(push_skel "${CMAKE_CURRENT_SOURCE_DIR}/../tools/btyacc/push.skel")
+
 add_custom_command(OUTPUT "${parser_c}" "${parser_h}"
     COMMAND "${HOST_BTYACC}" -d -y "${parser_y}"
     DEPENDS "${parser_y}" "${HOST_BTYACC}"
