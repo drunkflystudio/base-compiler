@@ -56,6 +56,7 @@ add_custom_command(OUTPUT "${parser_c}" "${parser_h}"
 set(src_compiler
     drunkfly/compiler/arena.c
     drunkfly/compiler/arena.h
+    drunkfly/compiler/codegen.h
     drunkfly/compiler/lexer.h
     drunkfly/compiler/lexer.re
     drunkfly/compiler/parser.ske
@@ -86,6 +87,18 @@ target_link_libraries(FlyCompilerCore PUBLIC FlyCommon)
 
 ######################################################################################################################
 
+set(src_compiler
+    drunkfly/compiler/g_boot_c.c
+    )
+
+source_group("Source Files\\drunkfly\\compiler" FILES ${src_compiler})
+add_library(FlyCompilerBackendBootstrap STATIC ${src_compiler})
+
+set_target_properties(FlyCompilerBackendBootstrap PROPERTIES FOLDER "Libs")
+target_link_libraries(FlyCompilerBackendBootstrap PUBLIC FlyCompilerCore)
+
+######################################################################################################################
+
 set(src
     main.c
     )
@@ -93,5 +106,5 @@ set(src
 source_group("Source Files" FILES ${src})
 add_executable(FlyCompiler ${src})
 set_target_properties(FlyCompiler PROPERTIES FOLDER "Tools")
-target_link_libraries(FlyCompiler PUBLIC FlyCompilerCore)
+target_link_libraries(FlyCompiler PUBLIC FlyCompilerCore FlyCompilerBackendBootstrap)
 add_dependencies(FlyCompiler RunCompilerTests)

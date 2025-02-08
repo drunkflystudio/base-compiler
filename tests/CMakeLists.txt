@@ -84,7 +84,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/conf-in.h"
 
 add_executable(CompilerTests ${src} ${gen} ${tests} "${testlist_h}")
 target_include_directories(CompilerTests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}")
-target_link_libraries(CompilerTests LuaParser FlyCompilerCore)
+target_link_libraries(CompilerTests LuaParser FlyCompilerCore FlyCompilerBackendBootstrap)
 set_target_properties(CompilerTests PROPERTIES
     FOLDER "Tests"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/.."
