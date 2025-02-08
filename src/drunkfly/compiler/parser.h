@@ -99,7 +99,7 @@ STRUCT(CompilerParserCallbacks)
     CompilerExpr* (*exprTrue)(void* ud, LOC(loc));
     CompilerExpr* (*exprIdentifier)(void* ud, LOC(loc), const char* name);
     CompilerExpr* (*exprInteger)(void* ud, LOC(loc), uint_value_t value);
-    CompilerExpr* (*exprParentheses)(void* ud, LOC(loc), EXPR(expr));
+    CompilerExpr* (*exprParentheses)(void* ud, LOC(loc), EXPR(operand));
     void          (*exprNewBegin)(void* ud, LOC(loc), TYPE(type));
     CompilerExpr* (*exprNewEnd_Struct)(void* ud, LOC(loc));
     CompilerExpr* (*exprNewEnd_Array)(void* ud, LOC(loc), EXPR(size));

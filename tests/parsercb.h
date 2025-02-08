@@ -25,6 +25,15 @@ typedef enum EnumID {
     EXPR_TRUE,
     EXPR_IDENTIFIER,
     EXPR_INTEGER,
+    EXPR_PARENTHESES,
+    EXPR_SUBSCRIPT,
+    EXPR_MEMBER,
+    EXPR_POSTFIX_INCR,
+    EXPR_POSTFIX_DECR,
+    EXPR_PREFIX_INCR,
+    EXPR_PREFIX_DECR,
+    EXPR_TAKE_ADDRESS,
+    EXPR_DEREF,
 } EnumID;
 
 struct CompilerExpr
@@ -33,6 +42,11 @@ struct CompilerExpr
     CompilerLocation loc;
     const char* identifier;
     uint_value_t integer;
+    CompilerExpr* operand;
+    CompilerExpr* array;
+    CompilerExpr* index;
+    CompilerExpr* op1;
+    CompilerExpr* op2;
 };
 
 /*==================================================================================================================*/
@@ -96,13 +110,28 @@ static bool isEnd(const char* str)
 
 static void printExpr(lua_State* L, CompilerExpr* expr)
 {
+    #define _(STRING) lua_pushliteral(L, STRING)
+    #define E(MEMBER) printExpr(L, expr->MEMBER)
+
     switch (expr->what) {
-        case EXPR_NULL: lua_pushliteral(L, "null"); return;
-        case EXPR_FALSE: lua_pushliteral(L, "false"); return;
-        case EXPR_TRUE: lua_pushliteral(L, "true"); return;
+        case EXPR_NULL: _("null"); return;
+        case EXPR_FALSE: _("false"); return;
+        case EXPR_TRUE: _("true"); return;
         case EXPR_IDENTIFIER: lua_pushstring(L, expr->identifier); return;
         case EXPR_INTEGER: pushHex(L, expr->integer); return;
+        case EXPR_PARENTHESES: _("("); E(operand); _(")"); return;
+        case EXPR_SUBSCRIPT: E(array); _("["); E(index); _("]"); return;
+        case EXPR_MEMBER: E(operand); _("."); lua_pushstring(L, expr->identifier); return;
+        case EXPR_POSTFIX_INCR: E(operand); _("++"); return;
+        case EXPR_POSTFIX_DECR: E(operand); _("--"); return;
+        case EXPR_PREFIX_INCR: _("++"); E(operand); return;
+        case EXPR_PREFIX_DECR: _("--"); E(operand); return;
+        case EXPR_TAKE_ADDRESS: _("&"); E(operand); return;
+        case EXPR_DEREF: _("*"); E(operand); return;
     }
+
+    #undef E
+    #undef _
 
     logPrintf("%s: TEST FAILURE: invalid expression.\n", g_testName);
     ++g_testFailCount;
@@ -931,9 +960,18 @@ static CompilerExpr* exprInteger(void* ud, const CompilerLocation* loc, uint_val
     return e;
 }
 
-static CompilerExpr* exprParentheses(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
+static CompilerExpr* exprParentheses(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprParentheses)
+            LOC(loc)
+            EXPR(operand)
+        END
+    }
+
+    CompilerExpr* e = expr(ud, loc, EXPR_PARENTHESES);
+    e->operand = operand;
+    return e;
 }
 
 static void exprNewBegin(void* ud, const CompilerLocation* loc, CompilerType* type)
@@ -969,43 +1007,120 @@ static CompilerExpr* exprMethodCallEnd(void* ud, const CompilerLocation* loc)
 
 static CompilerExpr* exprSubscript(void* ud, const CompilerLocation* loc, CompilerExpr* arr, CompilerExpr* idx)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprSubscript)
+            LOC(loc)
+            EXPR(arr)
+            EXPR(idx)
+        END
+    }
+
+    CompilerExpr* e = expr(ud, loc, EXPR_SUBSCRIPT);
+    e->array = arr;
+    e->index = idx;
+    return e;
 }
 
 static CompilerExpr* exprMember(void* ud,
     const CompilerLocation* loc, CompilerExpr* target, const CompilerLocation* nameLoc, const char* name)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprMember)
+            LOC(loc)
+            EXPR(target)
+            LOC(nameLoc)
+            STR(name)
+        END
+    }
+
+    CompilerExpr* e = expr(ud, loc, EXPR_MEMBER);
+    e->operand = target;
+    e->identifier = name;
+    return e;
 }
 
 static CompilerExpr* exprPostfixIncr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprPostfixIncr)
+            LOC(loc)
+            EXPR(operand)
+        END
+    }
+
+    CompilerExpr* e = expr(ud, loc, EXPR_POSTFIX_INCR);
+    e->operand = operand;
+    return e;
 }
 
 static CompilerExpr* exprPostfixDecr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprPostfixDecr)
+            LOC(loc)
+            EXPR(operand)
+        END
+    }
+
+    CompilerExpr* e = expr(ud, loc, EXPR_POSTFIX_DECR);
+    e->operand = operand;
+    return e;
 }
 
 static CompilerExpr* exprPrefixIncr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprPrefixIncr)
+            LOC(loc)
+            EXPR(operand)
+        END
+    }
+
+    CompilerExpr* e = expr(ud, loc, EXPR_PREFIX_INCR);
+    e->operand = operand;
+    return e;
 }
 
 static CompilerExpr* exprPrefixDecr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprPrefixDecr)
+            LOC(loc)
+            EXPR(operand)
+        END
+    }
+
+    CompilerExpr* e = expr(ud, loc, EXPR_PREFIX_DECR);
+    e->operand = operand;
+    return e;
 }
 
 static CompilerExpr* exprTakeAddress(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprTakeAddress)
+            LOC(loc)
+            EXPR(operand)
+        END
+    }
+
+    CompilerExpr* e = expr(ud, loc, EXPR_TAKE_ADDRESS);
+    e->operand = operand;
+    return e;
 }
 
 static CompilerExpr* exprDeref(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprDeref)
+            LOC(loc)
+            EXPR(operand)
+        END
+    }
+
+    CompilerExpr* e = expr(ud, loc, EXPR_DEREF);
+    e->operand = operand;
+    return e;
 }
 
 static CompilerExpr* exprUnaryPlus(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
