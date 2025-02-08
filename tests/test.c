@@ -157,6 +157,18 @@ static ParserTestMode g_parseMode;
 
 #include "parsercb.h"
 
+static int mystrcmp(const char* input, const char* pattern)
+{
+    for (;;) {
+        if (*pattern != *input && *pattern != '?')
+            return -1;
+        if (*pattern == 0 || *input == 0)
+            return 0;
+        ++input;
+        ++pattern;
+    }
+}
+
 int test_parser(lua_State* L, ParserTestMode mode)
 {
     const char* fileContents = luaL_checkstring(L, 1);
@@ -252,12 +264,12 @@ int test_parser(lua_State* L, ParserTestMode mode)
 
     if (g_parseMode == PARSE_STMT) {
         static const char prefix[] = "stmtCompoundBegin loc:(1,22-1,22)\n";
-        static const char suffix[] = "stmtCompoundEnd loc:(3,1-3,1)\n";
+        static const char suffix[] = "stmtCompoundEnd loc:(?,1-?,1)\n";
         size_t len;
         if (!strncmp(actual, prefix, sizeof(prefix) - 1))
             actual += sizeof(prefix) - 1;
         len = strlen(actual);
-        if (len >= sizeof(suffix) - 1 && !strcmp(actual + len - sizeof(suffix) + 1, suffix))
+        if (len >= sizeof(suffix) - 1 && !mystrcmp(actual + len - sizeof(suffix) + 1, suffix))
             actual = lua_pushlstring(L, actual, len - sizeof(suffix) + 1);
     }
 

@@ -116,6 +116,8 @@ static bool isEnd(const char* str)
     return len > 3 && !strcmp(str + len - 3, "End");
 }
 
+#endif /* NDEBUG */
+
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 #define ASSERT_NAME_IS(NAME) assert(!strcmp(__func__, NAME))
 #elif defined(_MSC_VER) || (defined(__GNUC__) && __GNUC__ >= 2)
@@ -123,8 +125,6 @@ static bool isEnd(const char* str)
 #else
 #define ASSERT_NAME_IS(NAME) ((void)0)
 #endif
-
-#endif /* NDEBUG */
 
 /*==================================================================================================================*/
 
@@ -1917,114 +1917,199 @@ static void stmtCompoundEnd(void* ud, const CompilerLocation* loc)
 
 static void stmtIfBegin(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtIfBegin)
+        LOC(loc)
+    END
 }
 
 static void stmtIfThen(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
 {
+    FRAG(stmtIfThen)
+        LOC(loc)
+        EXPR(expr)
+    END
 }
 
 static void stmtIfElse(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtIfElse)
+        LOC(loc)
+    END
 }
 
 static void stmtIfEnd(void* ud)
 {
+    FRAG(stmtIfEnd)
+    END
 }
 
 static void stmtWhileBegin(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtWhileBegin)
+        LOC(loc)
+    END
 }
 
 static void stmtWhileDo(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
 {
+    FRAG(stmtWhileDo)
+        LOC(loc)
+        EXPR(expr)
+    END
 }
 
 static void stmtWhileEnd(void* ud)
 {
+    FRAG(stmtWhileEnd)
+    END
 }
 
 static void stmtDoBegin(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtDoBegin)
+        LOC(loc)
+    END
 }
 
 static void stmtDoEnd(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
 {
+    FRAG(stmtDoEnd)
+        LOC(loc)
+        EXPR(expr)
+    END
 }
 
 static void stmtForBegin(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtForBegin)
+        LOC(loc)
+    END
 }
 
 static void stmtForInit(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
 {
+    FRAG(stmtForInit)
+        LOC(loc)
+        EXPR(expr)
+    END
 }
 
 static void stmtForCondition(void* ud, CompilerExpr* expr)
 {
+    FRAG(stmtForCondition)
+        EXPR(expr)
+    END
 }
 
 static void stmtForUpdate(void* ud, CompilerExpr* expr)
 {
+    FRAG(stmtForUpdate)
+        EXPR(expr)
+    END
 }
 
 static void stmtForDo(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtForDo)
+        LOC(loc)
+    END
 }
 
 static void stmtForEnd(void* ud)
 {
+    FRAG(stmtForEnd)
+    END
 }
 
 static void stmtSwitchBegin(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtSwitchBegin)
+        LOC(loc)
+    END
 }
 
 static void stmtSwitchOperand(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
 {
+    FRAG(stmtSwitchOperand)
+        LOC(loc)
+        EXPR(expr)
+    END
 }
 
 static void stmtSwitchCase(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
 {
+    FRAG(stmtSwitchCase)
+        LOC(loc)
+        EXPR(expr)
+    END
 }
 
 static void stmtSwitchCaseRange(void* ud, const CompilerLocation* loc, CompilerExpr* start, CompilerExpr* end)
 {
+    FRAG(stmtSwitchCaseRange)
+        LOC(loc)
+        EXPR(start)
+        EXPR(end)
+    END
 }
 
 static void stmtSwitchDefault(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtSwitchDefault)
+        LOC(loc)
+    END
 }
 
 static void stmtSwitchEnd(void* ud)
 {
+    FRAG(stmtSwitchEnd)
+    END
 }
 
 static void stmtTryBegin(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtTryBegin)
+        LOC(loc)
+    END
 }
 
 static void stmtTry_CatchBegin(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtTry_CatchBegin)
+        LOC(loc)
+    END
 }
 
 static void stmtTry_CatchDo(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtTry_CatchDo)
+        LOC(loc)
+    END
 }
 
 static void stmtTry_CatchEnd(void* ud)
 {
+    FRAG(stmtTry_CatchEnd)
+    END
 }
 
 static void stmtTry_FinallyBegin(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtTry_FinallyBegin)
+        LOC(loc)
+    END
 }
 
 static void stmtTry_FinallyEnd(void* ud)
 {
+    FRAG(stmtTry_FinallyEnd)
+    END
 }
 
 static void stmtTryEnd(void* ud)
 {
+    FRAG(stmtTryEnd)
+    END
 }
 
 static void error(void* ud, const CompilerLocation* loc, const CompilerToken* token)

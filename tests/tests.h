@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 
 typedef enum ParserTestMode {
     PARSE_GLOBAL,
