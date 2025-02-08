@@ -377,6 +377,14 @@ a4
 4a
 _bool
 bool_
+A {
+ A
+{A
+A{
+xx;
+xx ;
+ xx;
+ xx
 ]], [[
 (1,1-1,1): identifier "a"
 (2,1-2,2): identifier "aa"
@@ -389,5 +397,19 @@ bool_
 (9,1-9,2): invalid decimal constant
 (10,1-10,5): identifier "_bool"
 (11,1-11,5): identifier "bool_"
-(12,1): <end of file>
+(12,1-12,1): identifier "A"
+(12,3-12,3): '{'
+(13,2-13,2): identifier "A"
+(14,1-14,1): '{'
+(14,2-14,2): identifier "A"
+(15,1-15,1): identifier "A"
+(15,2-15,2): '{'
+(16,1-16,2): identifier "xx"
+(16,3-16,3): ';'
+(17,1-17,2): identifier "xx"
+(17,4-17,4): ';'
+(18,2-18,3): identifier "xx"
+(18,4-18,4): ';'
+(19,2-19,3): identifier "xx"
+(20,1): <end of file>
 ]])

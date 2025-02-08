@@ -57,6 +57,7 @@ set(src_compiler
     drunkfly/compiler/arena.c
     drunkfly/compiler/arena.h
     drunkfly/compiler/lexer.h
+    drunkfly/compiler/lexer.re
     drunkfly/compiler/parser.ske
     drunkfly/compiler/parser.y
     drunkfly/compiler/private.h

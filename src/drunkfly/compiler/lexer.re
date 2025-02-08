@@ -70,6 +70,7 @@ static void compilerReadChar(Compiler* compiler)
     if (compiler->lexer.cursor >= compiler->lexer.end) {
         if (compiler->lexer.curChar != END_MARKER) {
             ++compiler->lexer.column;
+            ++compiler->lexer.cursor;
             compiler->lexer.curChar = END_MARKER;
         }
     } else {
@@ -171,6 +172,8 @@ bool compilerGetToken(Compiler* compiler)
 
             if (compiler->lexer.curChar == END_MARKER)
                 return false;
+
+            #define CURSOR (compiler->lexer.cursor - 1)
 
             /*!re2c
 
@@ -292,7 +295,7 @@ bool compilerGetToken(Compiler* compiler)
             ","                         { return EMIT(COMMA, ","); }
             "@"                         { return EMIT(ATSIGN, "@"); }
 
-            [a-zA-Z_][a-zA-Z0-9_]*      { size_t len = (size_t)(compiler->lexer.cursor - tokenStart);
+            [a-zA-Z_][a-zA-Z0-9_]*      { size_t len = (size_t)(CURSOR - tokenStart);
                                           compiler->lexer.token.text = compilerTempDupStrN(compiler, tokenStart, len);
                                           return EMIT_SPECIAL(IDENTIFIER, "identifier");
                                         }
@@ -310,7 +313,7 @@ bool compilerGetToken(Compiler* compiler)
                                               if (value < old)
                                                   overflow = true;
                                               value |= digit;
-                                          } while (p != compiler->lexer.cursor);
+                                          } while (p != CURSOR);
                                           if (overflow)
                                               compiler->lexer.token.overflow = true;
                                           if (error)
@@ -332,7 +335,7 @@ bool compilerGetToken(Compiler* compiler)
                                               if (value < old)
                                                   overflow = true;
                                               value |= digit;
-                                          } while (p != compiler->lexer.cursor);
+                                          } while (p != CURSOR);
                                           if (overflow)
                                               compiler->lexer.token.overflow = true;
                                           if (error)
@@ -353,7 +356,7 @@ bool compilerGetToken(Compiler* compiler)
                                               if (value < old)
                                                   overflow = true;
                                               value |= digitToNumber(*p++, &error);
-                                          } while (p != compiler->lexer.cursor);
+                                          } while (p != CURSOR);
                                           if (overflow)
                                               compiler->lexer.token.overflow = true;
                                           if (error) {
@@ -376,7 +379,7 @@ bool compilerGetToken(Compiler* compiler)
                                               value += digit;
                                               if (value < old)
                                                   overflow = true;
-                                          } while (p != compiler->lexer.cursor);
+                                          } while (p != CURSOR);
                                           if (overflow)
                                               compiler->lexer.token.overflow = true;
                                           if (error) {
