@@ -11,6 +11,8 @@ test_parser_full([[
 enum A {
 };
 ]], [[
+translationUnitBegin
+(2,2-2,2): unexpected token: ';'
 ]])
 
 test_parser_full([[

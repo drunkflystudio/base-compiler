@@ -1063,6 +1063,35 @@ static void stmtTryEnd(void* ud)
 {
 }
 
+static void error(void* ud, const CompilerLocation* loc, const CompilerToken* token)
+{
+    static const char frag_name_[] = "yyerror";
+
+    NOT_NULL(loc)
+    if (!loc)
+        return;
+
+    NOT_NULL(token)
+    if (!token)
+        return;
+
+    if (!loc->startLine) {
+        logPrintf("%s: TEST FAILURE: %s is NULL in token location.\n", g_testName, "startLine");
+        ++g_testFailCount;
+    }
+    if (!loc->endLine) {
+        logPrintf("%s: TEST FAILURE: %s is NULL in token location.\n", g_testName, "endLine");
+        ++g_testFailCount;
+    }
+
+    printF("(%d,%d-%d,%d): unexpected token: %s\n",
+        (loc->startLine ? loc->startLine->number : 0),
+        loc->startColumn,
+        (loc->endLine ? loc->endLine->number : 0),
+        loc->endColumn,
+        token->name);
+}
+
 static void initParserCallbacks(CompilerParser* parser)
 {
     parser->cb.translationUnitBegin = translationUnitBegin;
@@ -1208,4 +1237,5 @@ static void initParserCallbacks(CompilerParser* parser)
     parser->cb.stmtTry_FinallyBegin = stmtTry_FinallyBegin;
     parser->cb.stmtTry_FinallyEnd = stmtTry_FinallyEnd;
     parser->cb.stmtTryEnd = stmtTryEnd;
+    parser->cb.error = error;
 }

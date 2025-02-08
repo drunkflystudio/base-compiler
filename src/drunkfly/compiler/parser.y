@@ -728,17 +728,8 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 void yyerror(yycontext* ctx, int yychar, const YYSTYPE* yylval, const YYPOSN* yyposn)
 {
     CompilerParser* parser = (CompilerParser*)ctx->userdata;
-
     UNUSED(yychar);
-    UNUSED(yylval);
-    UNUSED(yyposn);
-
-    /* FIXME */
-    luaL_error(parser->compiler->L, "yyerror");
-
-    /*
-    compilerError(ctx->compiler, yyposn, "unexpected %s.", yylval->token->name);
-    */
+    parser->cb.error(parser->cb.ud, yyposn, yylval->token);
 }
 
 static const ChainedToken* nextToken(const ChainedToken** curToken)

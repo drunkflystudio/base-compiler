@@ -173,6 +173,9 @@ STRUCT(CompilerParserCallbacks)
     void (*stmtTry_FinallyBegin)(void* ud, LOC(loc));
     void (*stmtTry_FinallyEnd)(void* ud);
     void (*stmtTryEnd)(void* ud);
+
+    /* error */
+    void (*error)(void* ud, LOC(loc), const CompilerToken* token);
 };
 
 #undef TYPE

@@ -101,10 +101,18 @@ int test_lexer(lua_State* L)
         }
 
         while (compilerGetToken(compiler)) {
+            if (!compiler->lexer.token.location.startLine) {
+                logPrintf("%s: TEST FAILURE: %s is NULL in token location.\n", g_testName, "startLine");
+                ++g_testFailCount;
+            }
+            if (!compiler->lexer.token.location.endLine) {
+                logPrintf("%s: TEST FAILURE: %s is NULL in token location.\n", g_testName, "endLine");
+                ++g_testFailCount;
+            }
             printF("(%d,%d-%d,%d): %s",
-                compiler->lexer.token.location.startLine->number,
+                (compiler->lexer.token.location.startLine ? compiler->lexer.token.location.startLine->number : 0),
                 compiler->lexer.token.location.startColumn,
-                compiler->lexer.token.location.endLine->number,
+                (compiler->lexer.token.location.endLine ? compiler->lexer.token.location.endLine->number : 0),
                 compiler->lexer.token.location.endColumn,
                 compiler->lexer.token.name);
             if (compiler->lexer.token.text)
