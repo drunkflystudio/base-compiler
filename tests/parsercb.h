@@ -152,7 +152,7 @@ static void printExpr(lua_State* L, CompilerExpr* expr)
         case EXPR_FALSE: _("false"); return;
         case EXPR_TRUE: _("true"); return;
         case EXPR_IDENTIFIER: lua_pushstring(L, expr->identifier); return;
-        case EXPR_INTEGER: pushHex(L, expr->integer); return;
+        case EXPR_INTEGER: compilerPushHexString(L, expr->integer); return;
         case EXPR_PARENTHESES: _("("); E(operand); _(")"); return;
         case EXPR_SUBSCRIPT: E(array); _("["); E(index); _("]"); return;
         case EXPR_MEMBER: E(operand); _("."); lua_pushstring(L, expr->identifier); return;
@@ -255,8 +255,8 @@ static void frag(lua_State* L, int count)
 
 #define INT(NAME) \
         ++arg_n_; \
-        lua_pushfstring(L, " %s:%s", #NAME, pushHex(L, NAME)); \
-        lua_remove(L, -2); /* remove value pushed by pushHex() */
+        lua_pushfstring(L, " %s:%s", #NAME, compilerPushHexString(L, NAME)); \
+        lua_remove(L, -2); /* remove value pushed by compilerPushHexString() */
 
 #define OPTSTR(NAME) \
         ++arg_n_; \

@@ -3,6 +3,9 @@
 
 #include <drunkfly/common.h>
 
+typedef uint32_t uint_value_t;
+#define UINT_VALUE_FMT "%" PRINTF_INT32_MODIFIER "u"
+
 STRUCT(SourceFile);
 STRUCT(SourceLine);
 
@@ -31,5 +34,6 @@ CompilerLocation* compilerMergeLocations(Compiler* compiler, const CompilerLocat
 CompilerOutputFile* compilerGetFirstOutput(Compiler* compiler);
 CompilerOutputFile* compilerGetNextOutput(CompilerOutputFile* file);
 const char* compilerGetData(CompilerOutputFile* file, size_t* size);
+const char* compilerPushHexString(lua_State* L, uint_value_t value);
 
 #endif

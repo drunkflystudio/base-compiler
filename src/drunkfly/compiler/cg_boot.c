@@ -2,15 +2,48 @@
 #include <drunkfly/compiler/parser.h>
 #include <drunkfly/compiler/private.h>
 #include <drunkfly/buff.h>
+#include <string.h>
+
+STRUCT(Scope);
+
+STRUCT(Var) {
+    Var* next;
+    Scope* scope;
+    CompilerLocation loc;
+    const char* name;
+    CompilerType* type;
+    bool isConst;
+    bool isStatic;
+};
+
+struct Scope {
+    Scope* parent;
+    Var* firstVar;
+    Var* lastVar;
+    const char* className;
+    Buff code;
+};
 
 STRUCT(Context) {
     Compiler* compiler;
     CompilerOutputFile* file;
+    Scope* scope;
     Buff fwds;
     Buff structs;
     Buff methods;
     const char* currentClass;
+    Var* currentVar;
+    bool isConstVariables;
+    bool isStaticVariables;
+    int indent;
 };
+
+/*==================================================================================================================*/
+
+static void fatalError(Context* context, const char* message)
+{
+    luaL_error(context->compiler->L, message);
+}
 
 /*==================================================================================================================*/
 
@@ -54,6 +87,119 @@ static void printType(Context* context, Buff* buff, CompilerType* type)
         buffPrintC(buff, '*');
 
     UNUSED(context);
+}
+
+/*==================================================================================================================*/
+
+struct CompilerExpr
+{
+    const char* fmt;
+    CompilerExpr** operands;
+    CompilerLocation loc;
+    int numOperands;
+};
+
+static void printExpr(Context* context, Buff* buff, CompilerExpr* expr)
+{
+    const char* p;
+    int i = 0;
+    for (p = expr->fmt; *p; ++p) {
+        if (*p != '@')
+            buffPrintC(buff, *p);
+        else
+            printExpr(context, buff, expr->operands[i++]);
+    }
+}
+
+static CompilerExpr* newExpr(Context* context, const CompilerLocation* loc, const char* fmt, int numOperands, ...)
+{
+    va_list args;
+    int i;
+
+    CompilerExpr* expr = (CompilerExpr*)compilerTempAlloc(context->compiler, sizeof(CompilerExpr));
+    expr->operands = (CompilerExpr**)compilerTempAlloc(context->compiler, sizeof(CompilerExpr*) * (size_t)numOperands);
+    expr->fmt = fmt;
+    expr->numOperands = numOperands;
+    memcpy(&expr->loc, loc, sizeof(CompilerLocation));
+
+    va_start(args, numOperands);
+    for (i = 0; i < numOperands; i++)
+        expr->operands[i] = va_arg(args, CompilerExpr*);
+    va_end(args);
+
+    return expr;
+}
+
+/*==================================================================================================================*/
+
+static void pushIndent(Context* context)
+{
+    ++context->indent;
+}
+
+static void popIndent(Context* context)
+{
+    if (context->indent > 0)
+        --context->indent;
+    else
+        luaL_error(context->compiler->L, "internal error: indent stack underflow.");
+}
+
+static void printIndent(Context* context, Buff* buff)
+{
+    int i;
+    for (i = 0; i < context->indent * 4; ++i)
+        buffPrintC(buff, ' ');
+}
+
+/*==================================================================================================================*/
+
+static void pushScope(Context* context, const char* className)
+{
+    Scope* scope = (Scope*)compilerTempAlloc(context->compiler, sizeof(Scope));
+    scope->firstVar = NULL;
+    scope->lastVar = NULL;
+    scope->className = className;
+    buffInit(&scope->code, context->compiler->L);
+    scope->parent = context->scope;
+    context->scope = scope;
+}
+
+static Scope* popScope(Context* context)
+{
+    Scope* scope = context->scope;
+    if (scope)
+        context->scope = scope->parent;
+    else
+        luaL_error(context->compiler->L, "internal error: scope stack underflow.");
+    return scope;
+}
+
+static Var* addVariable(Context* context, const CompilerLocation* loc, const char* name)
+{
+    Scope* scope = context->scope;
+    Var* var = NULL;
+
+    if (!scope)
+        luaL_error(context->compiler->L, "internal error: scope stack underflow.");
+    else {
+        var = (Var*)compilerTempAlloc(context->compiler, sizeof(Var));
+        memcpy(&var->loc, loc, sizeof(CompilerLocation));
+        var->name = compilerTempDupStr(context->compiler, name);
+        var->type = NULL;
+        var->isConst = context->isConstVariables;
+        var->isStatic = context->isStaticVariables;
+        var->scope = scope;
+        var->next = NULL;
+
+        if (!scope->firstVar)
+            scope->firstVar = var;
+        else
+            scope->lastVar->next = var;
+        scope->lastVar = var;
+    }
+
+    return var;
 }
 
 /*==================================================================================================================*/
@@ -199,7 +345,7 @@ static void classBegin(void* ud,
     context->currentClass = name;
 
     printLine(context, &context->fwds, nameLoc);
-    buffPrintF(&context->fwds, "struct %s; typedef struct %s %s;\n", name, name, name);
+    buffPrintF(&context->fwds, "STRUCT(%s);\n", name);
 
     buffPrintC(&context->structs, '\n');
     printLine(context, &context->structs, nameLoc);
@@ -232,6 +378,7 @@ static void classParent(void* ud, const CompilerLocation* loc, const char* name)
 static void classMembersBegin(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
+    pushScope(context, context->currentClass);
     printLine(context, &context->structs, loc);
     buffPrintS(&context->structs, "{\n");
 }
@@ -290,6 +437,8 @@ static void classMethodBegin(void* ud, const CompilerLocation* loc, const Compil
     buffPrintF(&context->methods, "static ");
     printType(context, &context->methods, ret);
     buffPrintC(&context->methods, '\n');
+
+    pushScope(context, NULL);
 }
 
 static void classMethodNameSimple(void* ud, const CompilerLocation* loc, const char* name)
@@ -331,12 +480,15 @@ static void classMethodBodyBegin(void* ud)
 
 static void classMethodEnd(void* ud)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    Scope* scope = popScope(context);
+    buffPrintS(&context->methods, buffEnd(&scope->code, NULL));
 }
 
 static void classMembersEnd(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    popScope(context);
     UNUSED(loc);
 }
 
@@ -350,24 +502,23 @@ static void classEnd(void* ud, const CompilerLocation* loc)
 
 static void varDeclBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* optionalStatic, bool isConst)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    context->isConstVariables = isConst;
+    context->isStaticVariables = (optionalStatic != NULL);
     UNUSED(loc);
-    UNUSED(optionalStatic);
-    UNUSED(isConst);
 }
 
 static void varBegin(void* ud, const CompilerLocation* loc, const char* name)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(name);
+    Context* context = (Context*)ud;
+    context->currentVar = addVariable(context, loc, name);
 }
 
 static void varType(void* ud, const CompilerLocation* loc, CompilerType* type)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    context->currentVar->type = type;
     UNUSED(loc);
-    UNUSED(type);
 }
 
 static void varType_Array(void* ud, const CompilerLocation* loc, CompilerType* elementType, CompilerExpr* size)
@@ -380,13 +531,22 @@ static void varType_Array(void* ud, const CompilerLocation* loc, CompilerType* e
 
 static void varInitializer(void* ud, CompilerExpr* value)
 {
-    UNUSED(ud);
-    UNUSED(value);
+    Context* context = (Context*)ud;
+    printLine(context, &context->scope->code, &value->loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "%s = ", context->currentVar->name);
+    printExpr(context, &context->scope->code, value);
+    buffPrintS(&context->scope->code, ";\n");
 }
 
 static void varEnd(void* ud)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    if (context->currentVar->type == NULL) {
+        luaL_error(context->compiler->L,
+            "variable \"%s\": untyped variables are not supported by bootstrap backend.", context->currentVar->name);
+    }
+    context->currentVar = NULL;
 }
 
 static void varDeclEnd(void* ud, const CompilerLocation* loc)
@@ -438,13 +598,24 @@ static CompilerType* typeVoid(void* ud, const CompilerLocation* loc)
     return &g_void;
 }
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4702)
+#endif
+
 static CompilerType* typeBit(void* ud, const CompilerLocation* loc, CompilerExpr* optionalExpr)
 {
     Context* context = (Context*)ud;
     UNUSED(loc);
     UNUSED(optionalExpr);
-    return luaL_error(context->compiler->L, "bit type is not supported in bootstrap code generator."), NULL;
+    fatalError(context, "bit type is not supported in bootstrap code generator.");
+
+    return NULL;
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 static CompilerType* typeBool(void* ud, const CompilerLocation* loc)
 {
@@ -524,47 +695,39 @@ static CompilerType* typePointer(void* ud, const CompilerLocation* loc, Compiler
 
 static CompilerExpr* exprNull(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "null", 0);
 }
 
 static CompilerExpr* exprFalse(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "false", 0);
 }
 
 static CompilerExpr* exprTrue(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "true", 0);
 }
 
 static CompilerExpr* exprIdentifier(void* ud, const CompilerLocation* loc, const char* name)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(name);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, name, 0);
 }
 
 static CompilerExpr* exprInteger(void* ud, const CompilerLocation* loc, uint_value_t value)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(value);
-    return NULL;
+    Context* context = (Context*)ud;
+    const char* text = compilerPushHexString(context->compiler->L, value);
+    return newExpr(context, loc, text, 0);
 }
 
 static CompilerExpr* exprParentheses(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "(@)", 1, operand);
 }
 
 static void exprNewBegin(void* ud, const CompilerLocation* loc, CompilerType* type)
@@ -619,11 +782,8 @@ static CompilerExpr* exprMethodCallEnd(void* ud, const CompilerLocation* loc)
 
 static CompilerExpr* exprSubscript(void* ud, const CompilerLocation* loc, CompilerExpr* arr, CompilerExpr* idx)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(arr);
-    UNUSED(idx);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@[@]", 2, arr, idx);
 }
 
 static CompilerExpr* exprMember(void* ud,
@@ -639,403 +799,300 @@ static CompilerExpr* exprMember(void* ud,
 
 static CompilerExpr* exprPostfixIncr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@++", 1, operand);
 }
 
 static CompilerExpr* exprPostfixDecr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@--", 1, operand);
 }
 
 static CompilerExpr* exprPrefixIncr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "++@", 1, operand);
 }
 
 static CompilerExpr* exprPrefixDecr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "--@", 1, operand);
 }
 
 static CompilerExpr* exprTakeAddress(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "&@", 1, operand);
 }
 
 static CompilerExpr* exprDeref(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "*@", 1, operand);
 }
 
 static CompilerExpr* exprUnaryPlus(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@", 1, operand);
 }
 
 static CompilerExpr* exprUnaryMinus(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "-@", 1, operand);
 }
 
 static CompilerExpr* exprBitwiseNot(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "~@", 1, operand);
 }
 
 static CompilerExpr* exprLogicNot(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "!@", 1, operand);
 }
 
 static CompilerExpr* exprSizeOf(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(operand);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "sizeof(@)", 1, operand);
 }
 
 static CompilerExpr* exprMultiply(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ * @", 2, op1, op2);
 }
 
 static CompilerExpr* exprDivide(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ / @", 2, op1, op2);
 }
 
 static CompilerExpr* exprModulo(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ % @", 2, op1, op2);
 }
 
 static CompilerExpr* exprAdd(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ + @", 2, op1, op2);
 }
 
 static CompilerExpr* exprSubtract(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ - @", 2, op1, op2);
 }
 
 static CompilerExpr* exprShiftLeft(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ << @", 2, op1, op2);
 }
 
 static CompilerExpr* exprShiftRight(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ >> @", 2, op1, op2);
 }
 
 static CompilerExpr* exprGreater(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ > @", 2, op1, op2);
 }
 
 static CompilerExpr* exprGreaterEq(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ >= @", 2, op1, op2);
 }
 
 static CompilerExpr* exprLess(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ < @", 2, op1, op2);
 }
 
 static CompilerExpr* exprLessEq(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ <= @", 2, op1, op2);
 }
 
 static CompilerExpr* exprEqual(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ == @", 2, op1, op2);
 }
 
 static CompilerExpr* exprNotEqual(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ != @", 2, op1, op2);
 }
 
 static CompilerExpr* exprBitwiseAnd(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ & @", 2, op1, op2);
 }
 
 static CompilerExpr* exprBitwiseXor(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ ^ @", 2, op1, op2);
 }
 
 static CompilerExpr* exprBitwiseOr(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ | @", 2, op1, op2);
 }
 
 static CompilerExpr* exprLogicAnd(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ && @", 2, op1, op2);
 }
 
 static CompilerExpr* exprLogicOr(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ || @", 2, op1, op2);
 }
 
 static CompilerExpr* exprTernary(void* ud, const CompilerLocation* loc,
     CompilerExpr* cond, CompilerExpr* trueValue, CompilerExpr* falseValue)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(cond);
-    UNUSED(trueValue);
-    UNUSED(falseValue);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ ? @ : @", 3, cond, trueValue, falseValue);
 }
 
 static CompilerExpr* exprAssign(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ = @", 2, op1, op2);
 }
 
 static CompilerExpr* exprAssignAdd(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ += @", 2, op1, op2);
 }
 
 static CompilerExpr* exprAssignSub(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ -= @", 2, op1, op2);
 }
 
 static CompilerExpr* exprAssignMul(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ *= @", 2, op1, op2);
 }
 
 static CompilerExpr* exprAssignDiv(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ /= @", 2, op1, op2);
 }
 
 static CompilerExpr* exprAssignMod(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ %= @", 2, op1, op2);
 }
 
 static CompilerExpr* exprAssignAnd(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ &= @", 2, op1, op2);
 }
 
 static CompilerExpr* exprAssignOr(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ |= @", 2, op1, op2);
 }
 
 static CompilerExpr* exprAssignXor(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ ^= @", 2, op1, op2);
 }
 
 static CompilerExpr* exprAssignShl(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ <<= @", 2, op1, op2);
 }
 
 static CompilerExpr* exprAssignShr(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(op1);
-    UNUSED(op2);
-    return NULL;
+    Context* context = (Context*)ud;
+    return newExpr(context, loc, "@ >>= @", 2, op1, op2);
 }
 
 
 static void stmtEmpty(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, ";\n");
 }
 
 static void stmtExpr(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(e);
+    Context* context = (Context*)ud;
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    printExpr(context, &context->scope->code, e);
+    buffPrintS(&context->scope->code, ";\n");
 }
 
 static void stmtLabel(void* ud, const CompilerLocation* loc, const char* name)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(name);
+    Context* context = (Context*)ud;
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "%s:;\n", name);
 }
 
 static void stmtGoto(void* ud, const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "goto %s;\n", name);
     UNUSED(nameLoc);
-    UNUSED(name);
 }
 
 static void stmtBreak(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "break;\n");
 }
 
 static void stmtContinue(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "continue;\n");
 }
 
 static void stmtDelete(void* ud, const CompilerLocation* loc, CompilerExpr* e)
@@ -1055,15 +1112,39 @@ static void stmtThrow(void* ud, const CompilerLocation* loc, CompilerExpr* optio
 static void stmtCompoundBegin(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
-    printLine(context, &context->methods, loc);
-    buffPrintS(&context->methods, "{\n");
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "{\n");
+    pushScope(context, NULL);
+    pushIndent(context);
 }
 
 static void stmtCompoundEnd(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
-    printLine(context, &context->methods, loc);
-    buffPrintS(&context->methods, "}\n");
+    Scope* prevScope = popScope(context);
+    Var* var;
+
+    for (var = prevScope->firstVar; var; var = var->next) {
+        printLine(context, &context->scope->code, &var->loc);
+        printIndent(context, &context->scope->code);
+        if (var->isStatic)
+            buffPrintS(&context->scope->code, "static ");
+        printType(context, &context->scope->code, var->type);
+        if (var->isConst)
+            buffPrintS(&context->scope->code, " const");
+        buffPrintC(&context->scope->code, ' ');
+        buffPrintS(&context->scope->code, var->name);
+        buffPrintS(&context->scope->code, ";\n");
+    }
+
+    buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+
+    popIndent(context);
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "}\n");
 }
 
 static void stmtIfBegin(void* ud, const CompilerLocation* loc)
@@ -1074,20 +1155,40 @@ static void stmtIfBegin(void* ud, const CompilerLocation* loc)
 
 static void stmtIfThen(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(e);
+    Context* context = (Context*)ud;
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "if (");
+    printExpr(context, &context->scope->code, e);
+    buffPrintF(&context->scope->code, ")\n");
+
+    pushScope(context, NULL);
+    pushIndent(context);
 }
 
 static void stmtIfElse(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    Scope* prevScope = popScope(context);
+    popIndent(context);
+
+    buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "else\n");
+
+    pushScope(context, NULL);
+    pushIndent(context);
 }
 
 static void stmtIfEnd(void* ud)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    Scope* prevScope = popScope(context);
+    buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+    popIndent(context);
 }
 
 static void stmtWhileBegin(void* ud, const CompilerLocation* loc)
@@ -1247,6 +1348,7 @@ static void error(void* ud, const CompilerLocation* loc, const CompilerToken* to
 void compilerInitBootstrapCodegen(Compiler* compiler)
 {
     Context* context = (Context*)compilerTempAlloc(compiler, sizeof(Context));
+    memset(context, 0, sizeof(Context));
     context->compiler = compiler;
     context->file = compilerBeginOutput(compiler, NULL);
     buffInit(&context->fwds, compiler->L);

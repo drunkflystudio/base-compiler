@@ -62,3 +62,21 @@ CompilerOutputFile* compilerGetNextOutput(CompilerOutputFile* file)
 {
     return file->next;
 }
+
+const char* compilerPushHexString(lua_State* L, uint_value_t value)
+{
+    char buf[64];
+    char* dst = buf + sizeof(buf);
+
+    *--dst = 0;
+
+    do {
+        *--dst = luastr_hex[1 + (value & 0xf)];
+        value >>= 4;
+    } while (value);
+
+    *--dst = 'x';
+    *--dst = '0';
+
+    return lua_pushstring(L, dst);
+}

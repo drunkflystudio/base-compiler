@@ -47,24 +47,6 @@ static bool compare(lua_State* L, const char* expected, const char* actual)
     return true;
 }
 
-static const char* pushHex(lua_State* L, uint_value_t value)
-{
-    char buf[64];
-    char* dst = buf + sizeof(buf);
-
-    *--dst = 0;
-
-    do {
-        *--dst = luastr_hex[1 + (value & 0xf)];
-        value >>= 4;
-    } while (value);
-
-    *--dst = 'x';
-    *--dst = '0';
-
-    return lua_pushstring(L, dst);
-}
-
 /*===================================================================================================================*/
 /* LEXER */
 
@@ -118,7 +100,7 @@ int test_lexer(lua_State* L)
             if (compiler->lexer.token.text)
                 printF(" \"%s\"", compiler->lexer.token.text);
             if (compiler->lexer.token.id == T_INTEGER_LITERAL) {
-                printF(" (%s)", pushHex(L, compiler->lexer.token.integer));
+                printF(" (%s)", compilerPushHexString(L, compiler->lexer.token.integer));
                 lua_pop(L, 1);
             }
             if (compiler->lexer.token.overflow)
@@ -292,6 +274,8 @@ int test_bootstrap(lua_State* L)
 
     Compiler* compiler = compilerPushNew(L);
     pushTestName(L);
+
+    lua_checkstack(L, 10000);
 
     file = (SourceFile*)compilerTempAlloc(compiler, sizeof(SourceFile));
     file->name = g_testName;
