@@ -19,6 +19,24 @@ static CompilerType g_object = { "object" };
 
 /*==================================================================================================================*/
 
+typedef enum EnumID {
+    EXPR_NULL,
+    EXPR_FALSE,
+    EXPR_TRUE,
+    EXPR_IDENTIFIER,
+    EXPR_INTEGER,
+} EnumID;
+
+struct CompilerExpr
+{
+    EnumID what;
+    CompilerLocation loc;
+    const char* identifier;
+    uint_value_t integer;
+};
+
+/*==================================================================================================================*/
+
 static int g_indent;
 
 static void indent(void)
@@ -76,9 +94,20 @@ static bool isEnd(const char* str)
 
 /*==================================================================================================================*/
 
-static void printExpr(CompilerExpr* expr)
+static void printExpr(lua_State* L, CompilerExpr* expr)
 {
-    /* FIXME */
+    switch (expr->what) {
+        case EXPR_NULL: lua_pushliteral(L, "null"); return;
+        case EXPR_FALSE: lua_pushliteral(L, "false"); return;
+        case EXPR_TRUE: lua_pushliteral(L, "true"); return;
+        case EXPR_IDENTIFIER: lua_pushstring(L, expr->identifier); return;
+        case EXPR_INTEGER: pushHex(L, expr->integer); return;
+    }
+
+    logPrintf("%s: TEST FAILURE: invalid expression.\n", g_testName);
+    ++g_testFailCount;
+
+    lua_pushliteral(L, "?");
 }
 
 /*==================================================================================================================*/
@@ -115,15 +144,19 @@ static void frag(lua_State* L, int count)
         lua_pushfstring(L, " %s:%s", #NAME, ((NAME) ? "true" : "false"));
 
 #define VIS(NAME) \
-        ++arg_n_; \
         switch (NAME) { \
-            case COMPILER_PRIVATE: lua_pushfstring(L, " %s:%s", #NAME, "private"); break; \
-            case COMPILER_PROTECTED: lua_pushfstring(L, " %s:%s", #NAME, "protected"); break; \
-            case COMPILER_PUBLIC: lua_pushfstring(L, " %s:%s", #NAME, "public"); break; \
+            case COMPILER_PRIVATE: ++arg_n_; lua_pushfstring(L, " %s:%s", #NAME, "private"); break; \
+            case COMPILER_PROTECTED: ++arg_n_; lua_pushfstring(L, " %s:%s", #NAME, "protected"); break; \
+            case COMPILER_PUBLIC: ++arg_n_; lua_pushfstring(L, " %s:%s", #NAME, "public"); break; \
             default: \
                 logPrintf("%s: TEST FAILURE: %s: invalid value for \"%s\".\n", g_testName, frag_name_, #NAME); \
                 ++g_testFailCount; \
         }
+
+#define INT(NAME) \
+        ++arg_n_; \
+        lua_pushfstring(L, " %s:%s", #NAME, pushHex(L, NAME)); \
+        lua_remove(L, -2); /* remove value pushed by pushHex() */
 
 #define OPTSTR(NAME) \
         ++arg_n_; \
@@ -168,10 +201,11 @@ static void frag(lua_State* L, int count)
                 lua_pushstring(L, t->name); \
             } \
             if (t->size) { \
-                arg_n_ += 3; \
+                int n = lua_gettop(L); \
                 lua_pushliteral(L, "["); \
-                printExpr(t->size); \
+                printExpr(L, t->size); \
                 lua_pushliteral(L, "]"); \
+                arg_n_ += lua_gettop(L) - n; \
             } \
             t = NAME; \
             for (; t->pointee; t = t->pointee) { \
@@ -185,13 +219,14 @@ static void frag(lua_State* L, int count)
         OPTTYPE(NAME)
 
 #define OPTEXPR(NAME) \
-        ++arg_n_; \
-        if (!NAME) \
-            lua_pushfstring(L, " %s:%s", #NAME, "(null)"); \
-        else { \
-            lua_pushfstring(L, " %s:", #NAME); \
+        if (!NAME) { \
             ++arg_n_; \
-            printExpr(NAME); \
+            lua_pushfstring(L, " %s:%s", #NAME, "(null)"); \
+        } else { \
+            int n = lua_gettop(L); \
+            lua_pushfstring(L, " %s:", #NAME); \
+            printExpr(L, NAME); \
+            arg_n_ += lua_gettop(L) - n; \
         }
 
 #define EXPR(NAME) \
@@ -387,7 +422,7 @@ static void structEnd(void* ud, const CompilerLocation* loc)
 static void classBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFinal)
 {
-    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES) {
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
         FRAG(classBegin)
             LOC(loc)
             LOC(nameLoc)
@@ -419,7 +454,7 @@ static void classParent(void* ud, const CompilerLocation* loc, const char* name)
 
 static void classMembersBegin(void* ud, const CompilerLocation* loc)
 {
-    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES) {
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
         FRAG(classMembersBegin)
             LOC(loc)
         END_INDENT
@@ -438,7 +473,7 @@ static void classFriend(void* ud, const CompilerLocation* loc, const CompilerLoc
 static void classVariablesBegin(void* ud, const CompilerLocation* loc,
     const CompilerLocation* visLoc, CompilerVisibility vis, const CompilerLocation* optionalStatic, bool isConst)
 {
-    if (g_parseMode != PARSE_TYPES) {
+    if (g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
         FRAG(classVariablesBegin)
             LOC(loc)
             LOC(visLoc)
@@ -451,7 +486,7 @@ static void classVariablesBegin(void* ud, const CompilerLocation* loc,
 
 static void classVariablesEnd(void* ud, const CompilerLocation* loc)
 {
-    if (g_parseMode != PARSE_TYPES) {
+    if (g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
         FRAG_UNINDENT(classVariablesEnd)
             LOC(loc)
         END
@@ -538,7 +573,7 @@ static void classMethodEnd(void* ud)
 
 static void classMembersEnd(void* ud, const CompilerLocation* loc)
 {
-    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES) {
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
         FRAG_UNINDENT(classMembersEnd)
             LOC(loc)
         END
@@ -547,7 +582,7 @@ static void classMembersEnd(void* ud, const CompilerLocation* loc)
 
 static void classEnd(void* ud, const CompilerLocation* loc)
 {
-    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES) {
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
         FRAG_UNINDENT(classEnd)
             LOC(loc)
         END
@@ -565,7 +600,7 @@ static void varDeclBegin(void* ud, const CompilerLocation* loc, const CompilerLo
 
 static void varBegin(void* ud, const CompilerLocation* loc, const char* name)
 {
-    if (g_parseMode != PARSE_TYPES) {
+    if (g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
         FRAG(varBegin)
             LOC(loc)
             STR(name)
@@ -575,7 +610,7 @@ static void varBegin(void* ud, const CompilerLocation* loc, const char* name)
 
 static void varType(void* ud, const CompilerLocation* loc, CompilerType* type)
 {
-    if (g_parseMode == PARSE_TYPES) {
+    if (g_parseMode == PARSE_TYPES && g_parseMode != PARSE_EXPR) {
         FRAG(result)
             LOC(loc)
             TYPE(type)
@@ -599,14 +634,20 @@ static void varType_Array(void* ud, const CompilerLocation* loc, CompilerType* e
 
 static void varInitializer(void* ud, CompilerExpr* value)
 {
-    FRAG(varInitializer)
-        EXPR(value)
-    END
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(result)
+            EXPR(value)
+        END
+    } else {
+        FRAG(varInitializer)
+            EXPR(value)
+        END
+    }
 }
 
 static void varEnd(void* ud)
 {
-    if (g_parseMode != PARSE_TYPES) {
+    if (g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
         FRAG_UNINDENT(varEnd)
         END
     }
@@ -819,29 +860,75 @@ static CompilerType* typePointer(void* ud, const CompilerLocation* loc, Compiler
     return type;
 }
 
+static CompilerExpr* expr(void* ud, const CompilerLocation* loc, EnumID what)
+{
+    ParserTestContext* ctx = (ParserTestContext*)ud;
+    CompilerExpr* expr = (CompilerExpr*)compilerTempAlloc(ctx->compiler, sizeof(CompilerExpr));
+    memset(expr, 0, sizeof(CompilerExpr));
+    expr->what = what;
+    memcpy(&expr->loc, loc, sizeof(CompilerLocation));
+    return expr;
+}
+
 static CompilerExpr* exprNull(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprNull)
+            LOC(loc)
+        END
+    }
+
+    return expr(ud, loc, EXPR_NULL);
 }
 
 static CompilerExpr* exprFalse(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprFalse)
+            LOC(loc)
+        END
+    }
+
+    return expr(ud, loc, EXPR_FALSE);
 }
 
 static CompilerExpr* exprTrue(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprTrue)
+            LOC(loc)
+        END
+    }
+
+    return expr(ud, loc, EXPR_TRUE);
 }
 
 static CompilerExpr* exprIdentifier(void* ud, const CompilerLocation* loc, const char* name)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprIdentifier)
+            LOC(loc)
+            STR(name)
+        END
+    }
+
+    CompilerExpr* e = expr(ud, loc, EXPR_IDENTIFIER);
+    e->identifier = name;
+    return e;
 }
 
 static CompilerExpr* exprInteger(void* ud, const CompilerLocation* loc, uint_value_t value)
 {
-    return NULL;
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprInteger)
+            LOC(loc)
+            INT(value)
+        END
+    }
+
+    CompilerExpr* e = expr(ud, loc, EXPR_INTEGER);
+    e->integer = value;
+    return e;
 }
 
 static CompilerExpr* exprParentheses(void* ud, const CompilerLocation* loc, CompilerExpr* expr)

@@ -15,6 +15,7 @@
 typedef enum ParserTestMode {
     PARSE_GLOBAL,
     PARSE_ATTR,
+    PARSE_EXPR,
     PARSE_TYPES
 } ParserTestMode;
 

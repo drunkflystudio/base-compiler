@@ -197,6 +197,13 @@ int test_parser(lua_State* L, ParserTestMode mode)
             lua_concat(L, 3);
             fileContents = lua_tostring(L, -1);
             break;
+        case PARSE_EXPR:
+            lua_pushliteral(L, "class A{public var x=\n");
+            lua_pushvalue(L, 1);
+            lua_pushliteral(L, "\n;}");
+            lua_concat(L, 3);
+            fileContents = lua_tostring(L, -1);
+            break;
     }
 
     compiler->lexer.state = LEXER_NORMAL;
