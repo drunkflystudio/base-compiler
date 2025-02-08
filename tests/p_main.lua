@@ -1,5 +1,5 @@
 
-test_parser_full([[
+test_parser_global([[
 ]], [[
 translationUnitBegin
 translationUnitEnd

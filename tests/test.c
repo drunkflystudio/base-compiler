@@ -153,9 +153,11 @@ STRUCT(ParserTestContext)
     lua_State* L;
 };
 
+static ParserTestMode g_parseMode;
+
 #include "parsercb.h"
 
-int test_parser_full(lua_State* L)
+int test_parser(lua_State* L, ParserTestMode mode)
 {
     const char* fileContents = luaL_checkstring(L, 1);
     const char* expected = replaceCRLF(L, luaL_checkstring(L, 2));
@@ -182,6 +184,21 @@ int test_parser_full(lua_State* L)
     compilerBeginParse(&parser);
 
     g_indent = 0;
+    g_parseMode = mode;
+
+    switch (g_parseMode) {
+        case PARSE_GLOBAL:
+        case PARSE_ATTR:
+            break;
+        case PARSE_TYPES:
+            lua_pushliteral(L, "class A{public var x:\n");
+            lua_pushvalue(L, 1);
+            lua_pushliteral(L, "\n;}");
+            lua_concat(L, 3);
+            fileContents = lua_tostring(L, -1);
+            break;
+    }
+
     compiler->lexer.state = LEXER_NORMAL;
 
     for (;;) {

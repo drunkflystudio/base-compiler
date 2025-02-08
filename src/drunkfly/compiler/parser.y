@@ -151,7 +151,6 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %type <expr> statement_switch_expr
 %type <type> type_name
 %type <type> array_element_type_name
-%type <type> optional_type_name
 %type <flag> var_or_const
 %type <expr> variable_declaration_or_expression
 %type <flag> optional_final
@@ -445,11 +444,6 @@ array_element_type_name
     | type_name T_ASTERISK { $$ = CB.typePointer(UD, merge(@1, @2), $1); }
     ;
 
-optional_type_name
-    : /* empty */ { $$ = NULL; }
-    | T_COLON type_name { $$ = $2; }
-    ;
-
 /*********************************************************************************************************************/
 /* Attributes */
 
@@ -490,7 +484,7 @@ variable_declarator
 
 variable_name : T_IDENTIFIER { CB.varBegin(UD, &@1, $1->text); };
 variable_end : /* empty */ { CB.varEnd(UD); }
-variable_type : optional_type_name { CB.varType(UD, &@1, $1); };
+variable_type : /* empty */ | T_COLON type_name { CB.varType(UD, &@2, $2); };
 
 optional_initializer
     : /* empty */
@@ -583,7 +577,7 @@ enum_declaration : optional_attribute_list enum_declaration_start enum_optional_
 
 enum_declaration_start : enum_or_flags T_IDENTIFIER { CB.enumBegin(UD, &@1, &@2, $2->text, $1); };
 enum_or_flags : KW_enum { $$ = false; } | KW_flags { $$ = true; };
-enum_optional_type_name : optional_type_name { if ($1) CB.enumType(UD, &@1, $1); };
+enum_optional_type_name : /* empty */ | T_COLON type_name { CB.enumType(UD, &@2, $2); };
 
 enum_members: enum_members_start optional_enum_member_list enum_members_end;
 enum_members_start : T_LCURLY { CB.enumMembersBegin(UD, &@1); };
@@ -600,7 +594,7 @@ enum_member
 /*********************************************************************************************************************/
 /* Struct declarations */
 
-struct_declaration : optional_attribute_list struct_declaration_start struct_optional_parent_struct struct_members;
+struct_declaration : optional_attribute_list struct_declaration_start struct_optional_parent struct_members;
 
 struct_declaration_start : struct_or_union T_IDENTIFIER { CB.structBegin(UD, &@1, &@2, $2->text, $1); }
 struct_or_union : KW_struct { $$ = false; } | KW_union { $$ = true; };

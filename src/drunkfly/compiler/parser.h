@@ -25,10 +25,10 @@ STRUCT(CompilerParserCallbacks)
     void (*attrListEnd)(void* ud);
 
     /* enum declaration */
-    void (*enumBegin)(void* ud, LOC(loc), LOC(nameLoc), const char* name, bool isEnum);
+    void (*enumBegin)(void* ud, LOC(loc), LOC(nameLoc), const char* name, bool isFlags);
     void (*enumType)(void* ud, LOC(loc), TYPE(type));
     void (*enumMembersBegin)(void* ud, LOC(loc));
-    void (*enumMember)(void* ud, LOC(loc), const char* name, EXPR(value));
+    void (*enumMember)(void* ud, LOC(loc), const char* name, EXPR(optionalValue));
     void (*enumMembersEnd)(void* ud, LOC(loc));
     void (*enumEnd)(void* ud, LOC(loc));
 
@@ -81,7 +81,7 @@ STRUCT(CompilerParserCallbacks)
 
     /* type */
     CompilerType* (*typeVoid)(void* ud, LOC(loc));
-    CompilerType* (*typeBit)(void* ud, LOC(loc), EXPR(expr));
+    CompilerType* (*typeBit)(void* ud, LOC(loc), EXPR(optionalExpr));
     CompilerType* (*typeBool)(void* ud, LOC(loc));
     CompilerType* (*typeInt8)(void* ud, LOC(loc));
     CompilerType* (*typeUInt8)(void* ud, LOC(loc));

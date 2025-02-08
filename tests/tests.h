@@ -12,6 +12,12 @@
 #include <string.h>
 #include <errno.h>
 
+typedef enum ParserTestMode {
+    PARSE_GLOBAL,
+    PARSE_ATTR,
+    PARSE_TYPES
+} ParserTestMode;
+
 extern const char* g_testFileName;
 extern int g_testFailCount;
 extern int g_testSuccessCount;
@@ -19,7 +25,7 @@ extern int g_testSuccessCount;
 /* test.c */
 
 int test_lexer(lua_State* L);
-int test_parser_full(lua_State* L);
+int test_parser(lua_State* L, ParserTestMode mode);
 
 /* util.c */
 

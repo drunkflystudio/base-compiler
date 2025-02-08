@@ -14,14 +14,23 @@ static void printMessage(VMMSGTYPE type, const char* message)
     fprintf(stderr, "%s\n", message);
 }
 
+int test_parser_global(lua_State* L) { return test_parser(L, PARSE_GLOBAL); }
+int test_parser_attr(lua_State* L) { return test_parser(L, PARSE_ATTR); }
+int test_parser_types(lua_State* L) { return test_parser(L, PARSE_TYPES); }
+
 static int initTests(lua_State* L)
 {
     g_L = L;
 
     lua_pushcfunction(L, test_lexer);
     lua_setglobal(L, "test_lexer");
-    lua_pushcfunction(L, test_parser_full);
-    lua_setglobal(L, "test_parser_full");
+
+    lua_pushcfunction(L, test_parser_global);
+    lua_setglobal(L, "test_parser_global");
+    lua_pushcfunction(L, test_parser_attr);
+    lua_setglobal(L, "test_parser_attr");
+    lua_pushcfunction(L, test_parser_types);
+    lua_setglobal(L, "test_parser_types");
 
     return 0;
 }

@@ -17,6 +17,7 @@ set(tests
     p_attr.lua
     p_enum.lua
     p_main.lua
+    p_types.lua
     )
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")

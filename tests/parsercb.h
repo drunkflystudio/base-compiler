@@ -115,9 +115,9 @@ static void frag(lua_State* L, int count)
 #define VIS(NAME) \
         ++arg_n_; \
         switch (NAME) { \
-            case COMPILER_PRIVATE: lua_pushfstring(L, " %s:%s", #NAME, "private"); \
-            case COMPILER_PROTECTED: lua_pushfstring(L, " %s:%s", #NAME, "protected"); \
-            case COMPILER_PUBLIC: lua_pushfstring(L, " %s:%s", #NAME, "public"); \
+            case COMPILER_PRIVATE: lua_pushfstring(L, " %s:%s", #NAME, "private"); break; \
+            case COMPILER_PROTECTED: lua_pushfstring(L, " %s:%s", #NAME, "protected"); break; \
+            case COMPILER_PUBLIC: lua_pushfstring(L, " %s:%s", #NAME, "public"); break; \
             default: \
                 logPrintf("%s: TEST FAILURE: %s: invalid value for \"%s\".\n", g_testName, frag_name_, #NAME); \
                 ++g_testFailCount; \
@@ -209,12 +209,18 @@ static void frag(lua_State* L, int count)
 
 static void translationUnitBegin(void* ud)
 {
+    if (g_parseMode != PARSE_GLOBAL)
+        return;
+
     FRAG(translationUnitBegin)
     END_INDENT
 }
 
 static void translationUnitEnd(void* ud)
 {
+    if (g_parseMode != PARSE_GLOBAL)
+        return;
+
     FRAG_UNINDENT(translationUnitEnd)
     END
 }
@@ -231,7 +237,7 @@ static void attrParam(void* ud, const CompilerLocation* optionalNameLoc, const c
 {
     FRAG(attrParam)
         OPTLOC(optionalNameLoc)
-        STR(optionalName)
+        OPTSTR(optionalName)
         EXPR(value)
     END
 }
@@ -255,14 +261,20 @@ static void attrListEnd(void* ud)
 }
 
 static void enumBegin(void* ud,
-    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isEnum)
+    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFlags)
 {
-    FRAG(enumBegin)
-        LOC(loc)
-        LOC(nameLoc)
-        STR(name)
-        BOOL(isEnum)
-    END_INDENT
+    if (g_parseMode == PARSE_ATTR) {
+        FRAG(enum)
+            LOC(nameLoc)
+        END
+    } else {
+        FRAG(enumBegin)
+            LOC(loc)
+            LOC(nameLoc)
+            STR(name)
+            BOOL(isFlags)
+        END_INDENT
+    }
 }
 
 static void enumType(void* ud, const CompilerLocation* loc, CompilerType* type)
@@ -275,43 +287,55 @@ static void enumType(void* ud, const CompilerLocation* loc, CompilerType* type)
 
 static void enumMembersBegin(void* ud, const CompilerLocation* loc)
 {
-    FRAG(enumMembersBegin)
-        LOC(loc)
-    END_INDENT
+    if (g_parseMode != PARSE_ATTR) {
+        FRAG(enumMembersBegin)
+            LOC(loc)
+        END_INDENT
+    }
 }
 
-static void enumMember(void* ud, const CompilerLocation* loc, const char* name, CompilerExpr* value)
+static void enumMember(void* ud, const CompilerLocation* loc, const char* name, CompilerExpr* optionalValue)
 {
     FRAG(enumMember)
         LOC(loc)
         STR(name)
-        EXPR(value)
+        OPTEXPR(optionalValue)
     END
 }
 
 static void enumMembersEnd(void* ud, const CompilerLocation* loc)
 {
-    FRAG_UNINDENT(enumMembersEnd)
-        LOC(loc)
-    END
+    if (g_parseMode != PARSE_ATTR) {
+        FRAG_UNINDENT(enumMembersEnd)
+            LOC(loc)
+        END
+    }
 }
 
 static void enumEnd(void* ud, const CompilerLocation* loc)
 {
-    FRAG_UNINDENT(enumEnd)
-        LOC(loc)
-    END
+    if (g_parseMode != PARSE_ATTR) {
+        FRAG_UNINDENT(enumEnd)
+            LOC(loc)
+        END
+    }
 }
 
 static void structBegin(void* ud,
-    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isEnum)
+    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isUnion)
 {
-    FRAG(structBegin)
-        LOC(loc)
-        LOC(nameLoc)
-        STR(name)
-        BOOL(isEnum)
-    END_INDENT
+    if (g_parseMode == PARSE_ATTR) {
+        FRAG(struct)
+            LOC(nameLoc)
+        END_INDENT
+    } else {
+        FRAG(structBegin)
+            LOC(loc)
+            LOC(nameLoc)
+            STR(name)
+            BOOL(isUnion)
+        END_INDENT
+    }
 }
 
 static void structParent(void* ud, const CompilerLocation* loc, const char* name)
@@ -324,9 +348,11 @@ static void structParent(void* ud, const CompilerLocation* loc, const char* name
 
 static void structMembersBegin(void* ud, const CompilerLocation* loc)
 {
-    FRAG(structMembersBegin)
-        LOC(loc)
-    END_INDENT
+    if (g_parseMode != PARSE_ATTR) {
+        FRAG(structMembersBegin)
+            LOC(loc)
+        END_INDENT
+    }
 }
 
 static void structMember(void* ud, const CompilerLocation* loc, const char* name, CompilerType* type)
@@ -340,37 +366,45 @@ static void structMember(void* ud, const CompilerLocation* loc, const char* name
 
 static void structMembersEnd(void* ud, const CompilerLocation* loc)
 {
-    FRAG_UNINDENT(structMembersEnd)
-        LOC(loc)
-    END
+    if (g_parseMode != PARSE_ATTR) {
+        FRAG_UNINDENT(structMembersEnd)
+            LOC(loc)
+        END
+    }
 }
 
 static void structEnd(void* ud, const CompilerLocation* loc)
 {
-    FRAG_UNINDENT(structEnd)
-        LOC(loc)
-    END
+    if (g_parseMode != PARSE_ATTR) {
+        FRAG_UNINDENT(structEnd)
+            LOC(loc)
+        END
+    }
 }
 
 static void classBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFinal)
 {
-    FRAG(classBegin)
-        LOC(loc)
-        LOC(nameLoc)
-        STR(name)
-        BOOL(isFinal)
-    END_INDENT
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES) {
+        FRAG(classBegin)
+            LOC(loc)
+            LOC(nameLoc)
+            STR(name)
+            BOOL(isFinal)
+        END_INDENT
+    }
 }
 
 static void classBeginInterface(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
-    FRAG(classBeginInterface)
-        LOC(loc)
-        LOC(nameLoc)
-        STR(name)
-    END_INDENT
+    if (g_parseMode != PARSE_ATTR) {
+        FRAG(classBeginInterface)
+            LOC(loc)
+            LOC(nameLoc)
+            STR(name)
+        END_INDENT
+    }
 }
 
 static void classParent(void* ud, const CompilerLocation* loc, const char* name)
@@ -383,9 +417,11 @@ static void classParent(void* ud, const CompilerLocation* loc, const char* name)
 
 static void classMembersBegin(void* ud, const CompilerLocation* loc)
 {
-    FRAG(classMembersBegin)
-        LOC(loc)
-    END_INDENT
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES) {
+        FRAG(classMembersBegin)
+            LOC(loc)
+        END_INDENT
+    }
 }
 
 static void classFriend(void* ud, const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
@@ -400,20 +436,24 @@ static void classFriend(void* ud, const CompilerLocation* loc, const CompilerLoc
 static void classVariablesBegin(void* ud, const CompilerLocation* loc,
     const CompilerLocation* visLoc, CompilerVisibility vis, const CompilerLocation* optionalStatic, bool isConst)
 {
-    FRAG(classVariablesBegin)
-        LOC(loc)
-        LOC(visLoc)
-        VIS(vis)
-        OPTLOC(optionalStatic)
-        BOOL(isConst)
-    END_INDENT
+    if (g_parseMode != PARSE_TYPES) {
+        FRAG(classVariablesBegin)
+            LOC(loc)
+            LOC(visLoc)
+            VIS(vis)
+            OPTLOC(optionalStatic)
+            BOOL(isConst)
+        END_INDENT
+    }
 }
 
 static void classVariablesEnd(void* ud, const CompilerLocation* loc)
 {
-    FRAG_UNINDENT(classVariablesEnd)
-        LOC(loc)
-    END
+    if (g_parseMode != PARSE_TYPES) {
+        FRAG_UNINDENT(classVariablesEnd)
+            LOC(loc)
+        END
+    }
 }
 
 static void classDestructorBegin(void* ud,
@@ -496,16 +536,20 @@ static void classMethodEnd(void* ud)
 
 static void classMembersEnd(void* ud, const CompilerLocation* loc)
 {
-    FRAG_UNINDENT(classMembersEnd)
-        LOC(loc)
-    END
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES) {
+        FRAG_UNINDENT(classMembersEnd)
+            LOC(loc)
+        END
+    }
 }
 
 static void classEnd(void* ud, const CompilerLocation* loc)
 {
-    FRAG_UNINDENT(classEnd)
-        LOC(loc)
-    END
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES) {
+        FRAG_UNINDENT(classEnd)
+            LOC(loc)
+        END
+    }
 }
 
 static void varDeclBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* optionalStatic, bool isConst)
@@ -519,18 +563,27 @@ static void varDeclBegin(void* ud, const CompilerLocation* loc, const CompilerLo
 
 static void varBegin(void* ud, const CompilerLocation* loc, const char* name)
 {
-    FRAG(varBegin)
-        LOC(loc)
-        STR(name)
-    END_INDENT
+    if (g_parseMode != PARSE_TYPES) {
+        FRAG(varBegin)
+            LOC(loc)
+            STR(name)
+        END_INDENT
+    }
 }
 
 static void varType(void* ud, const CompilerLocation* loc, CompilerType* type)
 {
-    FRAG(varType)
-        LOC(loc)
-        TYPE(type)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(result)
+            LOC(loc)
+            TYPE(type)
+        END
+    } else {
+        FRAG(varType)
+            LOC(loc)
+            TYPE(type)
+        END
+    }
 }
 
 static void varType_Array(void* ud, const CompilerLocation* loc, CompilerType* elementType, CompilerExpr* size)
@@ -551,8 +604,10 @@ static void varInitializer(void* ud, CompilerExpr* value)
 
 static void varEnd(void* ud)
 {
-    FRAG_UNINDENT(varEnd)
-    END
+    if (g_parseMode != PARSE_TYPES) {
+        FRAG_UNINDENT(varEnd)
+        END
+    }
 }
 
 static void varDeclEnd(void* ud, const CompilerLocation* loc)
@@ -606,99 +661,120 @@ static void arrayInitializerEnd(void* ud, const CompilerLocation* loc)
 
 static CompilerType* typeVoid(void* ud, const CompilerLocation* loc)
 {
-    FRAG(typeVoid)
-        LOC(loc)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeVoid)
+            LOC(loc)
+        END
+    }
+
     return &g_void;
 }
 
-static CompilerType* typeBit(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
+static CompilerType* typeBit(void* ud, const CompilerLocation* loc, CompilerExpr* optionalExpr)
 {
-    FRAG(typeBit)
-        LOC(loc)
-        EXPR(expr)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeBit)
+            LOC(loc)
+            OPTEXPR(optionalExpr)
+        END
+    }
 
-    if (!expr)
+    if (!optionalExpr)
         return &g_bit;
     else {
         ParserTestContext* context = (ParserTestContext*)ud;
         CompilerType* type = (CompilerType*)compilerTempAlloc(context->compiler, sizeof(CompilerType));
         memset(type, 0, sizeof(CompilerType));
         type->name = "bit";
-        type->size = expr;
+        type->size = optionalExpr;
         return type;
     }
 }
 
 static CompilerType* typeBool(void* ud, const CompilerLocation* loc)
 {
-    FRAG(typeBool)
-        LOC(loc)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeBool)
+            LOC(loc)
+        END
+    }
 
     return &g_bool;
 }
 
 static CompilerType* typeInt8(void* ud, const CompilerLocation* loc)
 {
-    FRAG(typeInt8)
-        LOC(loc)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeInt8)
+            LOC(loc)
+        END
+    }
 
     return &g_int8;
 }
 
 static CompilerType* typeUInt8(void* ud, const CompilerLocation* loc)
 {
-    FRAG(typeUInt8)
-        LOC(loc)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeUInt8)
+            LOC(loc)
+        END
+    }
 
     return &g_uint8;
 }
 
 static CompilerType* typeInt16(void* ud, const CompilerLocation* loc)
 {
-    FRAG(typeInt16)
-        LOC(loc)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeInt16)
+            LOC(loc)
+        END
+    }
 
     return &g_int16;
 }
 
 static CompilerType* typeUInt16(void* ud, const CompilerLocation* loc)
 {
-    FRAG(typeUInt16)
-        LOC(loc)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeUInt16)
+            LOC(loc)
+        END
+    }
 
     return &g_uint16;
 }
 
 static CompilerType* typeInt32(void* ud, const CompilerLocation* loc)
 {
-    FRAG(typeInt32)
-        LOC(loc)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeInt32)
+            LOC(loc)
+        END
+    }
 
     return &g_int32;
 }
 
 static CompilerType* typeUInt32(void* ud, const CompilerLocation* loc)
 {
-    FRAG(typeUInt32)
-        LOC(loc)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeUInt32)
+            LOC(loc)
+        END
+    }
 
     return &g_uint32;
 }
 
 static CompilerType* typeObject(void* ud, const CompilerLocation* loc)
 {
-    FRAG(typeObject)
-        LOC(loc)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeObject)
+            LOC(loc)
+        END
+    }
 
     return &g_object;
 }
@@ -708,10 +784,12 @@ static CompilerType* typeIdentifier(void* ud, const CompilerLocation* loc, const
     ParserTestContext* ctx = (ParserTestContext*)ud;
     CompilerType* type;
 
-    FRAG(typeIdentifier)
-        LOC(loc)
-        STR(text)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeIdentifier)
+            LOC(loc)
+            STR(text)
+        END
+    }
 
     type = (CompilerType*)compilerTempAlloc(ctx->compiler, sizeof(CompilerType));
     memset(type, 0, sizeof(CompilerType));
@@ -725,10 +803,12 @@ static CompilerType* typePointer(void* ud, const CompilerLocation* loc, Compiler
     ParserTestContext* ctx = (ParserTestContext*)ud;
     CompilerType* type;
 
-    FRAG(typePointer)
-        LOC(loc)
-        TYPE(pointee)
-    END
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typePointer)
+            LOC(loc)
+            TYPE(pointee)
+        END
+    }
 
     type = (CompilerType*)compilerTempAlloc(ctx->compiler, sizeof(CompilerType));
     memset(type, 0, sizeof(CompilerType));
