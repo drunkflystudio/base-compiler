@@ -20,6 +20,8 @@ static int initTests(lua_State* L)
 
     lua_pushcfunction(L, test_lexer);
     lua_setglobal(L, "test_lexer");
+    lua_pushcfunction(L, test_parser_full);
+    lua_setglobal(L, "test_parser_full");
 
     return 0;
 }

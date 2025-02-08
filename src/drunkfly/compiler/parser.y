@@ -2,6 +2,7 @@
 #include <drunkfly/compiler/parser.h>
 #include <drunkfly/compiler/private.h>
 #include <drunkfly/compiler/token.h>
+#include <lauxlib.h>
 
 #ifdef BORLAND
 #pragma option -w-pia
@@ -632,11 +633,15 @@ struct_member
 
 /*********************************************************************************************************************/
 
-translation_unit
+translation_unit : translation_unit_start translation_unit_contents translation_unit_end;
+translation_unit_start : /* empty */ { CB.translationUnitBegin(UD); }
+translation_unit_end : /* empty */ { CB.translationUnitEnd(UD); }
+
+translation_unit_contents
     : /* empty */
-    | translation_unit class_declaration
-    | translation_unit enum_declaration
-    | translation_unit struct_declaration
+    | translation_unit_contents class_declaration
+    | translation_unit_contents enum_declaration
+    | translation_unit_contents struct_declaration
     ;
 
 /*********************************************************************************************************************/
@@ -653,7 +658,40 @@ translation_unit
 #undef yylval
 #undef yyposn
 
+STRUCT(ChainedToken)
+{
+    ChainedToken* next;
+    CompilerToken token;
+};
+
+static ChainedToken* firstToken = NULL;
+static ChainedToken* lastToken = NULL;
+
 void compilerBeginParse(CompilerParser* parser)
+{
+    UNUSED(parser);
+    firstToken = NULL;
+    lastToken = NULL;
+}
+
+void compilerPushToken(CompilerParser* parser)
+{
+    compilerPushTokenEx(parser, &parser->compiler->lexer.token);
+}
+
+void compilerPushTokenEx(CompilerParser* parser, const CompilerToken* token)
+{
+    ChainedToken* chained = (ChainedToken*)compilerTempAlloc(parser->compiler, sizeof(ChainedToken));
+    chained->next = NULL;
+    memcpy(&chained->token, token, sizeof(CompilerToken));
+    if (!firstToken)
+        firstToken = chained;
+    else
+        lastToken->next = chained;
+    lastToken = chained;
+}
+
+void compilerEndParse(CompilerParser* parser)
 {
     yycontext yyctx;
 
@@ -689,27 +727,28 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 
 void yyerror(yycontext* ctx, int yychar, const YYSTYPE* yylval, const YYPOSN* yyposn)
 {
-    UNUSED(ctx);
+    CompilerParser* parser = (CompilerParser*)ctx->userdata;
+
     UNUSED(yychar);
     UNUSED(yylval);
     UNUSED(yyposn);
 
+    /* FIXME */
+    luaL_error(parser->compiler->L, "yyerror");
+
     /*
-    Context* ctx = (Context*)yyctx->userdata;
-    UNUSED(yychar);
     compilerError(ctx->compiler, yyposn, "unexpected %s.", yylval->token->name);
     */
 }
 
-/*
-static const Token* nextToken(const Token** curToken)
+static const ChainedToken* nextToken(const ChainedToken** curToken)
 {
-    const Token* token;
+    const ChainedToken* token;
     int id;
 
     do {
         token = *curToken;
-        id = token->id;
+        id = token->token.id;
         if (id == T_EOF)
             break;
         *curToken = token->next;
@@ -717,32 +756,25 @@ static const Token* nextToken(const Token** curToken)
 
     return token;
 }
-*/
 
-int yylex(yycontext* yyctx)
+int yylex(yycontext* ctx)
 {
-    UNUSED(yyctx);
-    return T_EOF;
-
-    /*
-    Context* ctx = (Context*)yyctx->userdata;
     int id;
 
-    const Token* token = nextToken(&ctx->curToken);
+    const ChainedToken* token = nextToken(&firstToken);
 
-    id = token->id;
+    id = token->token.id;
     if (id == KW_do) {
-        const Token* ptr = ctx->curToken;
-        const Token* next = nextToken(&ptr);
-        if (next->id == T_LCURLY) {
+        const ChainedToken* ptr = firstToken;
+        const ChainedToken* next = nextToken(&ptr);
+        if (next->token.id == T_LCURLY) {
             id = T_KWdo_WITH_LCURLY;
-            ctx->curToken = next->next;
+            firstToken = next->next;
         }
     }
 
-    yyctx->yylval.token = token;
-    yyctx->yyposn = token->location;
+    ctx->yylval.token = (CompilerToken*)&token->token;
+    ctx->yyposn = token->token.location;
 
     return id;
-    */
 }

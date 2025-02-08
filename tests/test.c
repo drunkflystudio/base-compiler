@@ -65,6 +65,9 @@ static const char* pushHex(lua_State* L, uint_value_t value)
     return lua_pushstring(L, dst);
 }
 
+/*===================================================================================================================*/
+/* LEXER */
+
 int test_lexer(lua_State* L)
 {
     const char* fileContents = luaL_checkstring(L, 1);
@@ -123,6 +126,79 @@ int test_lexer(lua_State* L)
         }
     }
 
+    actual = endPrint();
+
+    if (!compare(L, expected, actual))
+        ++g_testFailCount;
+    else
+        ++g_testSuccessCount;
+
+    return 0;
+}
+
+/*===================================================================================================================*/
+/* PARSER */
+
+#include "parsercb.h"
+
+int test_parser_full(lua_State* L)
+{
+    const char* fileContents = luaL_checkstring(L, 1);
+    const char* expected = replaceCRLF(L, luaL_checkstring(L, 2));
+    const char* actual;
+    CompilerParser parser;
+    SourceFile* file;
+    int lineNumber = 1;
+
+    Compiler* compiler = compilerPushNew(L);
+    pushTestName(L);
+    beginPrint(L);
+
+    file = (SourceFile*)compilerTempAlloc(compiler, sizeof(SourceFile));
+    file->name = g_testName;
+
+    memset(&parser, 0, sizeof(CompilerParser));
+    parser.compiler = compiler;
+    parser.cb.ud = L;
+    initParserCallbacks(&parser);
+    compilerBeginParse(&parser);
+
+    g_indent = 0;
+    compiler->lexer.state = LEXER_NORMAL;
+
+    for (;;) {
+        const char* lineStart;
+        size_t lineLength;
+        bool eof = !compilerReadLine(&fileContents, &lineStart, &lineLength);
+
+        SourceLine* line = (SourceLine*)compilerTempAlloc(compiler, sizeof(SourceLine));
+        line->number = lineNumber++;
+
+        compilerBeginLine(compiler, file, line, lineStart, lineLength, compiler->lexer.state);
+
+        if (compiler->lexer.token.location.file != file) {
+            logPrintf("%s: TEST FAILURE: invalid file in token location.\n", g_testName);
+            ++g_testFailCount;
+        }
+
+        while (compilerGetToken(compiler))
+            compilerPushToken(&parser);
+
+        if (eof) {
+            if (compiler->lexer.state == LEXER_MULTILINE_COMMENT)
+                printF("error: %d,%d: unterminated comment\n", line->number, compiler->lexer.column);
+            compiler->lexer.token.id = T_EOF;
+            compiler->lexer.token.name = "<end of file>";
+            compiler->lexer.token.location.startLine = line;
+            compiler->lexer.token.location.endLine = line;
+            compiler->lexer.token.location.startColumn = compiler->lexer.column;
+            compiler->lexer.token.location.endColumn = compiler->lexer.column;
+            compilerPushToken(&parser);
+            break;
+        }
+    }
+
+    compilerEndParse(&parser);
     actual = endPrint();
 
     if (!compare(L, expected, actual))

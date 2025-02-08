@@ -13,6 +13,10 @@ STRUCT(CompilerParserCallbacks)
 {
     void* ud;
 
+    /* translation unit */
+    void (*translationUnitBegin)(void* ud);
+    void (*translationUnitEnd)(void* ud);
+
     /* attributes */
     void (*attrBegin)(void* ud, LOC(loc), const char* name);
     void (*attrParam)(void* ud, LOC(optionalNameLoc), const char* optionalName, EXPR(value));
@@ -183,5 +187,8 @@ STRUCT(CompilerParser)
 };
 
 void compilerBeginParse(CompilerParser* parser);
+void compilerPushToken(CompilerParser* parser);
+void compilerPushTokenEx(CompilerParser* parser, const CompilerToken* token);
+void compilerEndParse(CompilerParser* parser);
 
 #endif

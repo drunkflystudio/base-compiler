@@ -14,6 +14,7 @@ set(tests
     l_num8.lua
     l_num10.lua
     l_num16.lua
+    p_main.lua
     )
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
@@ -58,6 +59,7 @@ set(gen
 
 set(src
     main.c
+    parsercb.h
     test.c
     tests.h
     util.c

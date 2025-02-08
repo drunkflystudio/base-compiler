@@ -3,6 +3,7 @@
 
 #include <drunkfly/compiler.h>
 #include <drunkfly/compiler/private.h>
+#include <drunkfly/compiler/parser.h>
 #include <drunkfly/vm.h>
 #include <lua.h>
 #include <lauxlib.h>
@@ -18,6 +19,7 @@ extern int g_testSuccessCount;
 /* test.c */
 
 int test_lexer(lua_State* L);
+int test_parser_full(lua_State* L);
 
 /* util.c */
 
