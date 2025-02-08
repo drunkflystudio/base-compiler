@@ -9,12 +9,12 @@ struct CompilerType
 static CompilerType g_void = { "void" };
 static CompilerType g_bit = { "bit" };
 static CompilerType g_bool = { "bool" };
-static CompilerType g_int8 = { "int8" };
-static CompilerType g_uint8 = { "uint8" };
-static CompilerType g_int16 = { "int16" };
-static CompilerType g_uint16 = { "uint16" };
-static CompilerType g_int32 = { "int32" };
-static CompilerType g_uint32 = { "uint32" };
+static CompilerType g_int8 = { "i8" };
+static CompilerType g_uint8 = { "u8" };
+static CompilerType g_int16 = { "i16" };
+static CompilerType g_uint16 = { "u16" };
+static CompilerType g_int32 = { "i32" };
+static CompilerType g_uint32 = { "u32" };
 static CompilerType g_object = { "object" };
 
 /*==================================================================================================================*/

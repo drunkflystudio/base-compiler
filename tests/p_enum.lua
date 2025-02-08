@@ -29,7 +29,7 @@ enum A : int {
 ]], [[
 translationUnitBegin
  enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
-  enumType loc:(1,10-1,12) type:int16
+  enumType loc:(1,10-1,12) type:i16
   enumMembersBegin loc:(1,14-1,14)
   enumMembersEnd loc:(2,1-2,1)
  enumEnd loc:(2,1-2,1)
