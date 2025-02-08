@@ -107,3 +107,87 @@ translationUnitBegin
  enumEnd loc:(4,1-4,1)
 translationUnitEnd
 ]])
+
+test_parser_global([[
+enum A {
+    F = 4
+}
+]], [[
+translationUnitBegin
+ enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
+  enumMembersBegin loc:(1,8-1,8)
+   enumMember loc:(2,5-2,5) name:"F" optionalValue:0x4
+  enumMembersEnd loc:(3,1-3,1)
+ enumEnd loc:(3,1-3,1)
+translationUnitEnd
+]])
+
+test_parser_global([[
+enum A {
+    F = 4,
+}
+]], [[
+translationUnitBegin
+ enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
+  enumMembersBegin loc:(1,8-1,8)
+   enumMember loc:(2,5-2,5) name:"F" optionalValue:0x4
+  enumMembersEnd loc:(3,1-3,1)
+ enumEnd loc:(3,1-3,1)
+translationUnitEnd
+]])
+
+test_parser_global([[
+enum A {
+    F =
+}
+]], [[
+translationUnitBegin
+ enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
+  enumMembersBegin loc:(1,8-1,8)
+(3,1-3,1): unexpected token: '}'
+]])
+
+test_parser_global([[
+enum A {
+    F = 4
+    G
+}
+]], [[
+translationUnitBegin
+ enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
+  enumMembersBegin loc:(1,8-1,8)
+   enumMember loc:(2,5-2,5) name:"F" optionalValue:0x4
+(3,5-3,5): unexpected token: identifier
+]])
+
+test_parser_global([[
+enum A {
+    F = 4,
+    G = 4
+}
+]], [[
+translationUnitBegin
+ enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
+  enumMembersBegin loc:(1,8-1,8)
+   enumMember loc:(2,5-2,5) name:"F" optionalValue:0x4
+   enumMember loc:(3,5-3,5) name:"G" optionalValue:0x4
+  enumMembersEnd loc:(4,1-4,1)
+ enumEnd loc:(4,1-4,1)
+translationUnitEnd
+]])
+
+test_parser_global([[
+enum A {
+    F = 4,
+    G = 4,
+}
+]], [[
+translationUnitBegin
+ enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
+  enumMembersBegin loc:(1,8-1,8)
+   enumMember loc:(2,5-2,5) name:"F" optionalValue:0x4
+   enumMember loc:(3,5-3,5) name:"G" optionalValue:0x4
+  enumMembersEnd loc:(4,1-4,1)
+ enumEnd loc:(4,1-4,1)
+translationUnitEnd
+]])

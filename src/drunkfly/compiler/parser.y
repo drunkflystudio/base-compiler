@@ -588,7 +588,7 @@ enum_member_list : enum_member | enum_member_list T_COMMA enum_member;
 
 enum_member
     : T_IDENTIFIER { CB.enumMember(UD, &@1, $1->text, NULL); }
-    | T_IDENTIFIER T_ASSIGN expression { CB.enumMember(UD, &@1, $1->text, NULL); }
+    | T_IDENTIFIER T_ASSIGN expression { CB.enumMember(UD, &@1, $1->text, $3); }
     ;
 
 /*********************************************************************************************************************/
