@@ -6,16 +6,16 @@ struct CompilerType
     CompilerExpr* size;
 };
 
-static CompilerType g_void = { "void" };
-static CompilerType g_bit = { "bit" };
-static CompilerType g_bool = { "bool" };
-static CompilerType g_int8 = { "i8" };
-static CompilerType g_uint8 = { "u8" };
-static CompilerType g_int16 = { "i16" };
-static CompilerType g_uint16 = { "u16" };
-static CompilerType g_int32 = { "i32" };
-static CompilerType g_uint32 = { "u32" };
-static CompilerType g_object = { "object" };
+static CompilerType g_void = { "void", NULL, NULL };
+static CompilerType g_bit = { "bit", NULL, NULL };
+static CompilerType g_bool = { "bool", NULL, NULL };
+static CompilerType g_int8 = { "i8", NULL, NULL };
+static CompilerType g_uint8 = { "u8", NULL, NULL };
+static CompilerType g_int16 = { "i16", NULL, NULL };
+static CompilerType g_uint16 = { "u16", NULL, NULL };
+static CompilerType g_int32 = { "i32", NULL, NULL };
+static CompilerType g_uint32 = { "u32", NULL, NULL };
+static CompilerType g_object = { "object", NULL, NULL };
 
 /*==================================================================================================================*/
 
@@ -67,7 +67,7 @@ typedef enum EnumID {
     EXPR_ASSIGN_OR,
     EXPR_ASSIGN_XOR,
     EXPR_ASSIGN_SHL,
-    EXPR_ASSIGN_SHR,
+    EXPR_ASSIGN_SHR
 } EnumID;
 
 struct CompilerExpr
@@ -120,7 +120,7 @@ static bool isEnd(const char* str)
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 #define ASSERT_NAME_IS(NAME) assert(!strcmp(__func__, NAME))
-#elif defined(_MSC_VER) || (defined(__GNUC__) && __GNUC__ >= 2)
+#elif defined(_MSC_VER) /*|| (defined(__GNUC__) && __GNUC__ >= 2)*/
 #define ASSERT_NAME_IS(NAME) assert(!strcmp(__FUNCTION__, NAME))
 #else
 #define ASSERT_NAME_IS(NAME) ((void)0)
@@ -977,11 +977,11 @@ static CompilerType* typePointer(void* ud, const CompilerLocation* loc, Compiler
 static CompilerExpr* expr(void* ud, const CompilerLocation* loc, EnumID what)
 {
     ParserTestContext* ctx = (ParserTestContext*)ud;
-    CompilerExpr* expr = (CompilerExpr*)compilerTempAlloc(ctx->compiler, sizeof(CompilerExpr));
-    memset(expr, 0, sizeof(CompilerExpr));
-    expr->what = what;
-    memcpy(&expr->loc, loc, sizeof(CompilerLocation));
-    return expr;
+    CompilerExpr* e = (CompilerExpr*)compilerTempAlloc(ctx->compiler, sizeof(CompilerExpr));
+    memset(e, 0, sizeof(CompilerExpr));
+    e->what = what;
+    memcpy(&e->loc, loc, sizeof(CompilerLocation));
+    return e;
 }
 
 static CompilerExpr* exprNull(void* ud, const CompilerLocation* loc)
@@ -1067,32 +1067,58 @@ static CompilerExpr* exprParentheses(void* ud, const CompilerLocation* loc, Comp
 
 static void exprNewBegin(void* ud, const CompilerLocation* loc, CompilerType* type)
 {
+    /* FIXME */
+    UNUSED(ud);
+    UNUSED(loc);
+    UNUSED(type);
 }
 
 static CompilerExpr* exprNewEnd_Struct(void* ud, const CompilerLocation* loc)
 {
+    /* FIXME */
+    UNUSED(ud);
+    UNUSED(loc);
     return NULL;
 }
 
 static CompilerExpr* exprNewEnd_Array(void* ud, const CompilerLocation* loc, CompilerExpr* size)
 {
+    /* FIXME */
+    UNUSED(ud);
+    UNUSED(loc);
+    UNUSED(size);
     return NULL;
 }
 
 static void exprMethodCallBegin(void* ud, CompilerExpr* callee)
 {
+    /* FIXME */
+    UNUSED(ud);
+    UNUSED(callee);
 }
 
 static void exprMethodSimple(void* ud, const CompilerLocation* loc, const char* name)
 {
+    /* FIXME */
+    UNUSED(ud);
+    UNUSED(loc);
+    UNUSED(name);
 }
 
 static void exprMethodArg(void* ud, const CompilerLocation* loc, const char* name, CompilerExpr* value)
 {
+    /* FIXME */
+    UNUSED(ud);
+    UNUSED(loc);
+    UNUSED(name);
+    UNUSED(value);
 }
 
 static CompilerExpr* exprMethodCallEnd(void* ud, const CompilerLocation* loc)
 {
+    /* FIXME */
+    UNUSED(ud);
+    UNUSED(loc);
     return NULL;
 }
 
@@ -1637,6 +1663,12 @@ static CompilerExpr* exprLogicOr(void* ud, const CompilerLocation* loc, Compiler
 static CompilerExpr* exprTernary(void* ud, const CompilerLocation* loc,
     CompilerExpr* cond, CompilerExpr* trueValue, CompilerExpr* falseValue)
 {
+    /* FIXME */
+    UNUSED(ud);
+    UNUSED(loc);
+    UNUSED(cond);
+    UNUSED(trueValue);
+    UNUSED(falseValue);
     return NULL;
 }
 
@@ -1846,11 +1878,11 @@ static void stmtEmpty(void* ud, const CompilerLocation* loc)
     END
 }
 
-static void stmtExpr(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
+static void stmtExpr(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
     FRAG(stmtExpr)
         LOC(loc)
-        EXPR(expr)
+        EXPR(e)
     END
 }
 
@@ -1885,11 +1917,11 @@ static void stmtContinue(void* ud, const CompilerLocation* loc)
     END
 }
 
-static void stmtDelete(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
+static void stmtDelete(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
     FRAG(stmtDelete)
         LOC(loc)
-        EXPR(expr)
+        EXPR(e)
     END
 }
 
@@ -1922,11 +1954,11 @@ static void stmtIfBegin(void* ud, const CompilerLocation* loc)
     END
 }
 
-static void stmtIfThen(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
+static void stmtIfThen(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
     FRAG(stmtIfThen)
         LOC(loc)
-        EXPR(expr)
+        EXPR(e)
     END
 }
 
@@ -1950,11 +1982,11 @@ static void stmtWhileBegin(void* ud, const CompilerLocation* loc)
     END
 }
 
-static void stmtWhileDo(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
+static void stmtWhileDo(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
     FRAG(stmtWhileDo)
         LOC(loc)
-        EXPR(expr)
+        EXPR(e)
     END
 }
 
@@ -1971,11 +2003,11 @@ static void stmtDoBegin(void* ud, const CompilerLocation* loc)
     END
 }
 
-static void stmtDoEnd(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
+static void stmtDoEnd(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
     FRAG(stmtDoEnd)
         LOC(loc)
-        EXPR(expr)
+        EXPR(e)
     END
 }
 
@@ -1986,25 +2018,25 @@ static void stmtForBegin(void* ud, const CompilerLocation* loc)
     END
 }
 
-static void stmtForInit(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
+static void stmtForInit(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
     FRAG(stmtForInit)
         LOC(loc)
-        EXPR(expr)
+        EXPR(e)
     END
 }
 
-static void stmtForCondition(void* ud, CompilerExpr* expr)
+static void stmtForCondition(void* ud, CompilerExpr* e)
 {
     FRAG(stmtForCondition)
-        EXPR(expr)
+        EXPR(e)
     END
 }
 
-static void stmtForUpdate(void* ud, CompilerExpr* expr)
+static void stmtForUpdate(void* ud, CompilerExpr* e)
 {
     FRAG(stmtForUpdate)
-        EXPR(expr)
+        EXPR(e)
     END
 }
 
@@ -2028,19 +2060,19 @@ static void stmtSwitchBegin(void* ud, const CompilerLocation* loc)
     END
 }
 
-static void stmtSwitchOperand(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
+static void stmtSwitchOperand(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
     FRAG(stmtSwitchOperand)
         LOC(loc)
-        EXPR(expr)
+        EXPR(e)
     END
 }
 
-static void stmtSwitchCase(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
+static void stmtSwitchCase(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
     FRAG(stmtSwitchCase)
         LOC(loc)
-        EXPR(expr)
+        EXPR(e)
     END
 }
 
@@ -2115,6 +2147,8 @@ static void stmtTryEnd(void* ud)
 static void error(void* ud, const CompilerLocation* loc, const CompilerToken* token)
 {
     static const char frag_name_[] = "yyerror";
+
+    UNUSED(ud);
 
     NOT_NULL(loc)
     if (!loc)
