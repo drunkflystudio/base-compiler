@@ -24,6 +24,22 @@ STRUCT(CompilerParserCallbacks)
     void (*attrListBegin)(void* ud);
     void (*attrListEnd)(void* ud);
 
+    /* enum declaration */
+    void (*enumBegin)(void* ud, LOC(loc), LOC(nameLoc), const char* name, bool isEnum);
+    void (*enumType)(void* ud, LOC(loc), TYPE(type));
+    void (*enumMembersBegin)(void* ud, LOC(loc));
+    void (*enumMember)(void* ud, LOC(loc), const char* name, EXPR(value));
+    void (*enumMembersEnd)(void* ud, LOC(loc));
+    void (*enumEnd)(void* ud, LOC(loc));
+
+    /* struct declaration */
+    void (*structBegin)(void* ud, LOC(loc), LOC(nameLoc), const char* name, bool isUnion);
+    void (*structParent)(void* ud, LOC(loc), const char* name);
+    void (*structMembersBegin)(void* ud, LOC(loc));
+    void (*structMember)(void* ud, LOC(loc), const char* name, TYPE(type));
+    void (*structMembersEnd)(void* ud, LOC(loc));
+    void (*structEnd)(void* ud, LOC(loc));
+
     /* class/interface declaration */
     void (*classBegin)(void* ud, LOC(loc), LOC(nameLoc), const char* name, bool isFinal);
     void (*classBeginInterface)(void* ud, LOC(loc), LOC(nameLoc), const char* name);
@@ -42,6 +58,7 @@ STRUCT(CompilerParserCallbacks)
     void (*classMethodBodyBegin)(void* ud);
     void (*classMethodEnd)(void* ud);
     void (*classMembersEnd)(void* ud, LOC(loc));
+    void (*classEnd)(void* ud, LOC(loc));
 
     /* variable declaration */
     void (*varDeclBegin)(void* ud, LOC(loc), LOC(optionalStatic), bool isConst);

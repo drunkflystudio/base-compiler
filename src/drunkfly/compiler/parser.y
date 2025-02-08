@@ -158,6 +158,8 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %type <visi> class_member_visibility
 %type <flag> optional_static
 %type <flag> optional_override
+%type <flag> enum_or_flags
+%type <flag> struct_or_union
 
 %union {
     CompilerType* type;
@@ -526,7 +528,7 @@ optional_parent_class_list : /* empty */ | T_COLON parent_class_list;
 parent_class_list : parent_class_name | parent_class_list T_COMMA parent_class_name;
 parent_class_name : T_IDENTIFIER { CB.classParent(UD, &@1, $1->text); };
 class_body_start : T_LCURLY { CB.classMembersBegin(UD, &@1); };
-class_body_end : T_RCURLY { CB.classMembersEnd(UD, &@1); };
+class_body_end : T_RCURLY { CB.classMembersEnd(UD, &@1); CB.classEnd(UD, &@1); };
 class_body : class_body_start class_member_list class_body_end;
 class_member_list : /* empty */ | class_member_list class_member;
 
@@ -577,59 +579,40 @@ optional_compound_statement
 /*********************************************************************************************************************/
 /* Enum declarations */
 
-enum_declaration
-    : optional_attribute_list enum_or_flags T_IDENTIFIER optional_type_name
-            T_LCURLY optional_enum_member_list T_RCURLY
-    ;
+enum_declaration : optional_attribute_list enum_declaration_start enum_optional_type_name enum_members;
 
-enum_or_flags
-    : KW_enum
-    | KW_flags
-    ;
+enum_declaration_start : enum_or_flags T_IDENTIFIER { CB.enumBegin(UD, &@1, &@2, $2->text, $1); };
+enum_or_flags : KW_enum { $$ = false; } | KW_flags { $$ = true; };
+enum_optional_type_name : optional_type_name { if ($1) CB.enumType(UD, &@1, $1); };
 
-optional_enum_member_list
-    : /* empty */
-    | enum_member_list
-    | enum_member_list T_COMMA
-    ;
+enum_members: enum_members_start optional_enum_member_list enum_members_end;
+enum_members_start : T_LCURLY { CB.enumMembersBegin(UD, &@1); };
+enum_members_end : T_RCURLY { CB.enumMembersEnd(UD, &@1); CB.enumEnd(UD, &@1); };
 
-enum_member_list
-    : enum_member
-    | enum_member_list T_COMMA enum_member
-    ;
+optional_enum_member_list : /* empty */ | enum_member_list | enum_member_list T_COMMA;
+enum_member_list : enum_member | enum_member_list T_COMMA enum_member;
 
 enum_member
-    : T_IDENTIFIER
-    | T_IDENTIFIER T_ASSIGN expression
+    : T_IDENTIFIER { CB.enumMember(UD, &@1, $1->text, NULL); }
+    | T_IDENTIFIER T_ASSIGN expression { CB.enumMember(UD, &@1, $1->text, NULL); }
     ;
-
 
 /*********************************************************************************************************************/
 /* Struct declarations */
 
-struct_declaration
-    : optional_attribute_list struct_or_union T_IDENTIFIER optional_parent_struct
-           T_LCURLY struct_member_list T_RCURLY
-    ;
+struct_declaration : optional_attribute_list struct_declaration_start struct_optional_parent_struct struct_members;
 
-struct_or_union
-    : KW_struct
-    | KW_union
-    ;
+struct_declaration_start : struct_or_union T_IDENTIFIER { CB.structBegin(UD, &@1, &@2, $2->text, $1); }
+struct_or_union : KW_struct { $$ = false; } | KW_union { $$ = true; };
+struct_optional_parent : /* empty */ | T_COLON T_IDENTIFIER { CB.structParent(UD, &@2, $2->text); };
 
-optional_parent_struct
-    : /* empty */
-    | T_COLON T_IDENTIFIER
-    ;
+struct_members: struct_members_start struct_member_list struct_members_end;
+struct_members_start : T_LCURLY { CB.structMembersBegin(UD, &@1); };
+struct_members_end : T_RCURLY { CB.structMembersEnd(UD, &@1); CB.structEnd(UD, &@1); };
 
-struct_member_list
-    : /* empty */
-    | struct_member_list struct_member
-    ;
-
-struct_member
-    : optional_attribute_list T_IDENTIFIER T_COLON type_name T_SEMICOLON
-    ;
+struct_member_list : /* empty */ | struct_member_list struct_member_with_attributes;
+struct_member_with_attributes : optional_attribute_list struct_member;
+struct_member : T_IDENTIFIER T_COLON type_name T_SEMICOLON { CB.structMember(UD, &@1, $1->text, $3); };
 
 /*********************************************************************************************************************/
 

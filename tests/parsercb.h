@@ -254,6 +254,104 @@ static void attrListEnd(void* ud)
     END
 }
 
+static void enumBegin(void* ud,
+    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isEnum)
+{
+    FRAG(enumBegin)
+        LOC(loc)
+        LOC(nameLoc)
+        STR(name)
+        BOOL(isEnum)
+    END_INDENT
+}
+
+static void enumType(void* ud, const CompilerLocation* loc, CompilerType* type)
+{
+    FRAG(enumType)
+        LOC(loc)
+        TYPE(type)
+    END
+}
+
+static void enumMembersBegin(void* ud, const CompilerLocation* loc)
+{
+    FRAG(enumMembersBegin)
+        LOC(loc)
+    END_INDENT
+}
+
+static void enumMember(void* ud, const CompilerLocation* loc, const char* name, CompilerExpr* value)
+{
+    FRAG(enumMember)
+        LOC(loc)
+        STR(name)
+        EXPR(value)
+    END
+}
+
+static void enumMembersEnd(void* ud, const CompilerLocation* loc)
+{
+    FRAG_UNINDENT(enumMembersEnd)
+        LOC(loc)
+    END
+}
+
+static void enumEnd(void* ud, const CompilerLocation* loc)
+{
+    FRAG_UNINDENT(enumEnd)
+        LOC(loc)
+    END
+}
+
+static void structBegin(void* ud,
+    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isEnum)
+{
+    FRAG(structBegin)
+        LOC(loc)
+        LOC(nameLoc)
+        STR(name)
+        BOOL(isEnum)
+    END_INDENT
+}
+
+static void structParent(void* ud, const CompilerLocation* loc, const char* name)
+{
+    FRAG(enumType)
+        LOC(loc)
+        STR(name)
+    END
+}
+
+static void structMembersBegin(void* ud, const CompilerLocation* loc)
+{
+    FRAG(structMembersBegin)
+        LOC(loc)
+    END_INDENT
+}
+
+static void structMember(void* ud, const CompilerLocation* loc, const char* name, CompilerType* type)
+{
+    FRAG(structMember)
+        LOC(loc)
+        STR(name)
+        TYPE(type)
+    END
+}
+
+static void structMembersEnd(void* ud, const CompilerLocation* loc)
+{
+    FRAG_UNINDENT(structMembersEnd)
+        LOC(loc)
+    END
+}
+
+static void structEnd(void* ud, const CompilerLocation* loc)
+{
+    FRAG_UNINDENT(structEnd)
+        LOC(loc)
+    END
+}
+
 static void classBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFinal)
 {
@@ -399,6 +497,13 @@ static void classMethodEnd(void* ud)
 static void classMembersEnd(void* ud, const CompilerLocation* loc)
 {
     FRAG_UNINDENT(classMembersEnd)
+        LOC(loc)
+    END
+}
+
+static void classEnd(void* ud, const CompilerLocation* loc)
+{
+    FRAG_UNINDENT(classEnd)
         LOC(loc)
     END
 }
@@ -1101,6 +1206,24 @@ static void initParserCallbacks(CompilerParser* parser)
     parser->cb.attrEnd = attrEnd;
     parser->cb.attrListBegin = attrListBegin;
     parser->cb.attrListEnd = attrListEnd;
+    parser->cb.enumBegin = enumBegin;
+    parser->cb.enumType = enumType;
+    parser->cb.enumMembersBegin = enumMembersBegin;
+    parser->cb.enumMember = enumMember;
+    parser->cb.enumMembersEnd = enumMembersEnd;
+    parser->cb.enumEnd = enumEnd;
+    parser->cb.structBegin = structBegin;
+    parser->cb.structParent = structParent;
+    parser->cb.structMembersBegin = structMembersBegin;
+    parser->cb.structMember = structMember;
+    parser->cb.structMembersEnd = structMembersEnd;
+    parser->cb.structEnd = structEnd;
+    parser->cb.structBegin = structBegin;
+    parser->cb.structParent = structParent;
+    parser->cb.structMembersBegin = structMembersBegin;
+    parser->cb.structMember = structMember;
+    parser->cb.structMembersEnd = structMembersEnd;
+    parser->cb.structEnd = structEnd;
     parser->cb.classBegin = classBegin;
     parser->cb.classBeginInterface = classBeginInterface;
     parser->cb.classParent = classParent;
@@ -1118,6 +1241,7 @@ static void initParserCallbacks(CompilerParser* parser)
     parser->cb.classMethodBodyBegin = classMethodBodyBegin;
     parser->cb.classMethodEnd = classMethodEnd;
     parser->cb.classMembersEnd = classMembersEnd;
+    parser->cb.classEnd = classEnd;
     parser->cb.varDeclBegin = varDeclBegin;
     parser->cb.varBegin = varBegin;
     parser->cb.varType = varType;
