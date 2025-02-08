@@ -57,6 +57,17 @@ typedef enum EnumID {
     EXPR_BITWISE_OR,
     EXPR_LOGIC_AND,
     EXPR_LOGIC_OR,
+    EXPR_ASSIGN,
+    EXPR_ASSIGN_ADD,
+    EXPR_ASSIGN_SUB,
+    EXPR_ASSIGN_MUL,
+    EXPR_ASSIGN_DIV,
+    EXPR_ASSIGN_MOD,
+    EXPR_ASSIGN_AND,
+    EXPR_ASSIGN_OR,
+    EXPR_ASSIGN_XOR,
+    EXPR_ASSIGN_SHL,
+    EXPR_ASSIGN_SHR,
 } EnumID;
 
 struct CompilerExpr
@@ -174,6 +185,17 @@ static void printExpr(lua_State* L, CompilerExpr* expr)
         case EXPR_BITWISE_OR: E(op1); _("|"); E(op2); return;
         case EXPR_LOGIC_AND: E(op1); _("&&"); E(op2); return;
         case EXPR_LOGIC_OR: E(op1); _("||"); E(op2); return;
+        case EXPR_ASSIGN: E(op1); _("="); E(op2); return;
+        case EXPR_ASSIGN_ADD: E(op1); _("+="); E(op2); return;
+        case EXPR_ASSIGN_SUB: E(op1); _("-="); E(op2); return;
+        case EXPR_ASSIGN_MUL: E(op1); _("*="); E(op2); return;
+        case EXPR_ASSIGN_DIV: E(op1); _("/="); E(op2); return;
+        case EXPR_ASSIGN_MOD: E(op1); _("%="); E(op2); return;
+        case EXPR_ASSIGN_AND: E(op1); _("&="); E(op2); return;
+        case EXPR_ASSIGN_OR: E(op1); _("|="); E(op2); return;
+        case EXPR_ASSIGN_XOR: E(op1); _("^="); E(op2); return;
+        case EXPR_ASSIGN_SHL: E(op1); _("<<="); E(op2); return;
+        case EXPR_ASSIGN_SHR: E(op1); _(">>="); E(op2); return;
     }
 
     #undef E
@@ -239,7 +261,7 @@ static void frag(lua_State* L, int count)
 #define OPTSTR(NAME) \
         ++arg_n_; \
         if (!NAME) \
-            lua_pushfstring(L, " %s:%s", #NAME, "(null)"); \
+            lua_pushfstring(L, " %s:%s", #NAME, "<none>"); \
         else \
             lua_pushfstring(L, " %s:\"%s\"", #NAME, NAME);
 
@@ -250,7 +272,7 @@ static void frag(lua_State* L, int count)
 #define OPTLOC(NAME) \
         ++arg_n_; \
         if (!NAME) \
-            lua_pushfstring(L, " %s:%s", #NAME, "(null)"); \
+            lua_pushfstring(L, " %s:%s", #NAME, "<none>"); \
         else { \
             FIELD_NOT_NULL(NAME, startLine) \
             FIELD_NOT_NULL(NAME, endLine) \
@@ -268,7 +290,7 @@ static void frag(lua_State* L, int count)
 #define OPTTYPE(NAME) \
         ++arg_n_; \
         if (!NAME) \
-            lua_pushfstring(L, " %s:%s", #NAME, "(null)"); \
+            lua_pushfstring(L, " %s:%s", #NAME, "<none>"); \
         else { \
             CompilerType* t = NAME; \
             while (t->pointee) \
@@ -299,7 +321,7 @@ static void frag(lua_State* L, int count)
 #define OPTEXPR(NAME) \
         if (!NAME) { \
             ++arg_n_; \
-            lua_pushfstring(L, " %s:%s", #NAME, "(null)"); \
+            lua_pushfstring(L, " %s:%s", #NAME, "<none>"); \
         } else { \
             int n = lua_gettop(L); \
             lua_pushfstring(L, " %s:", #NAME); \
@@ -500,7 +522,8 @@ static void structEnd(void* ud, const CompilerLocation* loc)
 static void classBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFinal)
 {
-    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES
+            && g_parseMode != PARSE_EXPR && g_parseMode != PARSE_STMT) {
         FRAG(classBegin)
             LOC(loc)
             LOC(nameLoc)
@@ -532,7 +555,8 @@ static void classParent(void* ud, const CompilerLocation* loc, const char* name)
 
 static void classMembersBegin(void* ud, const CompilerLocation* loc)
 {
-    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES
+            && g_parseMode != PARSE_EXPR && g_parseMode != PARSE_STMT) {
         FRAG(classMembersBegin)
             LOC(loc)
         END_INDENT
@@ -591,22 +615,26 @@ static void classDestructorEnd(void* ud)
 static void classMethodBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* visLoc,
     CompilerVisibility vis, const CompilerLocation* optionalStatic, const CompilerLocation* retLoc, CompilerType* ret)
 {
-    FRAG(classMethodBegin)
-        LOC(loc)
-        LOC(visLoc)
-        VIS(vis)
-        OPTLOC(optionalStatic)
-        LOC(retLoc)
-        TYPE(ret)
-    END_INDENT
+    if (g_parseMode != PARSE_STMT) {
+        FRAG(classMethodBegin)
+            LOC(loc)
+            LOC(visLoc)
+            VIS(vis)
+            OPTLOC(optionalStatic)
+            LOC(retLoc)
+            TYPE(ret)
+        END_INDENT
+    }
 }
 
 static void classMethodNameSimple(void* ud, const CompilerLocation* loc, const char* name)
 {
-    FRAG(classMethodNameSimple)
-        LOC(loc)
-        STR(name)
-    END
+    if (g_parseMode != PARSE_STMT) {
+        FRAG(classMethodNameSimple)
+            LOC(loc)
+            STR(name)
+        END
+    }
 }
 
 static void classMethodNameArg(void* ud, const CompilerLocation* loc,
@@ -624,10 +652,12 @@ static void classMethodNameArg(void* ud, const CompilerLocation* loc,
 static void classMethodNameEnd(void* ud,
     const CompilerLocation* optionalFinal, const CompilerLocation* optionalOverride)
 {
-    FRAG_UNINDENT(classMethodNameEnd)
-        OPTLOC(optionalFinal)
-        OPTLOC(optionalOverride)
+    if (g_parseMode != PARSE_STMT) {
+        FRAG_UNINDENT(classMethodNameEnd)
+            OPTLOC(optionalFinal)
+            OPTLOC(optionalOverride)
         END
+    }
 }
 
 static void classMethodEnd_Abstract(void* ud, const CompilerLocation* loc)
@@ -639,19 +669,24 @@ static void classMethodEnd_Abstract(void* ud, const CompilerLocation* loc)
 
 static void classMethodBodyBegin(void* ud)
 {
-    FRAG(classMethodBodyBegin)
-    END_INDENT
+    if (g_parseMode != PARSE_STMT) {
+        FRAG(classMethodBodyBegin)
+        END_INDENT
+    }
 }
 
 static void classMethodEnd(void* ud)
 {
-    FRAG_UNINDENT(classMethodEnd)
-    END
+    if (g_parseMode != PARSE_STMT) {
+        FRAG_UNINDENT(classMethodEnd)
+        END
+    }
 }
 
 static void classMembersEnd(void* ud, const CompilerLocation* loc)
 {
-    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES
+            && g_parseMode != PARSE_EXPR && g_parseMode != PARSE_STMT) {
         FRAG_UNINDENT(classMembersEnd)
             LOC(loc)
         END
@@ -660,7 +695,8 @@ static void classMembersEnd(void* ud, const CompilerLocation* loc)
 
 static void classEnd(void* ud, const CompilerLocation* loc)
 {
-    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR) {
+    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES
+            && g_parseMode != PARSE_EXPR && g_parseMode != PARSE_STMT) {
         FRAG_UNINDENT(classEnd)
             LOC(loc)
         END
@@ -983,6 +1019,8 @@ static CompilerExpr* exprTrue(void* ud, const CompilerLocation* loc)
 
 static CompilerExpr* exprIdentifier(void* ud, const CompilerLocation* loc, const char* name)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprIdentifier)
             LOC(loc)
@@ -990,13 +1028,15 @@ static CompilerExpr* exprIdentifier(void* ud, const CompilerLocation* loc, const
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_IDENTIFIER);
+    e = expr(ud, loc, EXPR_IDENTIFIER);
     e->identifier = name;
     return e;
 }
 
 static CompilerExpr* exprInteger(void* ud, const CompilerLocation* loc, uint_value_t value)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprInteger)
             LOC(loc)
@@ -1004,13 +1044,15 @@ static CompilerExpr* exprInteger(void* ud, const CompilerLocation* loc, uint_val
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_INTEGER);
+    e = expr(ud, loc, EXPR_INTEGER);
     e->integer = value;
     return e;
 }
 
 static CompilerExpr* exprParentheses(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprParentheses)
             LOC(loc)
@@ -1018,7 +1060,7 @@ static CompilerExpr* exprParentheses(void* ud, const CompilerLocation* loc, Comp
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_PARENTHESES);
+    e = expr(ud, loc, EXPR_PARENTHESES);
     e->operand = operand;
     return e;
 }
@@ -1056,6 +1098,8 @@ static CompilerExpr* exprMethodCallEnd(void* ud, const CompilerLocation* loc)
 
 static CompilerExpr* exprSubscript(void* ud, const CompilerLocation* loc, CompilerExpr* arr, CompilerExpr* idx)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprSubscript)
             LOC(loc)
@@ -1064,7 +1108,7 @@ static CompilerExpr* exprSubscript(void* ud, const CompilerLocation* loc, Compil
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_SUBSCRIPT);
+    e = expr(ud, loc, EXPR_SUBSCRIPT);
     e->array = arr;
     e->index = idx;
     return e;
@@ -1073,6 +1117,8 @@ static CompilerExpr* exprSubscript(void* ud, const CompilerLocation* loc, Compil
 static CompilerExpr* exprMember(void* ud,
     const CompilerLocation* loc, CompilerExpr* target, const CompilerLocation* nameLoc, const char* name)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprMember)
             LOC(loc)
@@ -1082,7 +1128,7 @@ static CompilerExpr* exprMember(void* ud,
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_MEMBER);
+    e = expr(ud, loc, EXPR_MEMBER);
     e->operand = target;
     e->identifier = name;
     return e;
@@ -1090,6 +1136,8 @@ static CompilerExpr* exprMember(void* ud,
 
 static CompilerExpr* exprPostfixIncr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprPostfixIncr)
             LOC(loc)
@@ -1097,13 +1145,15 @@ static CompilerExpr* exprPostfixIncr(void* ud, const CompilerLocation* loc, Comp
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_POSTFIX_INCR);
+    e = expr(ud, loc, EXPR_POSTFIX_INCR);
     e->operand = operand;
     return e;
 }
 
 static CompilerExpr* exprPostfixDecr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprPostfixDecr)
             LOC(loc)
@@ -1111,13 +1161,15 @@ static CompilerExpr* exprPostfixDecr(void* ud, const CompilerLocation* loc, Comp
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_POSTFIX_DECR);
+    e = expr(ud, loc, EXPR_POSTFIX_DECR);
     e->operand = operand;
     return e;
 }
 
 static CompilerExpr* exprPrefixIncr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprPrefixIncr)
             LOC(loc)
@@ -1125,13 +1177,15 @@ static CompilerExpr* exprPrefixIncr(void* ud, const CompilerLocation* loc, Compi
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_PREFIX_INCR);
+    e = expr(ud, loc, EXPR_PREFIX_INCR);
     e->operand = operand;
     return e;
 }
 
 static CompilerExpr* exprPrefixDecr(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprPrefixDecr)
             LOC(loc)
@@ -1139,13 +1193,15 @@ static CompilerExpr* exprPrefixDecr(void* ud, const CompilerLocation* loc, Compi
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_PREFIX_DECR);
+    e = expr(ud, loc, EXPR_PREFIX_DECR);
     e->operand = operand;
     return e;
 }
 
 static CompilerExpr* exprTakeAddress(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprTakeAddress)
             LOC(loc)
@@ -1153,13 +1209,15 @@ static CompilerExpr* exprTakeAddress(void* ud, const CompilerLocation* loc, Comp
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_TAKE_ADDRESS);
+    e = expr(ud, loc, EXPR_TAKE_ADDRESS);
     e->operand = operand;
     return e;
 }
 
 static CompilerExpr* exprDeref(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprDeref)
             LOC(loc)
@@ -1167,13 +1225,15 @@ static CompilerExpr* exprDeref(void* ud, const CompilerLocation* loc, CompilerEx
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_DEREF);
+    e = expr(ud, loc, EXPR_DEREF);
     e->operand = operand;
     return e;
 }
 
 static CompilerExpr* exprUnaryPlus(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprUnaryPlus)
             LOC(loc)
@@ -1181,13 +1241,15 @@ static CompilerExpr* exprUnaryPlus(void* ud, const CompilerLocation* loc, Compil
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_UNARY_PLUS);
+    e = expr(ud, loc, EXPR_UNARY_PLUS);
     e->operand = operand;
     return e;
 }
 
 static CompilerExpr* exprUnaryMinus(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprUnaryMinus)
             LOC(loc)
@@ -1195,13 +1257,15 @@ static CompilerExpr* exprUnaryMinus(void* ud, const CompilerLocation* loc, Compi
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_UNARY_MINUS);
+    e = expr(ud, loc, EXPR_UNARY_MINUS);
     e->operand = operand;
     return e;
 }
 
 static CompilerExpr* exprBitwiseNot(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprBitwiseNot)
             LOC(loc)
@@ -1209,13 +1273,15 @@ static CompilerExpr* exprBitwiseNot(void* ud, const CompilerLocation* loc, Compi
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_BITWISE_NOT);
+    e = expr(ud, loc, EXPR_BITWISE_NOT);
     e->operand = operand;
     return e;
 }
 
 static CompilerExpr* exprLogicNot(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprLogicNot)
             LOC(loc)
@@ -1223,13 +1289,15 @@ static CompilerExpr* exprLogicNot(void* ud, const CompilerLocation* loc, Compile
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_LOGIC_NOT);
+    e = expr(ud, loc, EXPR_LOGIC_NOT);
     e->operand = operand;
     return e;
 }
 
 static CompilerExpr* exprSizeOf(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprSizeOf)
             LOC(loc)
@@ -1237,13 +1305,15 @@ static CompilerExpr* exprSizeOf(void* ud, const CompilerLocation* loc, CompilerE
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_SIZEOF);
+    e = expr(ud, loc, EXPR_SIZEOF);
     e->operand = operand;
     return e;
 }
 
 static CompilerExpr* exprMultiply(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprMultiply)
             LOC(loc)
@@ -1252,7 +1322,7 @@ static CompilerExpr* exprMultiply(void* ud, const CompilerLocation* loc, Compile
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_MULTIPLY);
+    e = expr(ud, loc, EXPR_MULTIPLY);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1260,6 +1330,8 @@ static CompilerExpr* exprMultiply(void* ud, const CompilerLocation* loc, Compile
 
 static CompilerExpr* exprDivide(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprDivide)
             LOC(loc)
@@ -1268,7 +1340,7 @@ static CompilerExpr* exprDivide(void* ud, const CompilerLocation* loc, CompilerE
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_DIVIDE);
+    e = expr(ud, loc, EXPR_DIVIDE);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1276,6 +1348,8 @@ static CompilerExpr* exprDivide(void* ud, const CompilerLocation* loc, CompilerE
 
 static CompilerExpr* exprModulo(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprModulo)
             LOC(loc)
@@ -1284,7 +1358,7 @@ static CompilerExpr* exprModulo(void* ud, const CompilerLocation* loc, CompilerE
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_MODULO);
+    e = expr(ud, loc, EXPR_MODULO);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1292,6 +1366,8 @@ static CompilerExpr* exprModulo(void* ud, const CompilerLocation* loc, CompilerE
 
 static CompilerExpr* exprAdd(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprAdd)
             LOC(loc)
@@ -1300,7 +1376,7 @@ static CompilerExpr* exprAdd(void* ud, const CompilerLocation* loc, CompilerExpr
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_ADD);
+    e = expr(ud, loc, EXPR_ADD);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1308,6 +1384,8 @@ static CompilerExpr* exprAdd(void* ud, const CompilerLocation* loc, CompilerExpr
 
 static CompilerExpr* exprSubtract(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprSubtract)
             LOC(loc)
@@ -1316,7 +1394,7 @@ static CompilerExpr* exprSubtract(void* ud, const CompilerLocation* loc, Compile
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_SUBTRACT);
+    e = expr(ud, loc, EXPR_SUBTRACT);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1324,6 +1402,8 @@ static CompilerExpr* exprSubtract(void* ud, const CompilerLocation* loc, Compile
 
 static CompilerExpr* exprShiftLeft(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprShiftLeft)
             LOC(loc)
@@ -1332,7 +1412,7 @@ static CompilerExpr* exprShiftLeft(void* ud, const CompilerLocation* loc, Compil
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_SHIFT_LEFT);
+    e = expr(ud, loc, EXPR_SHIFT_LEFT);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1340,6 +1420,8 @@ static CompilerExpr* exprShiftLeft(void* ud, const CompilerLocation* loc, Compil
 
 static CompilerExpr* exprShiftRight(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprShiftRight)
             LOC(loc)
@@ -1348,7 +1430,7 @@ static CompilerExpr* exprShiftRight(void* ud, const CompilerLocation* loc, Compi
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_SHIFT_RIGHT);
+    e = expr(ud, loc, EXPR_SHIFT_RIGHT);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1356,6 +1438,8 @@ static CompilerExpr* exprShiftRight(void* ud, const CompilerLocation* loc, Compi
 
 static CompilerExpr* exprGreater(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprGreater)
             LOC(loc)
@@ -1364,7 +1448,7 @@ static CompilerExpr* exprGreater(void* ud, const CompilerLocation* loc, Compiler
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_GREATER);
+    e = expr(ud, loc, EXPR_GREATER);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1372,6 +1456,8 @@ static CompilerExpr* exprGreater(void* ud, const CompilerLocation* loc, Compiler
 
 static CompilerExpr* exprGreaterEq(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprGreaterEq)
             LOC(loc)
@@ -1380,7 +1466,7 @@ static CompilerExpr* exprGreaterEq(void* ud, const CompilerLocation* loc, Compil
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_GREATER_EQ);
+    e = expr(ud, loc, EXPR_GREATER_EQ);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1388,6 +1474,8 @@ static CompilerExpr* exprGreaterEq(void* ud, const CompilerLocation* loc, Compil
 
 static CompilerExpr* exprLess(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprLess)
             LOC(loc)
@@ -1396,7 +1484,7 @@ static CompilerExpr* exprLess(void* ud, const CompilerLocation* loc, CompilerExp
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_LESS);
+    e = expr(ud, loc, EXPR_LESS);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1404,6 +1492,8 @@ static CompilerExpr* exprLess(void* ud, const CompilerLocation* loc, CompilerExp
 
 static CompilerExpr* exprLessEq(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprLessEq)
             LOC(loc)
@@ -1412,7 +1502,7 @@ static CompilerExpr* exprLessEq(void* ud, const CompilerLocation* loc, CompilerE
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_LESS_EQ);
+    e = expr(ud, loc, EXPR_LESS_EQ);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1420,6 +1510,8 @@ static CompilerExpr* exprLessEq(void* ud, const CompilerLocation* loc, CompilerE
 
 static CompilerExpr* exprEqual(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprEqual)
             LOC(loc)
@@ -1428,7 +1520,7 @@ static CompilerExpr* exprEqual(void* ud, const CompilerLocation* loc, CompilerEx
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_EQUAL);
+    e = expr(ud, loc, EXPR_EQUAL);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1436,6 +1528,8 @@ static CompilerExpr* exprEqual(void* ud, const CompilerLocation* loc, CompilerEx
 
 static CompilerExpr* exprNotEqual(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprNotEqual)
             LOC(loc)
@@ -1444,7 +1538,7 @@ static CompilerExpr* exprNotEqual(void* ud, const CompilerLocation* loc, Compile
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_NOT_EQUAL);
+    e = expr(ud, loc, EXPR_NOT_EQUAL);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1452,6 +1546,8 @@ static CompilerExpr* exprNotEqual(void* ud, const CompilerLocation* loc, Compile
 
 static CompilerExpr* exprBitwiseAnd(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprBitwiseAnd)
             LOC(loc)
@@ -1460,7 +1556,7 @@ static CompilerExpr* exprBitwiseAnd(void* ud, const CompilerLocation* loc, Compi
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_BITWISE_AND);
+    e = expr(ud, loc, EXPR_BITWISE_AND);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1468,6 +1564,8 @@ static CompilerExpr* exprBitwiseAnd(void* ud, const CompilerLocation* loc, Compi
 
 static CompilerExpr* exprBitwiseXor(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprBitwiseXor)
             LOC(loc)
@@ -1476,7 +1574,7 @@ static CompilerExpr* exprBitwiseXor(void* ud, const CompilerLocation* loc, Compi
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_BITWISE_XOR);
+    e = expr(ud, loc, EXPR_BITWISE_XOR);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1484,6 +1582,8 @@ static CompilerExpr* exprBitwiseXor(void* ud, const CompilerLocation* loc, Compi
 
 static CompilerExpr* exprBitwiseOr(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprBitwiseOr)
             LOC(loc)
@@ -1492,7 +1592,7 @@ static CompilerExpr* exprBitwiseOr(void* ud, const CompilerLocation* loc, Compil
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_BITWISE_OR);
+    e = expr(ud, loc, EXPR_BITWISE_OR);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1500,6 +1600,8 @@ static CompilerExpr* exprBitwiseOr(void* ud, const CompilerLocation* loc, Compil
 
 static CompilerExpr* exprLogicAnd(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprLogicAnd)
             LOC(loc)
@@ -1508,7 +1610,7 @@ static CompilerExpr* exprLogicAnd(void* ud, const CompilerLocation* loc, Compile
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_LOGIC_AND);
+    e = expr(ud, loc, EXPR_LOGIC_AND);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1516,6 +1618,8 @@ static CompilerExpr* exprLogicAnd(void* ud, const CompilerLocation* loc, Compile
 
 static CompilerExpr* exprLogicOr(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
+    CompilerExpr* e;
+
     if (g_parseMode == PARSE_EXPR) {
         FRAG(exprLogicOr)
             LOC(loc)
@@ -1524,7 +1628,7 @@ static CompilerExpr* exprLogicOr(void* ud, const CompilerLocation* loc, Compiler
         END
     }
 
-    CompilerExpr* e = expr(ud, loc, EXPR_LOGIC_OR);
+    e = expr(ud, loc, EXPR_LOGIC_OR);
     e->op1 = op1;
     e->op2 = op2;
     return e;
@@ -1538,98 +1642,277 @@ static CompilerExpr* exprTernary(void* ud, const CompilerLocation* loc,
 
 static CompilerExpr* exprAssign(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprAssign)
+            LOC(loc)
+            EXPR(op1)
+            EXPR(op2)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_ASSIGN);
+    e->op1 = op1;
+    e->op2 = op2;
+    return e;
 }
 
 static CompilerExpr* exprAssignAdd(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprAssignAdd)
+            LOC(loc)
+            EXPR(op1)
+            EXPR(op2)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_ASSIGN_ADD);
+    e->op1 = op1;
+    e->op2 = op2;
+    return e;
 }
 
 static CompilerExpr* exprAssignSub(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprAssignSub)
+            LOC(loc)
+            EXPR(op1)
+            EXPR(op2)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_ASSIGN_SUB);
+    e->op1 = op1;
+    e->op2 = op2;
+    return e;
 }
 
 static CompilerExpr* exprAssignMul(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprAssignMul)
+            LOC(loc)
+            EXPR(op1)
+            EXPR(op2)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_ASSIGN_MUL);
+    e->op1 = op1;
+    e->op2 = op2;
+    return e;
 }
 
 static CompilerExpr* exprAssignDiv(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprAssignDiv)
+            LOC(loc)
+            EXPR(op1)
+            EXPR(op2)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_ASSIGN_DIV);
+    e->op1 = op1;
+    e->op2 = op2;
+    return e;
 }
 
 static CompilerExpr* exprAssignMod(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprAssignMod)
+            LOC(loc)
+            EXPR(op1)
+            EXPR(op2)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_ASSIGN_MOD);
+    e->op1 = op1;
+    e->op2 = op2;
+    return e;
 }
 
 static CompilerExpr* exprAssignAnd(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprAssignAnd)
+            LOC(loc)
+            EXPR(op1)
+            EXPR(op2)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_ASSIGN_AND);
+    e->op1 = op1;
+    e->op2 = op2;
+    return e;
 }
 
 static CompilerExpr* exprAssignOr(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprAssignOr)
+            LOC(loc)
+            EXPR(op1)
+            EXPR(op2)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_ASSIGN_OR);
+    e->op1 = op1;
+    e->op2 = op2;
+    return e;
 }
 
 static CompilerExpr* exprAssignXor(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprAssignXor)
+            LOC(loc)
+            EXPR(op1)
+            EXPR(op2)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_ASSIGN_XOR);
+    e->op1 = op1;
+    e->op2 = op2;
+    return e;
 }
 
 static CompilerExpr* exprAssignShl(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprAssignShl)
+            LOC(loc)
+            EXPR(op1)
+            EXPR(op2)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_ASSIGN_SHL);
+    e->op1 = op1;
+    e->op2 = op2;
+    return e;
 }
 
 static CompilerExpr* exprAssignShr(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)
 {
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprAssignShr)
+            LOC(loc)
+            EXPR(op1)
+            EXPR(op2)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_ASSIGN_SHR);
+    e->op1 = op1;
+    e->op2 = op2;
+    return e;
 }
 
 
 static void stmtEmpty(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtEmpty)
+        LOC(loc)
+    END
 }
 
 static void stmtExpr(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
 {
+    FRAG(stmtExpr)
+        LOC(loc)
+        EXPR(expr)
+    END
 }
 
 static void stmtLabel(void* ud, const CompilerLocation* loc, const char* name)
 {
+    FRAG(stmtLabel)
+        LOC(loc)
+        STR(name)
+    END
 }
 
 static void stmtGoto(void* ud, const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
+    FRAG(stmtGoto)
+        LOC(loc)
+        LOC(nameLoc)
+        STR(name)
+    END
 }
 
 static void stmtBreak(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtBreak)
+        LOC(loc)
+    END
 }
 
 static void stmtContinue(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtContinue)
+        LOC(loc)
+    END
 }
 
 static void stmtDelete(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
 {
+    FRAG(stmtDelete)
+        LOC(loc)
+        EXPR(expr)
+    END
 }
 
 static void stmtThrow(void* ud, const CompilerLocation* loc, CompilerExpr* optionalExpr)
 {
+    FRAG(stmtThrow)
+        LOC(loc)
+        OPTEXPR(optionalExpr)
+    END
 }
 
 static void stmtCompoundBegin(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtCompoundBegin)
+        LOC(loc)
+    END
 }
 
 static void stmtCompoundEnd(void* ud, const CompilerLocation* loc)
 {
+    FRAG(stmtCompoundEnd)
+        LOC(loc)
+    END
 }
 
 static void stmtIfBegin(void* ud, const CompilerLocation* loc)

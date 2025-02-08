@@ -44,7 +44,7 @@ enum A {
 translationUnitBegin
  enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
   enumMembersBegin loc:(1,8-1,8)
-   enumMember loc:(2,5-2,5) name:"F" optionalValue:(null)
+   enumMember loc:(2,5-2,5) name:"F" optionalValue:<none>
   enumMembersEnd loc:(3,1-3,1)
  enumEnd loc:(3,1-3,1)
 translationUnitEnd
@@ -58,7 +58,7 @@ enum A {
 translationUnitBegin
  enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
   enumMembersBegin loc:(1,8-1,8)
-   enumMember loc:(2,5-2,5) name:"F" optionalValue:(null)
+   enumMember loc:(2,5-2,5) name:"F" optionalValue:<none>
   enumMembersEnd loc:(3,1-3,1)
  enumEnd loc:(3,1-3,1)
 translationUnitEnd
@@ -85,8 +85,8 @@ enum A {
 translationUnitBegin
  enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
   enumMembersBegin loc:(1,8-1,8)
-   enumMember loc:(2,5-2,5) name:"F" optionalValue:(null)
-   enumMember loc:(3,5-3,5) name:"G" optionalValue:(null)
+   enumMember loc:(2,5-2,5) name:"F" optionalValue:<none>
+   enumMember loc:(3,5-3,5) name:"G" optionalValue:<none>
   enumMembersEnd loc:(4,1-4,1)
  enumEnd loc:(4,1-4,1)
 translationUnitEnd
@@ -101,8 +101,8 @@ enum A {
 translationUnitBegin
  enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
   enumMembersBegin loc:(1,8-1,8)
-   enumMember loc:(2,5-2,5) name:"F" optionalValue:(null)
-   enumMember loc:(3,5-3,5) name:"G" optionalValue:(null)
+   enumMember loc:(2,5-2,5) name:"F" optionalValue:<none>
+   enumMember loc:(3,5-3,5) name:"G" optionalValue:<none>
   enumMembersEnd loc:(4,1-4,1)
  enumEnd loc:(4,1-4,1)
 translationUnitEnd

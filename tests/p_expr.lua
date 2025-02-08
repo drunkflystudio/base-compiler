@@ -234,3 +234,80 @@ exprIdentifier loc:(2,4-2,4) name:"b"
 exprLogicOr loc:(2,1-2,4) op1:a op2:b
 result value:a||b
 ]])
+
+test_parser_expr('a=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprAssign loc:(2,1-2,3) op1:a op2:b
+result value:a=b
+]])
+
+test_parser_expr('a+=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprAssignAdd loc:(2,1-2,4) op1:a op2:b
+result value:a+=b
+]])
+
+test_parser_expr('a-=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprAssignSub loc:(2,1-2,4) op1:a op2:b
+result value:a-=b
+]])
+
+test_parser_expr('a*=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprAssignMul loc:(2,1-2,4) op1:a op2:b
+result value:a*=b
+]])
+
+test_parser_expr('a/=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprAssignDiv loc:(2,1-2,4) op1:a op2:b
+result value:a/=b
+]])
+
+test_parser_expr('a%=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprAssignMod loc:(2,1-2,4) op1:a op2:b
+result value:a%=b
+]])
+
+test_parser_expr('a&=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprAssignAnd loc:(2,1-2,4) op1:a op2:b
+result value:a&=b
+]])
+
+test_parser_expr('a|=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprAssignOr loc:(2,1-2,4) op1:a op2:b
+result value:a|=b
+]])
+
+test_parser_expr('a^=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprAssignXor loc:(2,1-2,4) op1:a op2:b
+result value:a^=b
+]])
+
+test_parser_expr('a<<=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,5-2,5) name:"b"
+exprAssignShl loc:(2,1-2,5) op1:a op2:b
+result value:a<<=b
+]])
+
+test_parser_expr('a>>=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,5-2,5) name:"b"
+exprAssignShr loc:(2,1-2,5) op1:a op2:b
+result value:a>>=b
+]])

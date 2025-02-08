@@ -17,6 +17,7 @@ static void printMessage(VMMSGTYPE type, const char* message)
 int test_parser_global(lua_State* L) { return test_parser(L, PARSE_GLOBAL); }
 int test_parser_attr(lua_State* L) { return test_parser(L, PARSE_ATTR); }
 int test_parser_expr(lua_State* L) { return test_parser(L, PARSE_EXPR); }
+int test_parser_stmt(lua_State* L) { return test_parser(L, PARSE_STMT); }
 int test_parser_types(lua_State* L) { return test_parser(L, PARSE_TYPES); }
 
 static int initTests(lua_State* L)
@@ -32,6 +33,8 @@ static int initTests(lua_State* L)
     lua_setglobal(L, "test_parser_attr");
     lua_pushcfunction(L, test_parser_expr);
     lua_setglobal(L, "test_parser_expr");
+    lua_pushcfunction(L, test_parser_stmt);
+    lua_setglobal(L, "test_parser_stmt");
     lua_pushcfunction(L, test_parser_types);
     lua_setglobal(L, "test_parser_types");
 

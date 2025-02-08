@@ -324,7 +324,7 @@ statement
     | expression T_SEMICOLON { CB.stmtExpr(UD, merge(@1, @2), $1); }
     | variable_declaration
     | compound_statement
-    | T_IDENTIFIER T_COLON { CB.stmtLabel(UD, merge(@1, @2), $1->name); }
+    | T_IDENTIFIER T_COLON { CB.stmtLabel(UD, merge(@1, @2), $1->text); }
     | KW_goto T_IDENTIFIER T_SEMICOLON { CB.stmtGoto(UD, merge(@1, @3), &@2, $2->text); }
     | KW_break T_SEMICOLON { CB.stmtBreak(UD, merge(@1, @2)); }
     | KW_continue T_SEMICOLON { CB.stmtContinue(UD, merge(@1, @2)); }

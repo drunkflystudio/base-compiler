@@ -16,7 +16,7 @@ result loc:(2,1-2,4) type:bool
 test_parser_types([[
 bit
 ]], [[
-typeBit loc:(2,1-2,3) optionalExpr:(null)
+typeBit loc:(2,1-2,3) optionalExpr:<none>
 result loc:(2,1-2,3) type:bit
 ]])
 

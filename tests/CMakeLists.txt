@@ -18,6 +18,7 @@ set(tests
     p_enum.lua
     p_expr.lua
     p_main.lua
+    p_stmt.lua
     p_types.lua
     )
 

@@ -204,6 +204,13 @@ int test_parser(lua_State* L, ParserTestMode mode)
             lua_concat(L, 3);
             fileContents = lua_tostring(L, -1);
             break;
+        case PARSE_STMT:
+            lua_pushliteral(L, "class A{public(void)m{\n");
+            lua_pushvalue(L, 1);
+            lua_pushliteral(L, "\n}}");
+            lua_concat(L, 3);
+            fileContents = lua_tostring(L, -1);
+            break;
     }
 
     compiler->lexer.state = LEXER_NORMAL;
@@ -242,6 +249,17 @@ int test_parser(lua_State* L, ParserTestMode mode)
 
     compilerEndParse(&parser);
     actual = endPrint();
+
+    if (g_parseMode == PARSE_STMT) {
+        static const char prefix[] = "stmtCompoundBegin loc:(1,22-1,22)\n";
+        static const char suffix[] = "stmtCompoundEnd loc:(3,1-3,1)\n";
+        size_t len;
+        if (!strncmp(actual, prefix, sizeof(prefix) - 1))
+            actual += sizeof(prefix) - 1;
+        len = strlen(actual);
+        if (len >= sizeof(suffix) - 1 && !strcmp(actual + len - sizeof(suffix) + 1, suffix))
+            actual = lua_pushlstring(L, actual, len - sizeof(suffix) + 1);
+    }
 
     if (!compare(L, expected, actual))
         ++g_testFailCount;
