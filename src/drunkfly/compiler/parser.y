@@ -709,9 +709,9 @@ void yyerror(yycontext* ctx, int yychar, const YYSTYPE* yylval, const YYPOSN* yy
     parser->cb.error(parser->cb.ud, yyposn, yylval->token);
 }
 
-static const ChainedToken* nextToken(const ChainedToken** curToken)
+static ChainedToken* nextToken(ChainedToken** curToken)
 {
-    const ChainedToken* token;
+    ChainedToken* token;
     int id;
 
     do {
@@ -733,8 +733,8 @@ int yylex(yycontext* ctx)
 
     id = token->token.id;
     if (id == KW_do) {
-        const ChainedToken* ptr = firstToken;
-        const ChainedToken* next = nextToken(&ptr);
+        ChainedToken* ptr = firstToken;
+        ChainedToken* next = nextToken(&ptr);
         if (next->token.id == T_LCURLY) {
             id = T_KWdo_WITH_LCURLY;
             firstToken = next->next;

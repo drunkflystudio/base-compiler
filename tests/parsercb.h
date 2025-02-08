@@ -85,7 +85,9 @@ static void printExpr(CompilerExpr* expr)
 
 static void frag(lua_State* L, int count)
 {
-    for (int i = 0; i < g_indent; i++)
+    int i;
+
+    for (i = 0; i < g_indent; i++)
         printC(' ');
 
     lua_concat(L, count);
