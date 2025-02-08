@@ -84,7 +84,7 @@ static bool isEnd(const char* str)
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 #define ASSERT_NAME_IS(NAME) assert(!strcmp(__func__, NAME))
-#elif defined(__MSC_VER) || (defined(__GNUC__) && __GNUC__ >= 2)
+#elif defined(_MSC_VER) || (defined(__GNUC__) && __GNUC__ >= 2)
 #define ASSERT_NAME_IS(NAME) assert(!strcmp(__FUNCTION__, NAME))
 #else
 #define ASSERT_NAME_IS(NAME) ((void)0)
@@ -154,13 +154,16 @@ static void frag(lua_State* L, int count)
     lua_pop(L, 1);
 }
 
-#define FRAG(NAME) \
+#define FRAG_CUSTOM_NAME(NAME) \
     { \
         ParserTestContext* context = (ParserTestContext*)ud; \
         lua_State* L = context->L; \
         const char* frag_name_ = #NAME; \
         int arg_n_ = 1; \
         lua_pushstring(L, frag_name_); \
+
+#define FRAG(NAME) \
+    FRAG_CUSTOM_NAME(NAME) \
         ASSERT_NAME_IS(#NAME);
 
 #define FRAG_UNINDENT(NAME) \
@@ -330,7 +333,7 @@ static void enumBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFlags)
 {
     if (g_parseMode == PARSE_ATTR) {
-        FRAG(enum)
+        FRAG_CUSTOM_NAME(enum)
             LOC(nameLoc)
         END
     } else {
@@ -391,7 +394,7 @@ static void structBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isUnion)
 {
     if (g_parseMode == PARSE_ATTR) {
-        FRAG(struct)
+        FRAG_CUSTOM_NAME(struct)
             LOC(nameLoc)
         END_INDENT
     } else {
@@ -640,7 +643,7 @@ static void varBegin(void* ud, const CompilerLocation* loc, const char* name)
 static void varType(void* ud, const CompilerLocation* loc, CompilerType* type)
 {
     if (g_parseMode == PARSE_TYPES && g_parseMode != PARSE_EXPR) {
-        FRAG(result)
+        FRAG_CUSTOM_NAME(result)
             LOC(loc)
             TYPE(type)
         END
@@ -664,7 +667,7 @@ static void varType_Array(void* ud, const CompilerLocation* loc, CompilerType* e
 static void varInitializer(void* ud, CompilerExpr* value)
 {
     if (g_parseMode == PARSE_EXPR) {
-        FRAG(result)
+        FRAG_CUSTOM_NAME(result)
             EXPR(value)
         END
     } else {
