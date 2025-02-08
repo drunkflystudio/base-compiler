@@ -78,3 +78,159 @@ exprIdentifier loc:(2,2-2,2) name:"i"
 exprDeref loc:(2,1-2,2) operand:i
 result value:*i
 ]])
+
+test_parser_expr('+i', [[
+exprIdentifier loc:(2,2-2,2) name:"i"
+exprUnaryPlus loc:(2,1-2,2) operand:i
+result value:+i
+]])
+
+test_parser_expr('-i', [[
+exprIdentifier loc:(2,2-2,2) name:"i"
+exprUnaryMinus loc:(2,1-2,2) operand:i
+result value:-i
+]])
+
+test_parser_expr('~i', [[
+exprIdentifier loc:(2,2-2,2) name:"i"
+exprBitwiseNot loc:(2,1-2,2) operand:i
+result value:~i
+]])
+
+test_parser_expr('!i', [[
+exprIdentifier loc:(2,2-2,2) name:"i"
+exprLogicNot loc:(2,1-2,2) operand:i
+result value:!i
+]])
+
+test_parser_expr('sizeof(i)', [[
+exprIdentifier loc:(2,8-2,8) name:"i"
+exprSizeOf loc:(2,1-2,9) operand:i
+result value:sizeof(i)
+]])
+
+test_parser_expr('a*b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprMultiply loc:(2,1-2,3) op1:a op2:b
+result value:a*b
+]])
+
+test_parser_expr('a/b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprDivide loc:(2,1-2,3) op1:a op2:b
+result value:a/b
+]])
+
+test_parser_expr('a%b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprModulo loc:(2,1-2,3) op1:a op2:b
+result value:a%b
+]])
+
+test_parser_expr('a+b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprAdd loc:(2,1-2,3) op1:a op2:b
+result value:a+b
+]])
+
+test_parser_expr('a-b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprSubtract loc:(2,1-2,3) op1:a op2:b
+result value:a-b
+]])
+
+test_parser_expr('a<<b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprShiftLeft loc:(2,1-2,4) op1:a op2:b
+result value:a<<b
+]])
+
+test_parser_expr('a>>b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprShiftRight loc:(2,1-2,4) op1:a op2:b
+result value:a>>b
+]])
+
+test_parser_expr('a<b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprLess loc:(2,1-2,3) op1:a op2:b
+result value:a<b
+]])
+
+test_parser_expr('a>b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprGreater loc:(2,1-2,3) op1:a op2:b
+result value:a>b
+]])
+
+test_parser_expr('a<=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprLessEq loc:(2,1-2,4) op1:a op2:b
+result value:a<=b
+]])
+
+test_parser_expr('a>=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprGreaterEq loc:(2,1-2,4) op1:a op2:b
+result value:a>=b
+]])
+
+test_parser_expr('a==b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprEqual loc:(2,1-2,4) op1:a op2:b
+result value:a==b
+]])
+
+test_parser_expr('a!=b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprNotEqual loc:(2,1-2,4) op1:a op2:b
+result value:a!=b
+]])
+
+test_parser_expr('a&b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprBitwiseAnd loc:(2,1-2,3) op1:a op2:b
+result value:a&b
+]])
+
+test_parser_expr('a^b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprBitwiseXor loc:(2,1-2,3) op1:a op2:b
+result value:a^b
+]])
+
+test_parser_expr('a|b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprBitwiseOr loc:(2,1-2,3) op1:a op2:b
+result value:a|b
+]])
+
+test_parser_expr('a&&b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprLogicAnd loc:(2,1-2,4) op1:a op2:b
+result value:a&&b
+]])
+
+test_parser_expr('a||b', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,4-2,4) name:"b"
+exprLogicOr loc:(2,1-2,4) op1:a op2:b
+result value:a||b
+]])
