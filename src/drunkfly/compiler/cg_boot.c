@@ -6,8 +6,57 @@
 STRUCT(Context) {
     Compiler* compiler;
     CompilerOutputFile* file;
+    Buff fwds;
     Buff structs;
+    Buff methods;
+    const char* currentClass;
 };
+
+/*==================================================================================================================*/
+
+static void printLine(Context* context, Buff* buff, const CompilerLocation* loc)
+{
+    /* FIXME */
+    UNUSED(context);
+    UNUSED(buff);
+    UNUSED(loc);
+}
+
+/*==================================================================================================================*/
+
+struct CompilerType
+{
+    const char* name;
+    CompilerType* pointee;
+    CompilerExpr* size;
+};
+
+static CompilerType g_void = { "void", NULL, NULL };
+static CompilerType g_bool = { "bool", NULL, NULL };
+static CompilerType g_int8 = { "int8_t", NULL, NULL };
+static CompilerType g_uint8 = { "uint8_t", NULL, NULL };
+static CompilerType g_int16 = { "int16_t", NULL, NULL };
+static CompilerType g_uint16 = { "uint16_t", NULL, NULL };
+static CompilerType g_int32 = { "int32_t", NULL, NULL };
+static CompilerType g_uint32 = { "uint32_t", NULL, NULL };
+static CompilerType g_object = { "void*", NULL, NULL };
+
+static void printType(Context* context, Buff* buff, CompilerType* type)
+{
+    CompilerType* pointee = type;
+    while (pointee->pointee)
+        pointee = pointee->pointee;
+
+    if (pointee->name)
+        buffPrintS(buff, pointee->name);
+
+    for (; type->pointee; type = type->pointee)
+        buffPrintC(buff, '*');
+
+    UNUSED(context);
+}
+
+/*==================================================================================================================*/
 
 static void translationUnitBegin(void* ud)
 {
@@ -18,7 +67,10 @@ static void translationUnitEnd(void* ud)
 {
     Context* context = (Context*)ud;
     compilerPrintS(context->file, "#include <drunkfly/common.h>\n");
+    compilerPrintC(context->file, '\n');
+    compilerPrintS(context->file, buffEnd(&context->fwds, NULL));
     compilerPrintS(context->file, buffEnd(&context->structs, NULL));
+    compilerPrintS(context->file, buffEnd(&context->methods, NULL));
 }
 
 static void attrBegin(void* ud, const CompilerLocation* loc, const char* name)
@@ -140,20 +192,34 @@ static void structEnd(void* ud, const CompilerLocation* loc)
 static void classBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFinal)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(nameLoc);
-    UNUSED(name);
+    Context* context = (Context*)ud;
     UNUSED(isFinal);
+    UNUSED(loc);
+
+    context->currentClass = name;
+
+    printLine(context, &context->fwds, nameLoc);
+    buffPrintF(&context->fwds, "struct %s; typedef struct %s %s;\n", name, name, name);
+
+    buffPrintC(&context->structs, '\n');
+    printLine(context, &context->structs, nameLoc);
+    buffPrintF(&context->structs, "struct %s\n", name);
 }
 
 static void classBeginInterface(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
     UNUSED(loc);
-    UNUSED(nameLoc);
-    UNUSED(name);
+
+    context->currentClass = name;
+
+    printLine(context, &context->fwds, nameLoc);
+    buffPrintF(&context->fwds, "struct %s; typedef struct %s %s;\n", name, name, name);
+
+    buffPrintC(&context->structs, '\n');
+    printLine(context, &context->structs, nameLoc);
+    buffPrintF(&context->structs, "struct %s\n", name);
 }
 
 static void classParent(void* ud, const CompilerLocation* loc, const char* name)
@@ -165,8 +231,9 @@ static void classParent(void* ud, const CompilerLocation* loc, const char* name)
 
 static void classMembersBegin(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    printLine(context, &context->structs, loc);
+    buffPrintS(&context->structs, "{\n");
 }
 
 static void classFriend(void* ud, const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
@@ -212,20 +279,24 @@ static void classDestructorEnd(void* ud)
 static void classMethodBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* visLoc,
     CompilerVisibility vis, const CompilerLocation* optionalStatic, const CompilerLocation* retLoc, CompilerType* ret)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
     UNUSED(loc);
     UNUSED(visLoc);
     UNUSED(vis);
     UNUSED(optionalStatic);
-    UNUSED(retLoc);
-    UNUSED(ret);
+
+    buffPrintC(&context->methods, '\n');
+    printLine(context, &context->methods, retLoc);
+    buffPrintF(&context->methods, "static ");
+    printType(context, &context->methods, ret);
+    buffPrintC(&context->methods, '\n');
 }
 
 static void classMethodNameSimple(void* ud, const CompilerLocation* loc, const char* name)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(name);
+    Context* context = (Context*)ud;
+    printLine(context, &context->methods, loc);
+    buffPrintF(&context->methods, "%s_%s()\n", context->currentClass, name);
 }
 
 static void classMethodNameArg(void* ud, const CompilerLocation* loc,
@@ -271,8 +342,10 @@ static void classMembersEnd(void* ud, const CompilerLocation* loc)
 
 static void classEnd(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    printLine(context, &context->structs, loc);
+    buffPrintS(&context->structs, "};\n");
+    context->currentClass = NULL;
 }
 
 static void varDeclBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* optionalStatic, bool isConst)
@@ -362,87 +435,91 @@ static CompilerType* typeVoid(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
     UNUSED(loc);
-    return NULL;
+    return &g_void;
 }
 
 static CompilerType* typeBit(void* ud, const CompilerLocation* loc, CompilerExpr* optionalExpr)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
     UNUSED(loc);
     UNUSED(optionalExpr);
-    return NULL;
+    return luaL_error(context->compiler->L, "bit type is not supported in bootstrap code generator."), NULL;
 }
 
 static CompilerType* typeBool(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
     UNUSED(loc);
-    return NULL;
+    return &g_bool;
 }
 
 static CompilerType* typeInt8(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
     UNUSED(loc);
-    return NULL;
+    return &g_int8;
 }
 
 static CompilerType* typeUInt8(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
     UNUSED(loc);
-    return NULL;
+    return &g_uint8;
 }
 
 static CompilerType* typeInt16(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
     UNUSED(loc);
-    return NULL;
+    return &g_int16;
 }
 
 static CompilerType* typeUInt16(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
     UNUSED(loc);
-    return NULL;
+    return &g_uint16;
 }
 
 static CompilerType* typeInt32(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
     UNUSED(loc);
-    return NULL;
+    return &g_int32;
 }
 
 static CompilerType* typeUInt32(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
     UNUSED(loc);
-    return NULL;
+    return &g_uint32;
 }
 
 static CompilerType* typeObject(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
     UNUSED(loc);
-    return NULL;
+    return &g_object;
 }
 
 static CompilerType* typeIdentifier(void* ud, const CompilerLocation* loc, const char* text)
 {
-    UNUSED(ud);
+    Context* ctx = (Context*)ud;
+    CompilerType* type = (CompilerType*)compilerTempAlloc(ctx->compiler, sizeof(CompilerType));
+    memset(type, 0, sizeof(CompilerType));
+    type->name = compilerTempDupStr(ctx->compiler, text);
     UNUSED(loc);
-    UNUSED(text);
-    return NULL;
+    return type;
 }
 
 static CompilerType* typePointer(void* ud, const CompilerLocation* loc, CompilerType* pointee)
 {
-    UNUSED(ud);
+    Context* ctx = (Context*)ud;
+    CompilerType* type = (CompilerType*)compilerTempAlloc(ctx->compiler, sizeof(CompilerType));
+    memset(type, 0, sizeof(CompilerType));
+    type->pointee = pointee;
     UNUSED(loc);
-    UNUSED(pointee);
-    return NULL;
+    return type;
 }
 
 static CompilerExpr* exprNull(void* ud, const CompilerLocation* loc)
@@ -977,14 +1054,16 @@ static void stmtThrow(void* ud, const CompilerLocation* loc, CompilerExpr* optio
 
 static void stmtCompoundBegin(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    printLine(context, &context->methods, loc);
+    buffPrintS(&context->methods, "{\n");
 }
 
 static void stmtCompoundEnd(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    printLine(context, &context->methods, loc);
+    buffPrintS(&context->methods, "}\n");
 }
 
 static void stmtIfBegin(void* ud, const CompilerLocation* loc)
@@ -1158,17 +1237,21 @@ static void stmtTryEnd(void* ud)
 
 static void error(void* ud, const CompilerLocation* loc, const CompilerToken* token)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
     UNUSED(loc);
-    UNUSED(token);
+    luaL_error(context->compiler->L, "unexpected token: %s\n", token->name);
 }
+
+/*==================================================================================================================*/
 
 void compilerInitBootstrapCodegen(Compiler* compiler)
 {
     Context* context = (Context*)compilerTempAlloc(compiler, sizeof(Context));
     context->compiler = compiler;
     context->file = compilerBeginOutput(compiler, NULL);
+    buffInit(&context->fwds, compiler->L);
     buffInit(&context->structs, compiler->L);
+    buffInit(&context->methods, compiler->L);
     compiler->parser.cb.ud = context;
     compiler->parser.cb.translationUnitBegin = translationUnitBegin;
     compiler->parser.cb.translationUnitEnd = translationUnitEnd;

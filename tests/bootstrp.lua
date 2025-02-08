@@ -6,4 +6,15 @@ class Application {
 }
 ]], [[
 #include <drunkfly/common.h>
+
+struct Application; typedef struct Application Application;
+
+struct Application
+{
+};
+
+static void
+Application_main()
+{
+}
 ]])
