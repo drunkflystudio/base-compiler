@@ -1,4 +1,24 @@
 
+struct CompilerType
+{
+    const char* name;
+    CompilerType* pointee;
+    CompilerExpr* size;
+};
+
+static CompilerType g_void = { "void" };
+static CompilerType g_bit = { "bit" };
+static CompilerType g_bool = { "bool" };
+static CompilerType g_int8 = { "int8" };
+static CompilerType g_uint8 = { "uint8" };
+static CompilerType g_int16 = { "int16" };
+static CompilerType g_uint16 = { "uint16" };
+static CompilerType g_int32 = { "int32" };
+static CompilerType g_uint32 = { "uint32" };
+static CompilerType g_object = { "object" };
+
+/*==================================================================================================================*/
+
 static int g_indent;
 
 static void indent(void)
@@ -8,9 +28,60 @@ static void indent(void)
 
 static void unindent(void)
 {
-    assert(g_indent > 0);
+    if (g_indent <= 0) {
+        logPrintf("%s: TEST FAILURE: invalid unindent().\n", g_testName);
+        ++g_testFailCount;
+        return;
+    }
     --g_indent;
 }
+
+#ifndef NDEBUG
+
+static bool isBegin(const char* str)
+{
+    size_t len = strlen(str);
+    return len > 5 && !strcmp(str + len - 5, "Begin");
+}
+
+static bool isEnd(const char* str)
+{
+    size_t len = strlen(str);
+    return len > 3 && !strcmp(str + len - 3, "End");
+}
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#define ASSERT_NAME_IS(NAME) assert(!strcmp(__func__, NAME))
+#elif defined(__MSC_VER) || (defined(__GNUC__) && __GNUC__ >= 2)
+#define ASSERT_NAME_IS(NAME) assert(!strcmp(__FUNCTION__, NAME))
+#else
+#define ASSERT_NAME_IS(NAME) ((void)0)
+#endif
+
+#endif /* NDEBUG */
+
+/*==================================================================================================================*/
+
+#define NOT_NULL(NAME) \
+    if ((NAME) == NULL) { \
+        logPrintf("%s: TEST FAILURE: %s: unexpected NULL for \"%s\".\n", g_testName, frag_name_, #NAME); \
+        ++g_testFailCount; \
+    }
+
+#define FIELD_NOT_NULL(NAME, FIELD) \
+    if ((NAME)->FIELD == NULL) { \
+        logPrintf("%s: TEST FAILURE: %s: %s is NULL in \"%s\".\n", g_testName, frag_name_, #FIELD, #NAME); \
+        ++g_testFailCount; \
+    }
+
+/*==================================================================================================================*/
+
+static void printExpr(CompilerExpr* expr)
+{
+    /* FIXME */
+}
+
+/*==================================================================================================================*/
 
 static void frag(lua_State* L, int count)
 {
@@ -25,16 +96,32 @@ static void frag(lua_State* L, int count)
 
 #define FRAG(NAME) \
     { \
-        lua_State* L = (lua_State*)ud; \
+        ParserTestContext* context = (ParserTestContext*)ud; \
+        lua_State* L = context->L; \
         const char* frag_name_ = #NAME; \
         int arg_n_ = 1; \
-        lua_pushstring(L, frag_name_);
+        lua_pushstring(L, frag_name_); \
+        ASSERT_NAME_IS(#NAME);
 
-#define STR(NAME) \
+#define FRAG_UNINDENT(NAME) \
+    assert(isEnd(#NAME)); \
+    unindent(); \
+    FRAG(NAME)
+
+#define BOOL(NAME) \
         ++arg_n_; \
-        if ((NAME) == NULL) \
-            luaL_error(L, "%s: unexpected NULL for \"%s\".", frag_name_, #NAME); \
-        lua_pushfstring(L, " %s:\"%s\"", #NAME, NAME);
+        lua_pushfstring(L, " %s:%s", #NAME, ((NAME) ? "true" : "false"));
+
+#define VIS(NAME) \
+        ++arg_n_; \
+        switch (NAME) { \
+            case COMPILER_PRIVATE: lua_pushfstring(L, " %s:%s", #NAME, "private"); \
+            case COMPILER_PROTECTED: lua_pushfstring(L, " %s:%s", #NAME, "protected"); \
+            case COMPILER_PUBLIC: lua_pushfstring(L, " %s:%s", #NAME, "public"); \
+            default: \
+                logPrintf("%s: TEST FAILURE: %s: invalid value for \"%s\".\n", g_testName, frag_name_, #NAME); \
+                ++g_testFailCount; \
+        }
 
 #define OPTSTR(NAME) \
         ++arg_n_; \
@@ -43,54 +130,92 @@ static void frag(lua_State* L, int count)
         else \
             lua_pushfstring(L, " %s:\"%s\"", #NAME, NAME);
 
-#define LOC(NAME) \
-        ++arg_n_; \
-        if ((NAME) == NULL) \
-            luaL_error(L, "%s: unexpected NULL for \"%s\".", frag_name_, #NAME); \
-        if ((NAME)->startLine == NULL) \
-            luaL_error(L, "%s: %s is NULL in \"%s\".", "startLine", frag_name_, #NAME); \
-        if ((NAME)->endLine == NULL) \
-            luaL_error(L, "%s: %s is NULL in \"%s\".", "endLine", frag_name_, #NAME); \
-        lua_pushfstring(L, " %s:(%d,%d-%d,%d)", #NAME, \
-            NAME->startLine->number, \
-            NAME->startColumn, \
-            NAME->endLine->number, \
-            NAME->endColumn);
+#define STR(NAME) \
+        NOT_NULL(NAME) \
+        OPTSTR(NAME)
 
 #define OPTLOC(NAME) \
         ++arg_n_; \
         if (!NAME) \
             lua_pushfstring(L, " %s:%s", #NAME, "(null)"); \
         else { \
-            if ((NAME)->startLine == NULL) \
-                luaL_error(L, "%s: %s is NULL in \"%s\".", "startLine", frag_name_, #NAME); \
-            if ((NAME)->endLine == NULL) \
-                luaL_error(L, "%s: %s is NULL in \"%s\".", "endLine", frag_name_, #NAME); \
+            FIELD_NOT_NULL(NAME, startLine) \
+            FIELD_NOT_NULL(NAME, endLine) \
             lua_pushfstring(L, " %s:(%d,%d-%d,%d)", #NAME, \
-                NAME->startLine->number, \
+                NAME->startLine ? NAME->startLine->number : 0, \
                 NAME->startColumn, \
-                NAME->endLine->number, \
+                NAME->endLine ? NAME->endLine->number : 0, \
                 NAME->endColumn); \
         }
 
+#define LOC(NAME) \
+        NOT_NULL(NAME) \
+        OPTLOC(NAME)
+
+#define OPTTYPE(NAME) \
+        ++arg_n_; \
+        if (!NAME) \
+            lua_pushfstring(L, " %s:%s", #NAME, "(null)"); \
+        else { \
+            CompilerType* t = NAME; \
+            while (t->pointee) \
+                t = t->pointee; \
+            lua_pushfstring(L, " %s:", #NAME); \
+            if (t->name) { \
+                ++arg_n_; \
+                lua_pushstring(L, t->name); \
+            } \
+            if (t->size) { \
+                arg_n_ += 3; \
+                lua_pushliteral(L, "["); \
+                printExpr(t->size); \
+                lua_pushliteral(L, "]"); \
+            } \
+            t = NAME; \
+            for (; t->pointee; t = t->pointee) { \
+                ++arg_n_; \
+                lua_pushliteral(L, "*"); \
+            } \
+        }
+
+#define TYPE(NAME) \
+        NOT_NULL(NAME) \
+        OPTTYPE(NAME)
+
+#define OPTEXPR(NAME) \
+        ++arg_n_; \
+        if (!NAME) \
+            lua_pushfstring(L, " %s:%s", #NAME, "(null)"); \
+        else { \
+            lua_pushfstring(L, " %s:", #NAME); \
+            ++arg_n_; \
+            printExpr(NAME); \
+        }
+
 #define EXPR(NAME) \
-        /* FIXME */ UNUSED(NAME);
+        NOT_NULL(NAME) \
+        OPTEXPR(NAME)
 
 #define END \
         frag(L, arg_n_); \
     }
 
+#define END_INDENT \
+        assert(isBegin(frag_name_)); \
+    END \
+    indent();
+
+/*==================================================================================================================*/
+
 static void translationUnitBegin(void* ud)
 {
     FRAG(translationUnitBegin)
-    END
-    indent();
+    END_INDENT
 }
 
 static void translationUnitEnd(void* ud)
 {
-    unindent();
-    FRAG(translationUnitEnd)
+    FRAG_UNINDENT(translationUnitEnd)
     END
 }
 
@@ -99,8 +224,7 @@ static void attrBegin(void* ud, const CompilerLocation* loc, const char* name)
     FRAG(attrBegin)
         LOC(loc)
         STR(name)
-    END
-    indent();
+    END_INDENT
 }
 
 static void attrParam(void* ud, const CompilerLocation* optionalNameLoc, const char* optionalName, CompilerExpr* value)
@@ -114,204 +238,398 @@ static void attrParam(void* ud, const CompilerLocation* optionalNameLoc, const c
 
 static void attrEnd(void* ud)
 {
-    unindent();
-    FRAG(attrEnd)
+    FRAG_UNINDENT(attrEnd)
     END
 }
 
 static void attrListBegin(void* ud)
 {
+    FRAG(attrListBegin)
+    END_INDENT
 }
 
 static void attrListEnd(void* ud)
 {
+    FRAG_UNINDENT(attrListEnd)
+    END
 }
 
 static void classBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFinal)
 {
+    FRAG(classBegin)
+        LOC(loc)
+        LOC(nameLoc)
+        STR(name)
+        BOOL(isFinal)
+    END_INDENT
 }
 
 static void classBeginInterface(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
+    FRAG(classBeginInterface)
+        LOC(loc)
+        LOC(nameLoc)
+        STR(name)
+    END_INDENT
 }
 
 static void classParent(void* ud, const CompilerLocation* loc, const char* name)
 {
+    FRAG(classParent)
+        LOC(loc)
+        STR(name)
+    END
 }
 
 static void classMembersBegin(void* ud, const CompilerLocation* loc)
 {
+    FRAG(classMembersBegin)
+        LOC(loc)
+    END_INDENT
 }
 
 static void classFriend(void* ud, const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
+    FRAG(classFriend)
+        LOC(loc)
+        LOC(nameLoc)
+        STR(name)
+    END
 }
 
 static void classVariablesBegin(void* ud, const CompilerLocation* loc,
     const CompilerLocation* visLoc, CompilerVisibility vis, const CompilerLocation* optionalStatic, bool isConst)
 {
+    FRAG(classVariablesBegin)
+        LOC(loc)
+        LOC(visLoc)
+        VIS(vis)
+        OPTLOC(optionalStatic)
+        BOOL(isConst)
+    END_INDENT
 }
 
 static void classVariablesEnd(void* ud, const CompilerLocation* loc)
 {
+    FRAG_UNINDENT(classVariablesEnd)
+        LOC(loc)
+    END
 }
 
 static void classDestructorBegin(void* ud,
     const CompilerLocation* loc, const char* name, const CompilerLocation* visLoc, CompilerVisibility vis)
 {
+    FRAG(classDestructorBegin)
+        LOC(loc)
+        STR(name)
+        LOC(visLoc)
+        VIS(vis)
+    END_INDENT
 }
 
 static void classDestructorEnd(void* ud)
 {
+    FRAG_UNINDENT(classDestructorEnd)
+    END
 }
 
 static void classMethodBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* visLoc,
     CompilerVisibility vis, const CompilerLocation* optionalStatic, const CompilerLocation* retLoc, CompilerType* ret)
 {
+    FRAG(classMethodBegin)
+        LOC(loc)
+        LOC(visLoc)
+        VIS(vis)
+        OPTLOC(optionalStatic)
+        LOC(retLoc)
+        TYPE(ret)
+    END_INDENT
 }
 
 static void classMethodNameSimple(void* ud, const CompilerLocation* loc, const char* name)
 {
+    FRAG(classMethodNameSimple)
+        LOC(loc)
+        STR(name)
+    END
 }
 
 static void classMethodNameArg(void* ud, const CompilerLocation* loc,
     const char* name, CompilerType* type, const CompilerLocation* argLoc, const char* arg)
 {
+    FRAG(classMethodNameArg)
+        LOC(loc)
+        STR(name)
+        TYPE(type)
+        LOC(argLoc)
+        STR(arg)
+    END
 }
 
 static void classMethodNameEnd(void* ud,
     const CompilerLocation* optionalFinal, const CompilerLocation* optionalOverride)
 {
+    FRAG_UNINDENT(classMethodNameEnd)
+        OPTLOC(optionalFinal)
+        OPTLOC(optionalOverride)
+        END
 }
 
 static void classMethodEnd_Abstract(void* ud, const CompilerLocation* loc)
 {
+    FRAG_UNINDENT(classMethodEnd_Abstract)
+        LOC(loc)
+    END
 }
 
 static void classMethodBodyBegin(void* ud)
 {
+    FRAG(classMethodBodyBegin)
+    END_INDENT
 }
 
 static void classMethodEnd(void* ud)
 {
+    FRAG_UNINDENT(classMethodEnd)
+    END
 }
 
 static void classMembersEnd(void* ud, const CompilerLocation* loc)
 {
+    FRAG_UNINDENT(classMembersEnd)
+        LOC(loc)
+    END
 }
 
 static void varDeclBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* optionalStatic, bool isConst)
 {
+    FRAG(varDeclBegin)
+        LOC(loc)
+        OPTLOC(optionalStatic)
+        BOOL(isConst)
+    END_INDENT
 }
 
 static void varBegin(void* ud, const CompilerLocation* loc, const char* name)
 {
+    FRAG(varBegin)
+        LOC(loc)
+        STR(name)
+    END_INDENT
 }
 
 static void varType(void* ud, const CompilerLocation* loc, CompilerType* type)
 {
+    FRAG(varType)
+        LOC(loc)
+        TYPE(type)
+    END
 }
 
 static void varType_Array(void* ud, const CompilerLocation* loc, CompilerType* elementType, CompilerExpr* size)
 {
+    FRAG(varType_Array)
+        LOC(loc)
+        TYPE(elementType)
+        EXPR(size)
+    END
 }
 
 static void varInitializer(void* ud, CompilerExpr* value)
 {
+    FRAG(varInitializer)
+        EXPR(value)
+    END
 }
 
 static void varEnd(void* ud)
 {
+    FRAG_UNINDENT(varEnd)
+    END
 }
 
 static void varDeclEnd(void* ud, const CompilerLocation* loc)
 {
+    FRAG_UNINDENT(varDeclEnd)
+        LOC(loc)
+    END
 }
 
 static void structInitializerBegin(void* ud)
 {
+    FRAG(structInitializerBegin)
+    END_INDENT
 }
 
 static void structInitializer(void* ud, const CompilerLocation* loc, const char* name, CompilerExpr* value)
 {
+    FRAG(structInitializer)
+        LOC(loc)
+        STR(name)
+        EXPR(value)
+    END
 }
 
 static void structInitializerEnd(void* ud)
 {
+    FRAG_UNINDENT(structInitializerEnd)
+    END
 }
 
 static void arrayInitializerBegin(void* ud, const CompilerLocation* loc)
 {
+    FRAG(arrayInitializerBegin)
+        LOC(loc)
+    END_INDENT
 }
 
 static void arrayInitializer(void* ud, CompilerExpr* value)
 {
+    FRAG(arrayInitializer)
+        EXPR(value)
+    END
 }
 
 static void arrayInitializerEnd(void* ud, const CompilerLocation* loc)
 {
+    FRAG_UNINDENT(arrayInitializerEnd)
+        LOC(loc)
+    END
 }
 
 static CompilerType* typeVoid(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    FRAG(typeVoid)
+        LOC(loc)
+    END
+    return &g_void;
 }
 
 static CompilerType* typeBit(void* ud, const CompilerLocation* loc, CompilerExpr* expr)
 {
-    return NULL;
+    FRAG(typeBit)
+        LOC(loc)
+        EXPR(expr)
+    END
+
+    if (!expr)
+        return &g_bit;
+    else {
+        ParserTestContext* context = (ParserTestContext*)ud;
+        CompilerType* type = (CompilerType*)compilerTempAlloc(context->compiler, sizeof(CompilerType));
+        memset(type, 0, sizeof(CompilerType));
+        type->name = "bit";
+        type->size = expr;
+        return type;
+    }
 }
 
 static CompilerType* typeBool(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    FRAG(typeBool)
+        LOC(loc)
+    END
+
+    return &g_bool;
 }
 
 static CompilerType* typeInt8(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    FRAG(typeInt8)
+        LOC(loc)
+    END
+
+    return &g_int8;
 }
 
 static CompilerType* typeUInt8(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    FRAG(typeUInt8)
+        LOC(loc)
+    END
+
+    return &g_uint8;
 }
 
 static CompilerType* typeInt16(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    FRAG(typeInt16)
+        LOC(loc)
+    END
+
+    return &g_int16;
 }
 
 static CompilerType* typeUInt16(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    FRAG(typeUInt16)
+        LOC(loc)
+    END
+
+    return &g_uint16;
 }
 
 static CompilerType* typeInt32(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    FRAG(typeInt32)
+        LOC(loc)
+    END
+
+    return &g_int32;
 }
 
 static CompilerType* typeUInt32(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    FRAG(typeUInt32)
+        LOC(loc)
+    END
+
+    return &g_uint32;
 }
 
 static CompilerType* typeObject(void* ud, const CompilerLocation* loc)
 {
-    return NULL;
+    FRAG(typeObject)
+        LOC(loc)
+    END
+
+    return &g_object;
 }
 
 static CompilerType* typeIdentifier(void* ud, const CompilerLocation* loc, const char* text)
 {
-    return NULL;
+    ParserTestContext* ctx = (ParserTestContext*)ud;
+    CompilerType* type;
+
+    FRAG(typeIdentifier)
+        LOC(loc)
+        STR(text)
+    END
+
+    type = (CompilerType*)compilerTempAlloc(ctx->compiler, sizeof(CompilerType));
+    memset(type, 0, sizeof(CompilerType));
+    type->name = compilerTempDupStr(ctx->compiler, text);
+
+    return type;
 }
 
 static CompilerType* typePointer(void* ud, const CompilerLocation* loc, CompilerType* pointee)
 {
-    return NULL;
+    ParserTestContext* ctx = (ParserTestContext*)ud;
+    CompilerType* type;
+
+    FRAG(typePointer)
+        LOC(loc)
+        TYPE(pointee)
+    END
+
+    type = (CompilerType*)compilerTempAlloc(ctx->compiler, sizeof(CompilerType));
+    memset(type, 0, sizeof(CompilerType));
+    type->pointee = pointee;
+
+    return type;
 }
 
 static CompilerExpr* exprNull(void* ud, const CompilerLocation* loc)

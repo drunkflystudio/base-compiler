@@ -14,6 +14,8 @@ set(tests
     l_num8.lua
     l_num10.lua
     l_num16.lua
+    p_attr.lua
+    p_enum.lua
     p_main.lua
     )
 

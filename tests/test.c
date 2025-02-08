@@ -139,6 +139,12 @@ int test_lexer(lua_State* L)
 /*===================================================================================================================*/
 /* PARSER */
 
+STRUCT(ParserTestContext)
+{
+    Compiler* compiler;
+    lua_State* L;
+};
+
 #include "parsercb.h"
 
 int test_parser_full(lua_State* L)
@@ -147,6 +153,7 @@ int test_parser_full(lua_State* L)
     const char* expected = replaceCRLF(L, luaL_checkstring(L, 2));
     const char* actual;
     CompilerParser parser;
+    ParserTestContext context;
     SourceFile* file;
     int lineNumber = 1;
 
@@ -157,9 +164,12 @@ int test_parser_full(lua_State* L)
     file = (SourceFile*)compilerTempAlloc(compiler, sizeof(SourceFile));
     file->name = g_testName;
 
+    context.compiler = compiler;
+    context.L = L;
+
     memset(&parser, 0, sizeof(CompilerParser));
     parser.compiler = compiler;
-    parser.cb.ud = L;
+    parser.cb.ud = &context;
     initParserCallbacks(&parser);
     compilerBeginParse(&parser);
 
