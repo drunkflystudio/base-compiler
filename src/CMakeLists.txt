@@ -40,12 +40,13 @@ add_custom_command(OUTPUT "${lexer_c}"
 ## BtYacc
 
 set(parser_y "${CMAKE_CURRENT_SOURCE_DIR}/drunkfly/compiler/parser.y")
+set(parser_ske "${CMAKE_CURRENT_SOURCE_DIR}/drunkfly/compiler/parser.ske")
 set(parser_c "${CMAKE_CURRENT_BINARY_DIR}/y.tab.c")
 set(parser_h "${CMAKE_CURRENT_BINARY_DIR}/y.tab.h")
 
 add_custom_command(OUTPUT "${parser_c}" "${parser_h}"
-    COMMAND "${HOST_BTYACC}" -d -y "${parser_y}"
-    DEPENDS "${parser_y}" "${HOST_BTYACC}"
+    COMMAND "${HOST_BTYACC}" -d -S "${parser_ske}" -y "${parser_y}"
+    DEPENDS "${parser_y}" "${parser_ske}" "${HOST_BTYACC}"
     MAIN_DEPENDENCY "${parser_y}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     )
@@ -56,6 +57,7 @@ set(src_compiler
     drunkfly/compiler/arena.c
     drunkfly/compiler/arena.h
     drunkfly/compiler/lexer.h
+    drunkfly/compiler/parser.ske
     drunkfly/compiler/parser.y
     drunkfly/compiler/private.h
     drunkfly/compiler/token.h
