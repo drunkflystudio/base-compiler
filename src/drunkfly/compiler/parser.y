@@ -644,21 +644,21 @@ STRUCT(ChainedToken)
 static ChainedToken* firstToken = NULL;
 static ChainedToken* lastToken = NULL;
 
-void compilerBeginParse(CompilerParser* parser)
+void compilerBeginParse(Compiler* compiler)
 {
-    UNUSED(parser);
+    UNUSED(compiler);
     firstToken = NULL;
     lastToken = NULL;
 }
 
-void compilerPushToken(CompilerParser* parser)
+void compilerPushToken(Compiler* compiler)
 {
-    compilerPushTokenEx(parser, &parser->compiler->lexer.token);
+    compilerPushTokenEx(compiler, &compiler->lexer.token);
 }
 
-void compilerPushTokenEx(CompilerParser* parser, const CompilerToken* token)
+void compilerPushTokenEx(Compiler* compiler, const CompilerToken* token)
 {
-    ChainedToken* chained = (ChainedToken*)compilerTempAlloc(parser->compiler, sizeof(ChainedToken));
+    ChainedToken* chained = (ChainedToken*)compilerTempAlloc(compiler, sizeof(ChainedToken));
     chained->next = NULL;
     memcpy(&chained->token, token, sizeof(CompilerToken));
     if (!firstToken)
@@ -668,12 +668,12 @@ void compilerPushTokenEx(CompilerParser* parser, const CompilerToken* token)
     lastToken = chained;
 }
 
-void compilerEndParse(CompilerParser* parser)
+void compilerEndParse(Compiler* compiler)
 {
     yycontext yyctx;
 
     memset(&yyctx, 0, sizeof(yyctx));
-    yyctx.userdata = parser;
+    yyctx.userdata = &compiler->parser;
 
     yyparse(&yyctx);
 }

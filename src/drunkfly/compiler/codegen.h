@@ -2,8 +2,18 @@
 #define DRUNKFLY_COMPILER_CODEGEN_H
 
 #include <drunkfly/compiler.h>
-#include <drunkfly/compiler/parser.h>
 
-void compilerInitBootstrapCodegen(Compiler* compiler, CompilerParserCallbacks* cb);
+STRUCT(CompilerCodegen)
+{
+    Compiler* compiler;
+    CompilerOutputFile* files;
+};
+
+void compilerInitBootstrapCodegen(Compiler* compiler);
+
+CompilerOutputFile* compilerBeginOutput(Compiler* compiler, const char* fileName);
+void compilerPrintC(CompilerOutputFile* file, uint32_t c);
+void compilerPrintS(CompilerOutputFile* file, const char* str);
+void compilerPrintF(CompilerOutputFile* file, const char* fmt, ...);
 
 #endif

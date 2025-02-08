@@ -37,6 +37,8 @@ Compiler* compilerPushNew(lua_State* L)
     compiler->arenas = NULL;
     compiler->largeBlocks = NULL;
     compiler->L = L;
+    compiler->parser.compiler = compiler;
+    compiler->codegen.compiler = compiler;
 
     return compiler;
 }

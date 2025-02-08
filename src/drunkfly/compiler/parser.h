@@ -206,9 +206,9 @@ STRUCT(CompilerParser)
     CompilerParserCallbacks cb;
 };
 
-void compilerBeginParse(CompilerParser* parser);
-void compilerPushToken(CompilerParser* parser);
-void compilerPushTokenEx(CompilerParser* parser, const CompilerToken* token);
-void compilerEndParse(CompilerParser* parser);
+void compilerBeginParse(Compiler* compiler);
+void compilerPushToken(Compiler* compiler);
+void compilerPushTokenEx(Compiler* compiler, const CompilerToken* token);
+void compilerEndParse(Compiler* compiler);
 
 #endif

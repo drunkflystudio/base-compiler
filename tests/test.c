@@ -174,7 +174,6 @@ int test_parser(lua_State* L, ParserTestMode mode)
     const char* fileContents = luaL_checkstring(L, 1);
     const char* expected = replaceCRLF(L, luaL_checkstring(L, 2));
     const char* actual;
-    CompilerParser parser;
     ParserTestContext context;
     SourceFile* file;
     int lineNumber = 1;
@@ -189,11 +188,9 @@ int test_parser(lua_State* L, ParserTestMode mode)
     context.compiler = compiler;
     context.L = L;
 
-    memset(&parser, 0, sizeof(CompilerParser));
-    parser.compiler = compiler;
-    parser.cb.ud = &context;
-    initParserCallbacks(&parser);
-    compilerBeginParse(&parser);
+    compiler->parser.cb.ud = &context;
+    initParserCallbacks(&compiler->parser);
+    compilerBeginParse(compiler);
 
     g_indent = 0;
     g_parseMode = mode;
@@ -243,7 +240,7 @@ int test_parser(lua_State* L, ParserTestMode mode)
         }
 
         while (compilerGetToken(compiler))
-            compilerPushToken(&parser);
+            compilerPushToken(compiler);
 
         if (eof) {
             if (compiler->lexer.state == LEXER_MULTILINE_COMMENT)
@@ -254,12 +251,12 @@ int test_parser(lua_State* L, ParserTestMode mode)
             compiler->lexer.token.location.endLine = line;
             compiler->lexer.token.location.startColumn = compiler->lexer.column;
             compiler->lexer.token.location.endColumn = compiler->lexer.column;
-            compilerPushToken(&parser);
+            compilerPushToken(compiler);
             break;
         }
     }
 
-    compilerEndParse(&parser);
+    compilerEndParse(compiler);
     actual = endPrint();
 
     if (g_parseMode == PARSE_STMT) {
@@ -272,6 +269,83 @@ int test_parser(lua_State* L, ParserTestMode mode)
         if (len >= sizeof(suffix) - 1 && !mystrcmp(actual + len - sizeof(suffix) + 1, suffix))
             actual = lua_pushlstring(L, actual, len - sizeof(suffix) + 1);
     }
+
+    if (!compare(L, expected, actual))
+        ++g_testFailCount;
+    else
+        ++g_testSuccessCount;
+
+    return 0;
+}
+
+/*===================================================================================================================*/
+/* BOOTSTRAP CODEGEN */
+
+int test_bootstrap(lua_State* L)
+{
+    const char* fileContents = luaL_checkstring(L, 1);
+    const char* expected = replaceCRLF(L, luaL_checkstring(L, 2));
+    const char* actual;
+    CompilerOutputFile* output;
+    SourceFile* file;
+    int lineNumber = 1;
+
+    Compiler* compiler = compilerPushNew(L);
+    pushTestName(L);
+
+    file = (SourceFile*)compilerTempAlloc(compiler, sizeof(SourceFile));
+    file->name = g_testName;
+
+    compilerInitBootstrapCodegen(compiler);
+    compilerBeginParse(compiler);
+
+    compiler->lexer.state = LEXER_NORMAL;
+
+    for (;;) {
+        const char* lineStart;
+        size_t lineLength;
+        bool eof = !compilerReadLine(&fileContents, &lineStart, &lineLength);
+
+        SourceLine* line = (SourceLine*)compilerTempAlloc(compiler, sizeof(SourceLine));
+        line->number = lineNumber++;
+
+        compilerBeginLine(compiler, file, line, lineStart, lineLength, compiler->lexer.state);
+
+        if (compiler->lexer.token.location.file != file) {
+            logPrintf("%s: TEST FAILURE: invalid file in token location.\n", g_testName);
+            ++g_testFailCount;
+        }
+
+        while (compilerGetToken(compiler))
+            compilerPushToken(compiler);
+
+        if (eof) {
+            if (compiler->lexer.state == LEXER_MULTILINE_COMMENT)
+                printF("error: %d,%d: unterminated comment\n", line->number, compiler->lexer.column);
+            compiler->lexer.token.id = T_EOF;
+            compiler->lexer.token.name = "<end of file>";
+            compiler->lexer.token.location.startLine = line;
+            compiler->lexer.token.location.endLine = line;
+            compiler->lexer.token.location.startColumn = compiler->lexer.column;
+            compiler->lexer.token.location.endColumn = compiler->lexer.column;
+            compilerPushToken(compiler);
+            break;
+        }
+    }
+
+    compilerEndParse(compiler);
+
+    output = compilerGetFirstOutput(compiler);
+    if (!output) {
+        logPrintf("%s: TEST FAILURE: no output files from the compiler.\n", g_testName);
+        ++g_testFailCount;
+        return 0;
+    }
+    if (compilerGetNextOutput(output)) {
+        logPrintf("%s: TEST FAILURE: multiple output files from the compiler.\n", g_testName);
+        ++g_testFailCount;
+    }
+    actual = compilerGetData(output, NULL);
 
     if (!compare(L, expected, actual))
         ++g_testFailCount;

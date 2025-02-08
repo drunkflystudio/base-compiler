@@ -38,6 +38,9 @@ static int initTests(lua_State* L)
     lua_pushcfunction(L, test_parser_types);
     lua_setglobal(L, "test_parser_types");
 
+    lua_pushcfunction(L, test_bootstrap);
+    lua_setglobal(L, "test_bootstrap");
+
     return 0;
 }
 

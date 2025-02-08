@@ -56,12 +56,15 @@ add_custom_command(OUTPUT "${parser_c}" "${parser_h}"
 set(src_compiler
     drunkfly/compiler/arena.c
     drunkfly/compiler/arena.h
+    drunkfly/compiler/codegen.c
     drunkfly/compiler/codegen.h
     drunkfly/compiler/lexer.h
     drunkfly/compiler/lexer.re
     drunkfly/compiler/parser.ske
     drunkfly/compiler/parser.y
     drunkfly/compiler/private.h
+    drunkfly/compiler/semantic.c
+    drunkfly/compiler/semantic.h
     drunkfly/compiler/token.h
     )
 
@@ -88,7 +91,7 @@ target_link_libraries(FlyCompilerCore PUBLIC FlyCommon)
 ######################################################################################################################
 
 set(src_compiler
-    drunkfly/compiler/g_boot_c.c
+    drunkfly/compiler/cg_boot.c
     )
 
 source_group("Source Files\\drunkfly\\compiler" FILES ${src_compiler})

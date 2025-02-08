@@ -3,12 +3,16 @@
 
 #include <drunkfly/compiler/arena.h>
 #include <drunkfly/compiler/lexer.h>
+#include <drunkfly/compiler/parser.h>
+#include <drunkfly/compiler/codegen.h>
 
 struct Compiler {
     CompilerArena* arenas;
     CompilerArena* largeBlocks;
     lua_State* L;
     CompilerLexer lexer;
+    CompilerParser parser;
+    CompilerCodegen codegen;
 };
 
 #endif

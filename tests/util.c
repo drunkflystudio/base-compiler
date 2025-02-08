@@ -1,38 +1,35 @@
 #include "tests.h"
-#include <lobject.h>
-#include <stdarg.h>
+#include <drunkfly/buff.h>
 
-static luaL_Buffer g_buffer;
+static Buff g_buffer;
 FILE* g_logFile;
 
 void beginPrint(lua_State* L)
 {
-    luaL_buffinit(L, &g_buffer);
+    buffInit(&g_buffer, L);
 }
 
 void printC(char ch)
 {
-    luaL_addchar(&g_buffer, ch);
+    buffPrintC(&g_buffer, ch);
 }
 
 void printS(const char* str)
 {
-    luaL_addstring(&g_buffer, str);
+    buffPrintS(&g_buffer, str);
 }
 
 void printF(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    luaO_pushvfstring(g_buffer.L, fmt, args);
+    buffPrintV(&g_buffer, fmt, args);
     va_end(args);
-    luaL_addvalue(&g_buffer);
 }
 
 const char* endPrint(void)
 {
-    luaL_pushresult(&g_buffer);
-    return lua_tostring(g_buffer.L, -1);
+    return buffEnd(&g_buffer, NULL);
 }
 
 const char* boolStr(bool value)
