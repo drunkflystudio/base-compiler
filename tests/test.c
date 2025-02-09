@@ -62,6 +62,8 @@ int test_lexer(lua_State* L)
     pushTestName(L);
     beginPrint(L);
 
+    lua_checkstack(L, 10000);
+
     file = (SourceFile*)compilerTempAlloc(compiler, sizeof(SourceFile));
     file->name = g_testName;
 
@@ -163,6 +165,8 @@ int test_parser(lua_State* L, ParserTestMode mode)
     Compiler* compiler = compilerPushNew(L);
     pushTestName(L);
     beginPrint(L);
+
+    lua_checkstack(L, 10000);
 
     file = (SourceFile*)compilerTempAlloc(compiler, sizeof(SourceFile));
     file->name = g_testName;
