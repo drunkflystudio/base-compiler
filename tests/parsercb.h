@@ -57,6 +57,7 @@ typedef enum EnumID {
     EXPR_BITWISE_OR,
     EXPR_LOGIC_AND,
     EXPR_LOGIC_OR,
+    EXPR_TERNARY,
     EXPR_ASSIGN,
     EXPR_ASSIGN_ADD,
     EXPR_ASSIGN_SUB,
@@ -67,7 +68,9 @@ typedef enum EnumID {
     EXPR_ASSIGN_OR,
     EXPR_ASSIGN_XOR,
     EXPR_ASSIGN_SHL,
-    EXPR_ASSIGN_SHR
+    EXPR_ASSIGN_SHR,
+    EXPR_METHOD_CALL_SIMPLE,
+    EXPR_METHOD_CALL_ARGS
 } EnumID;
 
 struct CompilerExpr
@@ -81,6 +84,9 @@ struct CompilerExpr
     CompilerExpr* index;
     CompilerExpr* op1;
     CompilerExpr* op2;
+    CompilerExpr* op3;
+    const char* methodName;
+    TestMethodArg* methodArgs;
 };
 
 /*==================================================================================================================*/
@@ -185,6 +191,7 @@ static void printExpr(lua_State* L, CompilerExpr* expr)
         case EXPR_BITWISE_OR: E(op1); _("|"); E(op2); return;
         case EXPR_LOGIC_AND: E(op1); _("&&"); E(op2); return;
         case EXPR_LOGIC_OR: E(op1); _("||"); E(op2); return;
+        case EXPR_TERNARY: E(op1); _("?"); E(op2); _(":"); E(op3); return;
         case EXPR_ASSIGN: E(op1); _("="); E(op2); return;
         case EXPR_ASSIGN_ADD: E(op1); _("+="); E(op2); return;
         case EXPR_ASSIGN_SUB: E(op1); _("-="); E(op2); return;
@@ -196,6 +203,19 @@ static void printExpr(lua_State* L, CompilerExpr* expr)
         case EXPR_ASSIGN_XOR: E(op1); _("^="); E(op2); return;
         case EXPR_ASSIGN_SHL: E(op1); _("<<="); E(op2); return;
         case EXPR_ASSIGN_SHR: E(op1); _(">>="); E(op2); return;
+        case EXPR_METHOD_CALL_SIMPLE: _("["); E(operand); _(" "); lua_pushstring(L, expr->methodName); _("]"); return;
+        case EXPR_METHOD_CALL_ARGS: {
+            TestMethodArg* arg;
+            _("["); E(operand);
+            for (arg = expr->methodArgs; arg; arg = arg->next) {
+                _(" ");
+                lua_pushstring(L, arg->name);
+                _(":");
+                printExpr(L, arg->value);
+            }
+            _("]");
+            return;
+        }
     }
 
     #undef E
@@ -1092,34 +1112,81 @@ static CompilerExpr* exprNewEnd_Array(void* ud, const CompilerLocation* loc, Com
 
 static void exprMethodCallBegin(void* ud, CompilerExpr* callee)
 {
-    /* FIXME */
-    UNUSED(ud);
-    UNUSED(callee);
+    ParserTestContext* ctx = (ParserTestContext*)ud;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprMethodCallBegin)
+            EXPR(callee)
+        END_INDENT
+    }
+
+    ctx->methodCallee = callee;
+    ctx->methodName = NULL;
+    ctx->methodFirstArg = NULL;
+    ctx->methodLastArg = NULL;
 }
 
 static void exprMethodSimple(void* ud, const CompilerLocation* loc, const char* name)
 {
-    /* FIXME */
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(name);
+    ParserTestContext* ctx = (ParserTestContext*)ud;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprMethodSimple)
+            LOC(loc)
+            STR(name)
+        END
+    }
+
+    ctx->methodName = name;
 }
 
 static void exprMethodArg(void* ud, const CompilerLocation* loc, const char* name, CompilerExpr* value)
 {
-    /* FIXME */
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(name);
-    UNUSED(value);
+    ParserTestContext* ctx = (ParserTestContext*)ud;
+    TestMethodArg* arg;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprMethodArg)
+            LOC(loc)
+            STR(name)
+            EXPR(value)
+        END
+    }
+
+    arg = (TestMethodArg*)compilerTempAlloc(ctx->compiler, sizeof(TestMethodArg));
+    arg->next = NULL;
+    arg->name = name;
+    arg->value = value;
+
+    if (!ctx->methodFirstArg)
+        ctx->methodFirstArg = arg;
+    else
+        ctx->methodLastArg->next = arg;
+    ctx->methodLastArg = arg;
 }
 
 static CompilerExpr* exprMethodCallEnd(void* ud, const CompilerLocation* loc)
 {
-    /* FIXME */
-    UNUSED(ud);
-    UNUSED(loc);
-    return NULL;
+    ParserTestContext* ctx = (ParserTestContext*)ud;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG_UNINDENT(exprMethodCallEnd)
+            LOC(loc)
+        END
+    }
+
+    if (ctx->methodName) {
+        e = expr(ud, loc, EXPR_METHOD_CALL_SIMPLE);
+        e->operand = ctx->methodCallee;
+        e->methodName = ctx->methodName;
+    } else {
+        e = expr(ud, loc, EXPR_METHOD_CALL_ARGS);
+        e->operand = ctx->methodCallee;
+        e->methodArgs = ctx->methodFirstArg;
+    }
+
+    return e;
 }
 
 static CompilerExpr* exprSubscript(void* ud, const CompilerLocation* loc, CompilerExpr* arr, CompilerExpr* idx)
@@ -1663,13 +1730,22 @@ static CompilerExpr* exprLogicOr(void* ud, const CompilerLocation* loc, Compiler
 static CompilerExpr* exprTernary(void* ud, const CompilerLocation* loc,
     CompilerExpr* cond, CompilerExpr* trueValue, CompilerExpr* falseValue)
 {
-    /* FIXME */
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(cond);
-    UNUSED(trueValue);
-    UNUSED(falseValue);
-    return NULL;
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprTernary)
+            LOC(loc)
+            EXPR(cond)
+            EXPR(trueValue)
+            EXPR(falseValue)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_TERNARY);
+    e->op1 = cond;
+    e->op2 = trueValue;
+    e->op3 = falseValue;
+    return e;
 }
 
 static CompilerExpr* exprAssign(void* ud, const CompilerLocation* loc, CompilerExpr* op1, CompilerExpr* op2)

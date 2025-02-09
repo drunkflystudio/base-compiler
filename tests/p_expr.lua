@@ -235,6 +235,14 @@ exprLogicOr loc:(2,1-2,4) op1:a op2:b
 result value:a||b
 ]])
 
+test_parser_expr('a?b:c', [[
+exprIdentifier loc:(2,1-2,1) name:"a"
+exprIdentifier loc:(2,3-2,3) name:"b"
+exprIdentifier loc:(2,5-2,5) name:"c"
+exprTernary loc:(2,1-2,5) cond:a trueValue:b falseValue:c
+result value:a?b:c
+]])
+
 test_parser_expr('a=b', [[
 exprIdentifier loc:(2,1-2,1) name:"a"
 exprIdentifier loc:(2,3-2,3) name:"b"
@@ -310,4 +318,38 @@ exprIdentifier loc:(2,1-2,1) name:"a"
 exprIdentifier loc:(2,5-2,5) name:"b"
 exprAssignShr loc:(2,1-2,5) op1:a op2:b
 result value:a>>=b
+]])
+
+test_parser_expr('[obj main]', [[
+exprIdentifier loc:(2,2-2,4) name:"obj"
+exprMethodCallBegin callee:obj
+ exprMethodSimple loc:(2,6-2,9) name:"main"
+exprMethodCallEnd loc:(2,1-2,10)
+result value:[obj main]
+]])
+
+test_parser_expr('[obj arg:x]', [[
+exprIdentifier loc:(2,2-2,4) name:"obj"
+exprMethodCallBegin callee:obj
+ exprIdentifier loc:(2,10-2,10) name:"x"
+ exprMethodArg loc:(2,6-2,9) name:"arg" value:x
+exprMethodCallEnd loc:(2,1-2,11)
+result value:[obj arg:x]
+]])
+
+test_parser_expr('[obj firstArg:4+8 secondArg:38-x*4]', [[
+exprIdentifier loc:(2,2-2,4) name:"obj"
+exprMethodCallBegin callee:obj
+ exprInteger loc:(2,15-2,15) value:0x4
+ exprInteger loc:(2,17-2,17) value:0x8
+ exprAdd loc:(2,15-2,17) op1:0x4 op2:0x8
+ exprMethodArg loc:(2,6-2,14) name:"firstArg" value:0x4+0x8
+ exprInteger loc:(2,29-2,30) value:0x26
+ exprIdentifier loc:(2,32-2,32) name:"x"
+ exprInteger loc:(2,34-2,34) value:0x4
+ exprMultiply loc:(2,32-2,34) op1:x op2:0x4
+ exprSubtract loc:(2,29-2,34) op1:0x26 op2:x*0x4
+ exprMethodArg loc:(2,19-2,28) name:"secondArg" value:0x26-x*0x4
+exprMethodCallEnd loc:(2,1-2,35)
+result value:[obj firstArg:0x4+0x8 secondArg:0x26-x*0x4]
 ]])

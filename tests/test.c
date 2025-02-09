@@ -131,10 +131,21 @@ int test_lexer(lua_State* L)
 /*===================================================================================================================*/
 /* PARSER */
 
+STRUCT(TestMethodArg)
+{
+    TestMethodArg* next;
+    const char* name;
+    CompilerExpr* value;
+};
+
 STRUCT(ParserTestContext)
 {
     Compiler* compiler;
     lua_State* L;
+    CompilerExpr* methodCallee;
+    const char* methodName;
+    TestMethodArg* methodFirstArg;
+    TestMethodArg* methodLastArg;
 };
 
 static ParserTestMode g_parseMode;
