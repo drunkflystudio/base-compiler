@@ -1,1 +1,5 @@
 .gitmodules -text -eol
+*.sh text eol=lf
+*.sh linguist-language=Batchfile
+*.cmd text eol=crlf
+*.cmd linguist-language=Batchfile
