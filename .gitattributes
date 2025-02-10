@@ -1,4 +1,7 @@
 .gitmodules -text -eol
+*.h linguist-language=C
+*.ske linguist-language=C
+*.re linguist-language=C
 *.sh text eol=lf
 *.sh linguist-language=Batchfile
 *.cmd text eol=crlf
