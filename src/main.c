@@ -3,6 +3,7 @@
 #include <drunkfly/compiler/lexer.h>
 #include <drunkfly/compiler/parser.h>
 #include <drunkfly/compiler/arena.h>
+#include <drunkfly/compiler/bundle.h>
 #include <drunkfly/vm.h>
 #include <lua.h>
 #include <lauxlib.h>
@@ -157,6 +158,7 @@ static void compileFile(lua_State* L, SourceFile* file)
 static int runCompiler(lua_State* L)
 {
     const char* outputName = "output.c";
+    const char* bundleName = NULL;
     SourceFile* firstSource = NULL;
     SourceFile* lastSource = NULL;
     Codegen codegen = CODEGEN_NONE;
@@ -186,11 +188,18 @@ static int runCompiler(lua_State* L)
             if (i == g_argc - 1)
                 luaL_error(L, "missing output file name after '%s'.", g_argv[i]);
             outputName = g_argv[++i];
+        } else if (!strcmp(g_argv[i], "-bundle")) {
+            if (i == g_argc - 1)
+                luaL_error(L, "missing bundle name after '%s'.", g_argv[i]);
+            bundleName = g_argv[++i];
         } else if (!strcmp(g_argv[i], "-h") || !strcmp(g_argv[i], "-help") || !strcmp(g_argv[i], "--help")) {
             printf("Usage: flycc [options] file...\n"
                    "where options are:\n"
                    "  -o <path>            specify name of the output file.\n"
                 );
+            return g_exitCode = EXIT_FAILURE, 0;
+        } else {
+            fprintf(stderr, "unknown command line argument: '%s'.\n", g_argv[i]);
             return g_exitCode = EXIT_FAILURE, 0;
         }
     }
@@ -205,8 +214,26 @@ static int runCompiler(lua_State* L)
             /* FIXME */
             break;
         case CODEGEN_BOOTSTRAP:
-            compilerInitBootstrapCodegen(g_compiler);
+            compilerInitBootstrapCodegen(g_compiler, outputName);
             break;
+    }
+
+    if (bundleName) {
+        const char* bundleFile;
+        char* slash = strrchr(outputName, '/');
+      #ifdef _WIN32
+        char* slash2 = strrchr(outputName, '\\');
+        if (slash2 && (!slash || slash2 > slash))
+            slash = slash2;
+      #endif
+        if (slash)
+            lua_pushlstring(L, outputName, slash - outputName + 1);
+        bundleFile = lua_pushfstring(L, "%s.bun", bundleName);
+        if (slash) {
+            lua_concat(L, 2);
+            bundleFile = lua_tostring(L, -1);
+        }
+        compilerBeginBundle(g_compiler, bundleFile, bundleName);
     }
 
     while (firstSource) {
@@ -215,9 +242,15 @@ static int runCompiler(lua_State* L)
         firstSource = firstSource->next;
     }
 
+    compilerEndBundle(g_compiler);
+
     output = compilerGetFirstOutput(g_compiler);
-    outputData = compilerGetData(output, &outputSize);
-    writeFile(L, outputName, outputData, outputSize);
+    while (output) {
+        const char* name = compilerGetOutputName(output);
+        outputData = compilerGetOutputData(output, &outputSize);
+        writeFile(L, name, outputData, outputSize);
+        output = compilerGetNextOutput(output);
+    }
 
     return 0;
 }

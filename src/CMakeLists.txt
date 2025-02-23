@@ -56,6 +56,8 @@ add_custom_command(OUTPUT "${parser_c}" "${parser_h}"
 set(src_compiler
     drunkfly/compiler/arena.c
     drunkfly/compiler/arena.h
+    drunkfly/compiler/bundle.c
+    drunkfly/compiler/bundle.h
     drunkfly/compiler/codegen.c
     drunkfly/compiler/codegen.h
     drunkfly/compiler/lexer.h

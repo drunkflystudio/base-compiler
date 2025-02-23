@@ -2,6 +2,7 @@
 #include <drunkfly/compiler/parser.h>
 #include <drunkfly/compiler/private.h>
 #include <drunkfly/compiler/token.h>
+#include <drunkfly/compiler/bundle.h>
 #include <lauxlib.h>
 
 #ifdef BORLAND
@@ -16,6 +17,7 @@
 
 #define CTX ((CompilerParser*)(ctx->userdata))
 #define COMPILER (CTX->compiler)
+#define BUNDLE (COMPILER->bundle)
 #define CB (CTX->cb)
 #define UD (CTX->cb.ud)
 
@@ -525,7 +527,12 @@ class_declaration
     | optional_attribute_list interface_declaration_start optional_parent_class_list class_body
     ;
 
-class_declaration_start : KW_class T_IDENTIFIER optional_final { CB.classBegin(UD, &@1, &@2, $2->text, $3); };
+class_declaration_start : KW_class T_IDENTIFIER optional_final {
+        if (BUNDLE)
+            compilerBundleAddClass(BUNDLE, $2->text);
+        CB.classBegin(UD, &@1, &@2, $2->text, $3);
+    };
+
 interface_declaration_start : KW_interface T_IDENTIFIER { CB.classBeginInterface(UD, &@1, &@2, $2->text); };
 optional_final : /* empty */ { $$ = false; } | KW_final { $$ = true; };
 optional_parent_class_list : /* empty */ | T_COLON parent_class_list;

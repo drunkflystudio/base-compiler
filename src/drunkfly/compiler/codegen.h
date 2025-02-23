@@ -9,7 +9,7 @@ STRUCT(CompilerCodegen)
     CompilerOutputFile* files;
 };
 
-void compilerInitBootstrapCodegen(Compiler* compiler);
+void compilerInitBootstrapCodegen(Compiler* compiler, const char* fileName);
 
 CompilerOutputFile* compilerBeginOutput(Compiler* compiler, const char* fileName);
 void compilerPrintC(CompilerOutputFile* file, uint32_t c);

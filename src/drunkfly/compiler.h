@@ -18,6 +18,8 @@ STRUCT(CompilerExpr);
 
 STRUCT(CompilerOutputFile);
 
+STRUCT(CompilerBundle);
+
 typedef enum CompilerVisibility {
     COMPILER_PRIVATE,
     COMPILER_PROTECTED,
@@ -40,7 +42,8 @@ void compilerSetLocationCallbacks(Compiler* compiler, PFNGETFILENAME getFileName
 
 CompilerOutputFile* compilerGetFirstOutput(Compiler* compiler);
 CompilerOutputFile* compilerGetNextOutput(CompilerOutputFile* file);
-const char* compilerGetData(CompilerOutputFile* file, size_t* size);
+const char* compilerGetOutputName(CompilerOutputFile* file);
+const char* compilerGetOutputData(CompilerOutputFile* file, size_t* size);
 const char* compilerPushHexString(lua_State* L, uint_value_t value);
 
 #endif

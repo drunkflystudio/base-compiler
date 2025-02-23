@@ -13,6 +13,7 @@ struct Compiler {
     CompilerLexer lexer;
     CompilerParser parser;
     CompilerCodegen codegen;
+    CompilerBundle* bundle;
     PFNGETFILENAME getFileName;
     PFNGETLINENUMBER getLineNumber;
 };

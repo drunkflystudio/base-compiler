@@ -306,7 +306,7 @@ int test_bootstrap(lua_State* L)
     file = (SourceFile*)compilerTempAlloc(compiler, sizeof(SourceFile));
     file->name = g_testName;
 
-    compilerInitBootstrapCodegen(compiler);
+    compilerInitBootstrapCodegen(compiler, NULL);
     compilerBeginParse(compiler);
 
     lexerState = LEXER_NORMAL;
@@ -349,7 +349,7 @@ int test_bootstrap(lua_State* L)
         logPrintf("%s: TEST FAILURE: multiple output files from the compiler.\n", g_testName);
         ++g_testFailCount;
     }
-    actual = compilerGetData(output, NULL);
+    actual = compilerGetOutputData(output, NULL);
 
     if (!compare(L, expected, actual))
         ++g_testFailCount;

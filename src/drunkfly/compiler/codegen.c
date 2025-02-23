@@ -44,11 +44,16 @@ void compilerPrintF(CompilerOutputFile* file, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    buffPrintF(&file->buffer, fmt, args);
+    buffPrintV(&file->buffer, fmt, args);
     va_end(args);
 }
 
-const char* compilerGetData(CompilerOutputFile* file, size_t* size)
+const char* compilerGetOutputName(CompilerOutputFile* file)
+{
+    return file->name;
+}
+
+const char* compilerGetOutputData(CompilerOutputFile* file, size_t* size)
 {
     return buffEnd(&file->buffer, size);
 }

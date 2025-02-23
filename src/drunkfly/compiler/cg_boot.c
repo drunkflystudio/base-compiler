@@ -1724,12 +1724,12 @@ static void error(void* ud, const CompilerLocation* loc, const CompilerToken* to
 
 /*==================================================================================================================*/
 
-void compilerInitBootstrapCodegen(Compiler* compiler)
+void compilerInitBootstrapCodegen(Compiler* compiler, const char* outputFile)
 {
     Context* context = (Context*)compilerTempAlloc(compiler, sizeof(Context));
     memset(context, 0, sizeof(Context));
     context->compiler = compiler;
-    context->file = compilerBeginOutput(compiler, NULL);
+    context->file = compilerBeginOutput(compiler, outputFile);
     buffInit(&context->fwds, compiler->L);
     buffInit(&context->structs, compiler->L);
     buffInit(&context->methods, compiler->L);
