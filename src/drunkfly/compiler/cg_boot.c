@@ -1242,6 +1242,18 @@ static void stmtThrow(void* ud, const CompilerLocation* loc, CompilerExpr* optio
     luaL_error(context->compiler->L, "throw is not supported by bootstrap backend.");
 }
 
+static void stmtReturn(void* ud, const CompilerLocation* loc, CompilerExpr* optionalExpr)
+{
+    Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "return ");
+    if (optionalExpr)
+        printExpr(context, &context->scope->code, optionalExpr);
+    buffPrintF(&context->scope->code, ";\n");
+}
+
 static void stmtCompoundBegin(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
@@ -1819,6 +1831,7 @@ void compilerInitBootstrapCodegen(Compiler* compiler)
     compiler->parser.cb.stmtContinue = stmtContinue;
     compiler->parser.cb.stmtDelete = stmtDelete;
     compiler->parser.cb.stmtThrow = stmtThrow;
+    compiler->parser.cb.stmtReturn = stmtReturn;
     compiler->parser.cb.stmtCompoundBegin = stmtCompoundBegin;
     compiler->parser.cb.stmtCompoundEnd = stmtCompoundEnd;
     compiler->parser.cb.stmtIfBegin = stmtIfBegin;

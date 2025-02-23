@@ -969,6 +969,13 @@ static void stmtThrow(void* ud, const CompilerLocation* loc, CompilerExpr* optio
     UNUSED(optionalExpr);
 }
 
+static void stmtReturn(void* ud, const CompilerLocation* loc, CompilerExpr* optionalExpr)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    UNUSED(optionalExpr);
+}
+
 static void stmtCompoundBegin(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
@@ -1294,6 +1301,7 @@ void compilerInitSemantic(Compiler* compiler)
     compiler->parser.cb.stmtContinue = stmtContinue;
     compiler->parser.cb.stmtDelete = stmtDelete;
     compiler->parser.cb.stmtThrow = stmtThrow;
+    compiler->parser.cb.stmtReturn = stmtReturn;
     compiler->parser.cb.stmtCompoundBegin = stmtCompoundBegin;
     compiler->parser.cb.stmtCompoundEnd = stmtCompoundEnd;
     compiler->parser.cb.stmtIfBegin = stmtIfBegin;

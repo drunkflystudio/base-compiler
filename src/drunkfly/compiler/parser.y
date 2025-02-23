@@ -58,6 +58,7 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %token <token> KW_private
 %token <token> KW_protected
 %token <token> KW_public
+%token <token> KW_return
 %token <token> KW_sbyte
 %token <token> KW_sizeof
 %token <token> KW_static
@@ -330,6 +331,7 @@ statement
     | KW_continue T_SEMICOLON { CB.stmtContinue(UD, merge(@1, @2)); }
     | KW_delete expression T_SEMICOLON { CB.stmtDelete(UD, merge(@1, @3), $2); }
     | KW_throw optional_expression T_SEMICOLON { CB.stmtThrow(UD, merge(@1, @3), $2); }
+    | KW_return optional_expression T_SEMICOLON { CB.stmtReturn(UD, merge(@1, @3), $2); }
     | statement_if_start optional_variable_declaration statement_if_then statement optional_else statement_if_end
     | statement_while_start optional_variable_declaration statement_while_do statement statement_while_end
     | statement_do_start statement_do_body statement_do_end

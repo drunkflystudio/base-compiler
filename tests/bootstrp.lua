@@ -91,6 +91,9 @@ class Application {
                 var w : word = 9;
                 break;
         }
+
+        return;
+        return 4 + 8;
     }
 }
 ]], [[
@@ -261,5 +264,7 @@ Application_main()
             }
         }
     }
+    return ;
+    return 0x4 + 0x8;
 }
 ]])

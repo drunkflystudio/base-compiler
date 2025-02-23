@@ -231,6 +231,7 @@ bool compilerGetToken(Compiler* compiler)
             "private"                   { return EMIT_KEYWORD(private); }
             "protected"                 { return EMIT_KEYWORD(protected); }
             "public"                    { return EMIT_KEYWORD(public); }
+            "return"                    { return EMIT_KEYWORD(return); }
             "sbyte"                     { return EMIT_KEYWORD(sbyte); }
             "sizeof"                    { return EMIT_KEYWORD(sizeof); }
             "static"                    { return EMIT_KEYWORD(static); }

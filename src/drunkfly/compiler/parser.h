@@ -160,6 +160,7 @@ STRUCT(CompilerParserCallbacks)
     void (*stmtContinue)(void* ud, LOC(loc));
     void (*stmtDelete)(void* ud, LOC(loc), EXPR(expr));
     void (*stmtThrow)(void* ud, LOC(loc), EXPR(optionalExpr));
+    void (*stmtReturn)(void* ud, LOC(loc), EXPR(optionalExpr));
     void (*stmtCompoundBegin)(void* ud, LOC(loc));
     void (*stmtCompoundEnd)(void* ud, LOC(loc));
     void (*stmtIfBegin)(void* ud, LOC(loc));

@@ -56,6 +56,14 @@ test_parser_stmt('throw null;', [[
 stmtThrow loc:(2,1-2,11) optionalExpr:null
 ]])
 
+test_parser_stmt('return;', [[
+stmtReturn loc:(2,1-2,7) optionalExpr:<none>
+]])
+
+test_parser_stmt('return null;', [[
+stmtReturn loc:(2,1-2,12) optionalExpr:null
+]])
+
 test_parser_stmt('{}', [[
 stmtCompoundBegin loc:(2,1-2,1)
 stmtCompoundEnd loc:(2,2-2,2)

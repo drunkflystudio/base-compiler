@@ -2009,6 +2009,14 @@ static void stmtThrow(void* ud, const CompilerLocation* loc, CompilerExpr* optio
     END
 }
 
+static void stmtReturn(void* ud, const CompilerLocation* loc, CompilerExpr* optionalExpr)
+{
+    FRAG(stmtReturn)
+        LOC(loc)
+        OPTEXPR(optionalExpr)
+    END
+}
+
 static void stmtCompoundBegin(void* ud, const CompilerLocation* loc)
 {
     FRAG(stmtCompoundBegin)
@@ -2385,6 +2393,7 @@ static void initParserCallbacks(CompilerParser* parser)
     parser->cb.stmtContinue = stmtContinue;
     parser->cb.stmtDelete = stmtDelete;
     parser->cb.stmtThrow = stmtThrow;
+    parser->cb.stmtReturn = stmtReturn;
     parser->cb.stmtCompoundBegin = stmtCompoundBegin;
     parser->cb.stmtCompoundEnd = stmtCompoundEnd;
     parser->cb.stmtIfBegin = stmtIfBegin;
