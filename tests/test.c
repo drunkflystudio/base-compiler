@@ -47,6 +47,17 @@ static bool compare(lua_State* L, const char* expected, const char* actual)
     return true;
 }
 
+static const char* getFileName(const SourceFile* file)
+{
+    UNUSED(file);
+    return "file";
+}
+
+static int getLineNumber(const SourceLine* line)
+{
+    return (line ? line->number : 0);
+}
+
 /*===================================================================================================================*/
 /* LEXER */
 
@@ -59,6 +70,8 @@ int test_lexer(lua_State* L)
     int lineNumber = 1;
 
     Compiler* compiler = compilerPushNew(L);
+    compiler->getFileName = getFileName;
+    compiler->getLineNumber = getLineNumber;
     pushTestName(L);
     beginPrint(L);
 
@@ -174,6 +187,8 @@ int test_parser(lua_State* L, ParserTestMode mode)
     int lineNumber = 1;
 
     Compiler* compiler = compilerPushNew(L);
+    compiler->getFileName = getFileName;
+    compiler->getLineNumber = getLineNumber;
     pushTestName(L);
     beginPrint(L);
 
@@ -288,6 +303,8 @@ int test_bootstrap(lua_State* L)
     int lineNumber = 1;
 
     Compiler* compiler = compilerPushNew(L);
+    compiler->getFileName = getFileName;
+    compiler->getLineNumber = getLineNumber;
     pushTestName(L);
 
     lua_checkstack(L, 10000);

@@ -63,10 +63,23 @@ static void fatalError(Context* context, const char* message)
 
 static void printLine(Context* context, Buff* buff, const CompilerLocation* loc)
 {
-    /* FIXME */
-    UNUSED(context);
-    UNUSED(buff);
-    UNUSED(loc);
+    int i;
+
+    if (!context->compiler->getLineNumber || !loc)
+        return;
+
+    buffPrintC(buff, '#');
+    for (i = 1; i < context->indent * 4; ++i)
+        buffPrintC(buff, ' ');
+
+    buffPrintF(buff, "line %d", context->compiler->getLineNumber(loc->startLine));
+    if (context->compiler->getFileName) {
+        buffPrintS(buff, " \"");
+        buffPrintS(buff, context->compiler->getFileName(loc->file));
+        buffPrintC(buff, '"');
+    }
+
+    buffPrintC(buff, '\n');
 }
 
 /*==================================================================================================================*/
@@ -1683,8 +1696,13 @@ static void stmtTryEnd(void* ud)
 static void error(void* ud, const CompilerLocation* loc, const CompilerToken* token)
 {
     Context* context = (Context*)ud;
-    UNUSED(loc);
-    luaL_error(context->compiler->L, "unexpected token: %s\n", token->name);
+
+    if (!context->compiler->getLineNumber || !loc)
+        luaL_error(context->compiler->L, "unexpected token: %s\n", token->name);
+    else {
+        luaL_error(context->compiler->L, "(%d,%d): unexpected token: %s\n",
+            context->compiler->getLineNumber(loc->startLine), loc->startColumn, token->name);
+    }
 }
 
 /*==================================================================================================================*/
