@@ -1709,8 +1709,16 @@ static void error(void* ud, const CompilerLocation* loc, const CompilerToken* to
     if (!context->compiler->getLineNumber || !loc)
         luaL_error(context->compiler->L, "unexpected token: %s\n", token->name);
     else {
-        luaL_error(context->compiler->L, "(%d,%d): unexpected token: %s\n",
-            context->compiler->getLineNumber(loc->startLine), loc->startColumn, token->name);
+        if (!context->compiler->getFileName) {
+            luaL_error(context->compiler->L, "(%d,%d): unexpected token: %s\n",
+                context->compiler->getLineNumber(loc->startLine),
+                loc->startColumn, token->name);
+        } else {
+            luaL_error(context->compiler->L, "%s(%d,%d): unexpected token: %s\n",
+                context->compiler->getFileName(loc->file),
+                context->compiler->getLineNumber(loc->startLine),
+                loc->startColumn, token->name);
+        }
     }
 }
 
