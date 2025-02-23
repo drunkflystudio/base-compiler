@@ -110,13 +110,15 @@ STRUCT(Application);
 struct Application
 #line 2 "file"
 {
+#line 2 "file"
+    int (*dispatch)(lua_State* L);
 #line 100 "file"
 };
 
 #line 4 "file"
-static void
+static int
 #line 5 "file"
-Application_main()
+Application_main(lua_State* L)
 #line 6 "file"
 {
 #   line 7 "file"

@@ -210,6 +210,7 @@ STRUCT(CompilerParser)
 void compilerBeginParse(Compiler* compiler);
 void compilerPushToken(Compiler* compiler);
 void compilerPushTokenEx(Compiler* compiler, const CompilerToken* token);
+void compilerPushTokenEof(Compiler* compiler, SourceLine* line, int column);
 void compilerEndParse(Compiler* compiler);
 
 #endif

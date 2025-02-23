@@ -77,8 +77,9 @@ bool writeFile(const char* name, const char* contents)
     }
     fwrite(contents, 1, strlen(contents), f);
     if (ferror(f)) {
+        int err = errno;
         fclose(f);
-        fprintf(stderr, "error: can't write file \"%s\": %s", name, strerror(errno));
+        fprintf(stderr, "error: can't write file \"%s\": %s", name, strerror(err));
         return false;
     }
     fclose(f);

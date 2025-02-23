@@ -80,3 +80,9 @@ CompilerLocation* compilerMergeLocations(Compiler* compiler, const CompilerLocat
     CompilerLocation* result = (CompilerLocation*)compilerTempAlloc(compiler, sizeof(CompilerLocation));
     return compilerMergeLocationsInto(compiler, result, lo1, lo2);
 }
+
+void compilerSetLocationCallbacks(Compiler* compiler, PFNGETFILENAME getFileName, PFNGETLINENUMBER getLineNumber)
+{
+    compiler->getFileName = getFileName;
+    compiler->getLineNumber = getLineNumber;
+}

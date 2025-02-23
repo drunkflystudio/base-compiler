@@ -108,6 +108,6 @@ set(src
 
 source_group("Source Files" FILES ${src})
 add_executable(FlyCompiler ${src})
-set_target_properties(FlyCompiler PROPERTIES FOLDER "Tools")
+set_target_properties(FlyCompiler PROPERTIES FOLDER "Tools" OUTPUT_NAME "flycc")
 target_link_libraries(FlyCompiler PUBLIC FlyCompilerCore FlyCompilerBackendBootstrap)
 add_dependencies(FlyCompiler RunCompilerTests)

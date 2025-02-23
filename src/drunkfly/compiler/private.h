@@ -13,8 +13,8 @@ struct Compiler {
     CompilerLexer lexer;
     CompilerParser parser;
     CompilerCodegen codegen;
-    const char* (*getFileName)(const SourceFile* file);
-    int (*getLineNumber)(const SourceLine* line);
+    PFNGETFILENAME getFileName;
+    PFNGETLINENUMBER getLineNumber;
 };
 
 #endif

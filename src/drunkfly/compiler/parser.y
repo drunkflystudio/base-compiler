@@ -678,6 +678,17 @@ void compilerPushTokenEx(Compiler* compiler, const CompilerToken* token)
     lastToken = chained;
 }
 
+void compilerPushTokenEof(Compiler* compiler, SourceLine* line, int column)
+{
+    compiler->lexer.token.id = T_EOF;
+    compiler->lexer.token.name = "<end of file>";
+    compiler->lexer.token.location.startLine = line;
+    compiler->lexer.token.location.endLine = line;
+    compiler->lexer.token.location.startColumn = column;
+    compiler->lexer.token.location.endColumn = column;
+    compilerPushToken(compiler);
+}
+
 void compilerEndParse(Compiler* compiler)
 {
     yycontext yyctx;

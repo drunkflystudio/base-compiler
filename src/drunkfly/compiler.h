@@ -24,13 +24,20 @@ typedef enum CompilerVisibility {
     COMPILER_PUBLIC
 } CompilerVisibility;
 
+typedef const char* (*PFNGETFILENAME)(const SourceFile* file);
+typedef int (*PFNGETLINENUMBER)(const SourceLine* line);
+
+/* compiler.c */
+
 Compiler* compilerPushNew(lua_State* L);
 
 CompilerLocation* compilerMergeLocationsInto(Compiler* compiler,
     CompilerLocation* dst, const CompilerLocation* loc1, const CompilerLocation* loc2);
 CompilerLocation* compilerMergeLocations(Compiler* compiler, const CompilerLocation* lo1, const CompilerLocation* lo2);
+void compilerSetLocationCallbacks(Compiler* compiler, PFNGETFILENAME getFileName, PFNGETLINENUMBER getLineNumber);
 
 /* codegen.c */
+
 CompilerOutputFile* compilerGetFirstOutput(Compiler* compiler);
 CompilerOutputFile* compilerGetNextOutput(CompilerOutputFile* file);
 const char* compilerGetData(CompilerOutputFile* file, size_t* size);

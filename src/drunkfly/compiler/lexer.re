@@ -80,7 +80,7 @@ static void compilerReadChar(Compiler* compiler)
     }
 }
 
-void compilerBeginLine(Compiler* compiler, SourceFile* file, SourceLine* line, const char* text, size_t len, int state)
+void compilerBeginLine(Compiler* compiler, SourceFile* file, SourceLine* line, const char* text, size_t len, int* state)
 {
     compiler->lexer.token.location.file = file;
     compiler->lexer.token.location.startLine = line;
@@ -92,6 +92,11 @@ void compilerBeginLine(Compiler* compiler, SourceFile* file, SourceLine* line, c
     compiler->lexer.column = 0;
     compiler->lexer.state = state;
     compilerReadChar(compiler);
+}
+
+int compilerGetColumn(Compiler* compiler)
+{
+    return compiler->lexer.column;
 }
 
 #if defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))
@@ -125,7 +130,7 @@ bool compilerGetToken(Compiler* compiler)
          compiler->lexer.token.name = "'" #NAME "'", \
          true)
 
-    switch (compiler->lexer.state) {
+    switch (*compiler->lexer.state) {
         default:
             assert(false);
             return (bool)luaL_error(compiler->L, "invalid lexer state.");
@@ -156,7 +161,7 @@ bool compilerGetToken(Compiler* compiler)
                         goto unterminated_comment;
                     if (ch == '/') {
                         compilerReadChar(compiler);
-                        compiler->lexer.state = LEXER_NORMAL;
+                        *compiler->lexer.state = LEXER_NORMAL;
                         return EMIT_SPECIAL(MULTI_LINE_COMMENT, "multi-line comment");
                     }
                 }
@@ -191,7 +196,7 @@ bool compilerGetToken(Compiler* compiler)
                                               compilerReadChar(compiler);
                                           return EMIT_SPECIAL(SINGLE_LINE_COMMENT, "single line comment");
                                         }
-            "/*"                        { compiler->lexer.state = LEXER_MULTILINE_COMMENT;
+            "/*"                        { *compiler->lexer.state = LEXER_MULTILINE_COMMENT;
                                           emitComment = true;
                                           goto multiline_comment;
                                         }

@@ -68,10 +68,10 @@ int test_lexer(lua_State* L)
     const char* actual;
     SourceFile* file;
     int lineNumber = 1;
+    int lexerState;
 
     Compiler* compiler = compilerPushNew(L);
-    compiler->getFileName = getFileName;
-    compiler->getLineNumber = getLineNumber;
+    compilerSetLocationCallbacks(compiler, getFileName, getLineNumber);
     pushTestName(L);
     beginPrint(L);
 
@@ -80,7 +80,7 @@ int test_lexer(lua_State* L)
     file = (SourceFile*)compilerTempAlloc(compiler, sizeof(SourceFile));
     file->name = g_testName;
 
-    compiler->lexer.state = LEXER_NORMAL;
+    lexerState = LEXER_NORMAL;
 
     for (;;) {
         const char* lineStart;
@@ -90,7 +90,7 @@ int test_lexer(lua_State* L)
         SourceLine* line = (SourceLine*)compilerTempAlloc(compiler, sizeof(SourceLine));
         line->number = lineNumber++;
 
-        compilerBeginLine(compiler, file, line, lineStart, lineLength, compiler->lexer.state);
+        compilerBeginLine(compiler, file, line, lineStart, lineLength, &lexerState);
 
         if (compiler->lexer.token.location.file != file) {
             logPrintf("%s: TEST FAILURE: invalid file in token location.\n", g_testName);
@@ -124,9 +124,9 @@ int test_lexer(lua_State* L)
         }
 
         if (eof) {
-            if (compiler->lexer.state == LEXER_MULTILINE_COMMENT)
-                printF("(%d,%d): unterminated comment\n", line->number, compiler->lexer.column);
-            printF("(%d,%d): <end of file>\n", line->number, compiler->lexer.column);
+            if (lexerState == LEXER_MULTILINE_COMMENT)
+                printF("(%d,%d): unterminated comment\n", line->number, compilerGetColumn(compiler));
+            printF("(%d,%d): <end of file>\n", line->number, compilerGetColumn(compiler));
             break;
         }
     }
@@ -185,10 +185,10 @@ int test_parser(lua_State* L, ParserTestMode mode)
     ParserTestContext context;
     SourceFile* file;
     int lineNumber = 1;
+    int lexerState;
 
     Compiler* compiler = compilerPushNew(L);
-    compiler->getFileName = getFileName;
-    compiler->getLineNumber = getLineNumber;
+    compilerSetLocationCallbacks(compiler, getFileName, getLineNumber);
     pushTestName(L);
     beginPrint(L);
 
@@ -234,7 +234,7 @@ int test_parser(lua_State* L, ParserTestMode mode)
             break;
     }
 
-    compiler->lexer.state = LEXER_NORMAL;
+    lexerState = LEXER_NORMAL;
 
     for (;;) {
         const char* lineStart;
@@ -244,7 +244,7 @@ int test_parser(lua_State* L, ParserTestMode mode)
         SourceLine* line = (SourceLine*)compilerTempAlloc(compiler, sizeof(SourceLine));
         line->number = lineNumber++;
 
-        compilerBeginLine(compiler, file, line, lineStart, lineLength, compiler->lexer.state);
+        compilerBeginLine(compiler, file, line, lineStart, lineLength, &lexerState);
 
         if (compiler->lexer.token.location.file != file) {
             logPrintf("%s: TEST FAILURE: invalid file in token location.\n", g_testName);
@@ -255,15 +255,9 @@ int test_parser(lua_State* L, ParserTestMode mode)
             compilerPushToken(compiler);
 
         if (eof) {
-            if (compiler->lexer.state == LEXER_MULTILINE_COMMENT)
-                printF("error: %d,%d: unterminated comment\n", line->number, compiler->lexer.column);
-            compiler->lexer.token.id = T_EOF;
-            compiler->lexer.token.name = "<end of file>";
-            compiler->lexer.token.location.startLine = line;
-            compiler->lexer.token.location.endLine = line;
-            compiler->lexer.token.location.startColumn = compiler->lexer.column;
-            compiler->lexer.token.location.endColumn = compiler->lexer.column;
-            compilerPushToken(compiler);
+            if (lexerState == LEXER_MULTILINE_COMMENT)
+                printF("error: %d,%d: unterminated comment\n", line->number, compilerGetColumn(compiler));
+            compilerPushTokenEof(compiler, line, compilerGetColumn(compiler));
             break;
         }
     }
@@ -301,10 +295,10 @@ int test_bootstrap(lua_State* L)
     CompilerOutputFile* output;
     SourceFile* file;
     int lineNumber = 1;
+    int lexerState;
 
     Compiler* compiler = compilerPushNew(L);
-    compiler->getFileName = getFileName;
-    compiler->getLineNumber = getLineNumber;
+    compilerSetLocationCallbacks(compiler, getFileName, getLineNumber);
     pushTestName(L);
 
     lua_checkstack(L, 10000);
@@ -315,7 +309,7 @@ int test_bootstrap(lua_State* L)
     compilerInitBootstrapCodegen(compiler);
     compilerBeginParse(compiler);
 
-    compiler->lexer.state = LEXER_NORMAL;
+    lexerState = LEXER_NORMAL;
 
     for (;;) {
         const char* lineStart;
@@ -325,7 +319,7 @@ int test_bootstrap(lua_State* L)
         SourceLine* line = (SourceLine*)compilerTempAlloc(compiler, sizeof(SourceLine));
         line->number = lineNumber++;
 
-        compilerBeginLine(compiler, file, line, lineStart, lineLength, compiler->lexer.state);
+        compilerBeginLine(compiler, file, line, lineStart, lineLength, &lexerState);
 
         if (compiler->lexer.token.location.file != file) {
             logPrintf("%s: TEST FAILURE: invalid file in token location.\n", g_testName);
@@ -336,15 +330,9 @@ int test_bootstrap(lua_State* L)
             compilerPushToken(compiler);
 
         if (eof) {
-            if (compiler->lexer.state == LEXER_MULTILINE_COMMENT)
-                printF("error: %d,%d: unterminated comment\n", line->number, compiler->lexer.column);
-            compiler->lexer.token.id = T_EOF;
-            compiler->lexer.token.name = "<end of file>";
-            compiler->lexer.token.location.startLine = line;
-            compiler->lexer.token.location.endLine = line;
-            compiler->lexer.token.location.startColumn = compiler->lexer.column;
-            compiler->lexer.token.location.endColumn = compiler->lexer.column;
-            compilerPushToken(compiler);
+            if (lexerState == LEXER_MULTILINE_COMMENT)
+                printF("error: %d,%d: unterminated comment\n", line->number, compilerGetColumn(compiler));
+            compilerPushTokenEof(compiler, line, compilerGetColumn(compiler));
             break;
         }
     }

@@ -172,11 +172,16 @@ static void popIndent(Context* context)
         luaL_error(context->compiler->L, "internal error: indent stack underflow.");
 }
 
-static void printIndent(Context* context, Buff* buff)
+static void printIndentEx(Context* context, Buff* buff, int adjust)
 {
     int i;
-    for (i = 0; i < context->indent * 4; ++i)
+    for (i = 0; i < (context->indent + adjust) * 4; ++i)
         buffPrintC(buff, ' ');
+}
+
+static void printIndent(Context* context, Buff* buff)
+{
+    printIndentEx(context, buff, 0);
 }
 
 /*==================================================================================================================*/
@@ -511,6 +516,10 @@ static void classMembersBegin(void* ud, const CompilerLocation* loc)
     pushScope(context, context->currentClass);
     printLine(context, &context->structs, loc);
     buffPrintS(&context->structs, "{\n");
+
+    printLine(context, &context->structs, loc);
+    printIndentEx(context, &context->structs, 1);
+    buffPrintS(&context->structs, "int (*dispatch)(lua_State* L);\n");
 }
 
 static void classFriend(void* ud, const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
@@ -557,6 +566,7 @@ static void classMethodBegin(void* ud, const CompilerLocation* loc, const Compil
     CompilerVisibility vis, const CompilerLocation* optionalStatic, const CompilerLocation* retLoc, CompilerType* ret)
 {
     Context* context = (Context*)ud;
+    UNUSED(ret);
     UNUSED(loc);
     UNUSED(visLoc);
     UNUSED(vis);
@@ -564,9 +574,7 @@ static void classMethodBegin(void* ud, const CompilerLocation* loc, const Compil
 
     buffPrintC(&context->methods, '\n');
     printLine(context, &context->methods, retLoc);
-    buffPrintF(&context->methods, "static ");
-    printType(context, &context->methods, ret);
-    buffPrintC(&context->methods, '\n');
+    buffPrintF(&context->methods, "static int\n");
 
     pushScope(context, NULL);
 }
@@ -575,7 +583,7 @@ static void classMethodNameSimple(void* ud, const CompilerLocation* loc, const c
 {
     Context* context = (Context*)ud;
     printLine(context, &context->methods, loc);
-    buffPrintF(&context->methods, "%s_%s()\n", context->currentClass, name);
+    buffPrintF(&context->methods, "%s_%s(lua_State* L)\n", context->currentClass, name);
 }
 
 static void classMethodNameArg(void* ud, const CompilerLocation* loc,

@@ -17,11 +17,12 @@ STRUCT(CompilerLexer)
     const char* prevCursor;
     uint32_t curChar;
     int column;
-    int state;
+    int* state;
 };
 
 bool compilerReadLine(const char** ptr, const char** outLine, size_t* outLength);
-void compilerBeginLine(Compiler* compiler, SourceFile* file, SourceLine* line, const char* text, size_t len, int state);
+void compilerBeginLine(Compiler* compiler, SourceFile* file, SourceLine* line, const char* text, size_t len, int* state);
+int compilerGetColumn(Compiler* compiler);
 bool compilerGetToken(Compiler* compiler);
 
 #endif
