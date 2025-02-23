@@ -227,7 +227,7 @@ static int runCompiler(lua_State* L)
             slash = slash2;
       #endif
         if (slash)
-            lua_pushlstring(L, outputName, slash - outputName + 1);
+            lua_pushlstring(L, outputName, (size_t)(slash - outputName + 1));
         bundleFile = lua_pushfstring(L, "%s.bun", bundleName);
         if (slash) {
             lua_concat(L, 2);

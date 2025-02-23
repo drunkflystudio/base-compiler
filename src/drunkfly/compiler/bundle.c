@@ -5,7 +5,7 @@
 #include <drunkfly/buff.h>
 #include <string.h>
 
-STRUCT(CompilerBundle) {
+struct CompilerBundle {
     Compiler* compiler;
     const char* name;
     CompilerOutputFile* file;
