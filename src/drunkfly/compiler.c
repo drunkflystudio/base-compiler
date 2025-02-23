@@ -34,8 +34,6 @@ Compiler* compilerPushNew(lua_State* L)
     }
     lua_setmetatable(L, -2);
 
-    compiler->arenas = NULL;
-    compiler->largeBlocks = NULL;
     compiler->L = L;
     compiler->parser.compiler = compiler;
     compiler->codegen.compiler = compiler;

@@ -9,6 +9,6 @@ STRUCT(CompilerSemanticCallbacks)
     void (*produceTextFile)(const char* name, const char* text);
 };
 
- void compilerInitSemantic(Compiler* compiler);
+void compilerInitSemantic(Compiler* compiler);
 
 #endif
