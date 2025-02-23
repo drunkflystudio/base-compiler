@@ -13,7 +13,7 @@
 
 typedef enum Codegen {
     CODEGEN_NONE = 0,
-    CODEGEN_BOOTSTRAP,
+    CODEGEN_BOOTSTRAP
 } Codegen;
 
 struct SourceFile
@@ -42,6 +42,7 @@ static int getLineNumber(const SourceLine* line)
     return (line ? line->number : 0);
 }
 
+/*
 static const char* formatLocation(lua_State* L, const CompilerLocation* loc)
 {
     if (!loc)
@@ -54,6 +55,7 @@ static const char* formatLocation(lua_State* L, const CompilerLocation* loc)
         getLineNumber(loc->endLine),
         loc->endColumn);
 }
+*/
 
 static void printMessage(VMMSGTYPE type, const char* message)
 {

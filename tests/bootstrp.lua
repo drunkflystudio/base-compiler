@@ -116,9 +116,9 @@ struct Application
 };
 
 #line 4 "file"
-static int
+void
 #line 5 "file"
-Application_main(lua_State* L)
+Application_main(lua_State* L) { UNUSED(L);
 #line 6 "file"
 {
 #   line 7 "file"
@@ -393,5 +393,6 @@ Application_main(lua_State* L)
 #   line 98 "file"
     return 0x4 + 0x8;
 #line 99 "file"
+}
 }
 ]])

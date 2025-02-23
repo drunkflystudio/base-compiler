@@ -574,7 +574,7 @@ static void classMethodBegin(void* ud, const CompilerLocation* loc, const Compil
 
     buffPrintC(&context->methods, '\n');
     printLine(context, &context->methods, retLoc);
-    buffPrintF(&context->methods, "static int\n");
+    buffPrintF(&context->methods, "void\n");
 
     pushScope(context, NULL);
 }
@@ -583,7 +583,7 @@ static void classMethodNameSimple(void* ud, const CompilerLocation* loc, const c
 {
     Context* context = (Context*)ud;
     printLine(context, &context->methods, loc);
-    buffPrintF(&context->methods, "%s_%s(lua_State* L)\n", context->currentClass, name);
+    buffPrintF(&context->methods, "%s_%s(lua_State* L) { UNUSED(L);\n", context->currentClass, name);
 }
 
 static void classMethodNameArg(void* ud, const CompilerLocation* loc,
@@ -622,6 +622,7 @@ static void classMethodEnd(void* ud)
     Scope* scope = popScope(context);
     printVarDecls(context, scope);
     buffPrintS(&context->methods, buffEnd(&scope->code, NULL));
+    buffPrintS(&context->methods, "}\n");
 }
 
 static void classMembersEnd(void* ud, const CompilerLocation* loc)
