@@ -197,9 +197,9 @@ int test_parser(lua_State* L, ParserTestMode mode)
         case PARSE_ATTR:
             break;
         case PARSE_TYPES:
-            lua_pushliteral(L, "class A{public var x:\n");
+            lua_pushliteral(L, "class A{public var (\n");
             lua_pushvalue(L, 1);
-            lua_pushliteral(L, "\n;}");
+            lua_pushliteral(L, "\n) x;}");
             lua_concat(L, 3);
             fileContents = lua_tostring(L, -1);
             break;

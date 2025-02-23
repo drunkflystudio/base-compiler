@@ -480,13 +480,23 @@ var_or_const : KW_var { $$ = false; } | KW_const { $$ = true; };
 variable_declarator_list : variable_declarator | variable_declarator_list T_COMMA variable_declarator;
 
 variable_declarator
-    : variable_name variable_type optional_initializer variable_end
-    | variable_name variable_array_type array_initializer variable_end
+    : variable_declarator_start optional_initializer variable_end
+    | variable_array_declarator_start T_ASSIGN array_initializer variable_end
     ;
 
-variable_name : T_IDENTIFIER { CB.varBegin(UD, &@1, $1->text); };
+variable_declarator_start
+    : T_IDENTIFIER
+      { CB.varBegin(UD, &@1, $1->text); }
+    | T_LPAREN type_name T_RPAREN T_IDENTIFIER
+      { CB.varBegin(UD, &@4, $4->text); CB.varType(UD, &@2, $2); }
+    ;
+
+variable_array_declarator_start
+    : T_LPAREN array_element_type_name T_LBRACKET optional_expression T_RBRACKET T_RPAREN T_IDENTIFIER
+      { CB.varBegin(UD, &@7, $7->text); CB.varType_Array(UD, merge(@3, @5), $2, $4); }
+    ;
+
 variable_end : /* empty */ { CB.varEnd(UD); }
-variable_type : /* empty */ | T_COLON type_name { CB.varType(UD, &@2, $2); };
 
 optional_initializer
     : /* empty */
@@ -494,14 +504,12 @@ optional_initializer
     | T_ASSIGN expression { CB.varInitializer(UD, $2); }
     ;
 
-variable_array_type : T_COLON array_element_type_name T_LBRACKET optional_expression T_RBRACKET
-                            { CB.varType_Array(UD, merge(@2, @5), $2, $4); };
 array_initializer : array_initializer_start optional_array_initializer_list array_initializer_end;
-array_initializer_start : T_ASSIGN T_LCURLY { CB.arrayInitializerBegin(UD, &@2); };
+array_initializer_start : T_LCURLY { CB.arrayInitializerBegin(UD, &@1); };
 array_initializer_end : T_RCURLY { CB.arrayInitializerEnd(UD, &@1); };
 optional_array_initializer_list : /* empty */ | array_initializer_list | array_initializer_list T_COMMA;
-array_initializer_list : array_initializer | array_initializer_list T_COMMA array_initializer;
-array_initializer : expression { CB.arrayInitializer(UD, $1); };
+array_initializer_list : array_element_initializer | array_initializer_list T_COMMA array_element_initializer;
+array_element_initializer : expression { CB.arrayInitializer(UD, $1); };
 
 variable_declaration_or_expression
     : T_SEMICOLON { $$ = NULL; }

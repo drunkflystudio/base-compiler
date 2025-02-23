@@ -2,11 +2,12 @@
 test_bootstrap([[
 class Application {
     public static (void) main {
-        var tmp1 : bool;
-        var tmp2 : bool = false;
-        var tmp3 : word = (4);
-        var tmp4 : word = tmp3[tmp3];
-        const tmp5 : word = tmp4 / 123456;
+        var (bool) tmp1;
+        var (bool) tmp1;
+        var (bool) tmp2 = false;
+        var (word) tmp3 = (4);
+        var (word) tmp4 = tmp3[tmp3];
+        const (word) tmp5 = tmp4 / 123456;
         tmp5 += (9 + 3 * 8) - tmp4++ + --tmp3 % 24 << 6;
         tmp1 = (tmp3 > tmp4 ? tmp3 < tmp4 : tmp3 == tmp4) || tmp3 && tmp4;
         ;
@@ -18,19 +19,19 @@ class Application {
         if (tmp1)
             tmp3 -= tmp4;
         else {
-            var x : byte = 12;
+            var (byte) x = 12;
             break;
             continue;
         }
 
-        if (var x : word = 4; x == 4)
-            var y : word = 5;
+        if (var (word) x = 4; x == 4)
+            var (word) y = 5;
 
         while (true)
             ;
 
-        while (var x : bool = false; x) {
-            var y : bool = true;
+        while (var (bool) x = false; x) {
+            var (bool) y = true;
             if (y)
                 break;
         }
@@ -39,20 +40,20 @@ class Application {
         } while (false);
 
         do {
-            var w : word = 4;
+            var (word) w = 4;
         } while (w == 4);
 
         do
-            var q : word = 12;
+            var (word) q = 12;
         while (q != 12);
 
         for (;;)
             break;
 
-        for (var x : word;;)
+        for (var (word) x;;)
             break;
 
-        for (var x : word = 7; x; x++)
+        for (var (word) x = 7; x; x++)
             break;
 
         for (tmp4 = 11; ; x++)
@@ -81,14 +82,14 @@ class Application {
                 break;
         }
 
-        switch (var x : word = 12; x) {
+        switch (var (word) x = 12; x) {
             case 5:
                 continue;
             default:
-                var y : word = 8;
+                var (word) y = 8;
             case 6:
             case 7:
-                var w : word = 9;
+                var (word) w = 9;
                 break;
         }
 
