@@ -24,6 +24,18 @@ struct Scope {
     Buff code;
 };
 
+STRUCT(For) {
+    For* prev;
+    CompilerExpr* init;
+    CompilerExpr* condition;
+    CompilerExpr* update;
+};
+
+STRUCT(Switch) {
+    Switch* prev;
+    bool inCase;
+};
+
 STRUCT(Context) {
     Compiler* compiler;
     CompilerOutputFile* file;
@@ -32,6 +44,8 @@ STRUCT(Context) {
     Buff structs;
     Buff methods;
     const char* currentClass;
+    For* currentFor;
+    Switch* currentSwitch;
     Var* currentVar;
     bool isConstVariables;
     bool isStaticVariables;
@@ -175,6 +189,23 @@ static Scope* popScope(Context* context)
     return scope;
 }
 
+static void printVarDecls(Context* context, Scope* scope)
+{
+    Var* var;
+    for (var = scope->firstVar; var; var = var->next) {
+        printLine(context, &context->scope->code, &var->loc);
+        printIndent(context, &context->scope->code);
+        if (var->isStatic)
+            buffPrintS(&context->scope->code, "static ");
+        printType(context, &context->scope->code, var->type);
+        if (var->isConst)
+            buffPrintS(&context->scope->code, " const");
+        buffPrintC(&context->scope->code, ' ');
+        buffPrintS(&context->scope->code, var->name);
+        buffPrintS(&context->scope->code, ";\n");
+    }
+}
+
 static Var* addVariable(Context* context, const CompilerLocation* loc, const char* name)
 {
     Scope* scope = context->scope;
@@ -200,6 +231,92 @@ static Var* addVariable(Context* context, const CompilerLocation* loc, const cha
     }
 
     return var;
+}
+
+/*==================================================================================================================*/
+
+static For* pushFor(Context* context)
+{
+    For* f = (For*)compilerTempAlloc(context->compiler, sizeof(For));
+    memset(f, 0, sizeof(For));
+    f->prev = context->currentFor;
+    context->currentFor = f;
+    return f;
+}
+
+static For* popFor(Context* context)
+{
+    For* f = context->currentFor;
+    if (f)
+        context->currentFor = f->prev;
+    else
+        luaL_error(context->compiler->L, "internal error: `for` stack underflow.");
+    return f;
+}
+
+static For* currentFor(Context* context)
+{
+    For* f = context->currentFor;
+    if (!f)
+        luaL_error(context->compiler->L, "internal error: `for` stack is empty.");
+    return f;
+}
+
+/*==================================================================================================================*/
+
+static Switch* pushSwitch(Context* context)
+{
+    Switch* sw = (Switch*)compilerTempAlloc(context->compiler, sizeof(Switch));
+    memset(sw, 0, sizeof(For));
+    context->currentSwitch = sw;
+    return sw;
+}
+
+static Switch* popSwitch(Context* context)
+{
+    Switch* sw = context->currentSwitch;
+    if (sw)
+        context->currentSwitch = sw->prev;
+    else
+        luaL_error(context->compiler->L, "internal error: `switch` stack underflow.");
+    return sw;
+}
+
+static Switch* currentSwitch(Context* context)
+{
+    Switch* sw = context->currentSwitch;
+    if (!sw)
+        luaL_error(context->compiler->L, "internal error: `switch` stack is empty.");
+    return sw;
+}
+
+static void maybeSwitchStmt(Context* context)
+{
+    Switch* sw = context->currentSwitch;
+    if (!sw || sw->inCase)
+        return;
+
+    sw->inCase = true;
+
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "{\n");
+
+    pushScope(context, NULL);
+    pushIndent(context);
+}
+
+static void switchEndCase(Context* context, const CompilerLocation* loc)
+{
+    Scope* prevScope = popScope(context);
+
+    printVarDecls(context, prevScope);
+    buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+    popIndent(context);
+
+    if (loc)
+        printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "}\n");
 }
 
 /*==================================================================================================================*/
@@ -482,6 +599,7 @@ static void classMethodEnd(void* ud)
 {
     Context* context = (Context*)ud;
     Scope* scope = popScope(context);
+    printVarDecls(context, scope);
     buffPrintS(&context->methods, buffEnd(&scope->code, NULL));
 }
 
@@ -503,6 +621,7 @@ static void classEnd(void* ud, const CompilerLocation* loc)
 static void varDeclBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* optionalStatic, bool isConst)
 {
     Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
     context->isConstVariables = isConst;
     context->isStaticVariables = (optionalStatic != NULL);
     UNUSED(loc);
@@ -566,6 +685,7 @@ static void structInitializer(void* ud, const CompilerLocation* loc, const char*
     UNUSED(loc);
     UNUSED(name);
     UNUSED(value);
+    /* FIXME */
 }
 
 static void structInitializerEnd(void* ud)
@@ -735,6 +855,7 @@ static void exprNewBegin(void* ud, const CompilerLocation* loc, CompilerType* ty
     UNUSED(ud);
     UNUSED(loc);
     UNUSED(type);
+    /* FIXME */
 }
 
 static CompilerExpr* exprNewEnd_Struct(void* ud, const CompilerLocation* loc)
@@ -756,6 +877,7 @@ static void exprMethodCallBegin(void* ud, CompilerExpr* callee)
 {
     UNUSED(ud);
     UNUSED(callee);
+    /* FIXME */
 }
 
 static void exprMethodSimple(void* ud, const CompilerLocation* loc, const char* name)
@@ -794,6 +916,7 @@ static CompilerExpr* exprMember(void* ud,
     UNUSED(target);
     UNUSED(nameLoc);
     UNUSED(name);
+    /* FIXME */
     return NULL;
 }
 
@@ -1044,10 +1167,10 @@ static CompilerExpr* exprAssignShr(void* ud, const CompilerLocation* loc, Compil
     return newExpr(context, loc, "@ >>= @", 2, op1, op2);
 }
 
-
 static void stmtEmpty(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
     printLine(context, &context->scope->code, loc);
     printIndent(context, &context->scope->code);
     buffPrintS(&context->scope->code, ";\n");
@@ -1056,6 +1179,7 @@ static void stmtEmpty(void* ud, const CompilerLocation* loc)
 static void stmtExpr(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
     Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
     printLine(context, &context->scope->code, loc);
     printIndent(context, &context->scope->code);
     printExpr(context, &context->scope->code, e);
@@ -1065,6 +1189,7 @@ static void stmtExpr(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 static void stmtLabel(void* ud, const CompilerLocation* loc, const char* name)
 {
     Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
     printLine(context, &context->scope->code, loc);
     printIndent(context, &context->scope->code);
     buffPrintF(&context->scope->code, "%s:;\n", name);
@@ -1073,6 +1198,7 @@ static void stmtLabel(void* ud, const CompilerLocation* loc, const char* name)
 static void stmtGoto(void* ud, const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
     Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
     printLine(context, &context->scope->code, loc);
     printIndent(context, &context->scope->code);
     buffPrintF(&context->scope->code, "goto %s;\n", name);
@@ -1082,6 +1208,7 @@ static void stmtGoto(void* ud, const CompilerLocation* loc, const CompilerLocati
 static void stmtBreak(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
     printLine(context, &context->scope->code, loc);
     printIndent(context, &context->scope->code);
     buffPrintF(&context->scope->code, "break;\n");
@@ -1090,6 +1217,7 @@ static void stmtBreak(void* ud, const CompilerLocation* loc)
 static void stmtContinue(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
     printLine(context, &context->scope->code, loc);
     printIndent(context, &context->scope->code);
     buffPrintF(&context->scope->code, "continue;\n");
@@ -1100,18 +1228,24 @@ static void stmtDelete(void* ud, const CompilerLocation* loc, CompilerExpr* e)
     UNUSED(ud);
     UNUSED(loc);
     UNUSED(e);
+
+    /* FIXME */
 }
 
 static void stmtThrow(void* ud, const CompilerLocation* loc, CompilerExpr* optionalExpr)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+
     UNUSED(loc);
     UNUSED(optionalExpr);
+
+    luaL_error(context->compiler->L, "throw is not supported by bootstrap backend.");
 }
 
 static void stmtCompoundBegin(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
     printLine(context, &context->scope->code, loc);
     printIndent(context, &context->scope->code);
     buffPrintS(&context->scope->code, "{\n");
@@ -1123,21 +1257,8 @@ static void stmtCompoundEnd(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
     Scope* prevScope = popScope(context);
-    Var* var;
 
-    for (var = prevScope->firstVar; var; var = var->next) {
-        printLine(context, &context->scope->code, &var->loc);
-        printIndent(context, &context->scope->code);
-        if (var->isStatic)
-            buffPrintS(&context->scope->code, "static ");
-        printType(context, &context->scope->code, var->type);
-        if (var->isConst)
-            buffPrintS(&context->scope->code, " const");
-        buffPrintC(&context->scope->code, ' ');
-        buffPrintS(&context->scope->code, var->name);
-        buffPrintS(&context->scope->code, ";\n");
-    }
-
+    printVarDecls(context, prevScope);
     buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
 
     popIndent(context);
@@ -1149,8 +1270,15 @@ static void stmtCompoundEnd(void* ud, const CompilerLocation* loc)
 
 static void stmtIfBegin(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "{\n");
+
+    pushScope(context, NULL);
+    pushIndent(context);
 }
 
 static void stmtIfThen(void* ud, const CompilerLocation* loc, CompilerExpr* e)
@@ -1161,7 +1289,7 @@ static void stmtIfThen(void* ud, const CompilerLocation* loc, CompilerExpr* e)
     printIndent(context, &context->scope->code);
     buffPrintF(&context->scope->code, "if (");
     printExpr(context, &context->scope->code, e);
-    buffPrintF(&context->scope->code, ")\n");
+    buffPrintF(&context->scope->code, ") {\n");
 
     pushScope(context, NULL);
     pushIndent(context);
@@ -1173,11 +1301,12 @@ static void stmtIfElse(void* ud, const CompilerLocation* loc)
     Scope* prevScope = popScope(context);
     popIndent(context);
 
+    printVarDecls(context, prevScope);
     buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
 
     printLine(context, &context->scope->code, loc);
     printIndent(context, &context->scope->code);
-    buffPrintF(&context->scope->code, "else\n");
+    buffPrintF(&context->scope->code, "} else {\n");
 
     pushScope(context, NULL);
     pushIndent(context);
@@ -1186,154 +1315,357 @@ static void stmtIfElse(void* ud, const CompilerLocation* loc)
 static void stmtIfEnd(void* ud)
 {
     Context* context = (Context*)ud;
-    Scope* prevScope = popScope(context);
+    Scope* prevScope;
+
+    prevScope = popScope(context);
+    printVarDecls(context, prevScope);
     buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+
     popIndent(context);
+
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "}\n");
+
+    prevScope = popScope(context);
+    printVarDecls(context, prevScope);
+    buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+
+    popIndent(context);
+
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "}\n");
 }
 
 static void stmtWhileBegin(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "{\n");
+
+    pushScope(context, NULL);
+    pushIndent(context);
 }
 
 static void stmtWhileDo(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(e);
+    Context* context = (Context*)ud;
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "while (");
+    printExpr(context, &context->scope->code, e);
+    buffPrintF(&context->scope->code, ") {\n");
+
+    pushScope(context, NULL);
+    pushIndent(context);
 }
 
 static void stmtWhileEnd(void* ud)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    Scope* prevScope;
+
+    prevScope = popScope(context);
+    printVarDecls(context, prevScope);
+    buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+
+    popIndent(context);
+
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "}\n");
+
+    prevScope = popScope(context);
+    printVarDecls(context, prevScope);
+    buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+
+    popIndent(context);
+
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "}\n");
 }
 
 static void stmtDoBegin(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "{\n");
+
+    pushScope(context, NULL);
+    pushIndent(context);
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "do {\n");
+
+    pushScope(context, NULL);
+    pushIndent(context);
 }
 
 static void stmtDoEnd(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(e);
+    Context* context = (Context*)ud;
+    Scope* prevScope1, *prevScope2;
+
+    prevScope1 = popScope(context);
+    buffPrintS(&context->scope->code, buffEnd(&prevScope1->code, NULL));
+    popIndent(context);
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "} while (");
+    printExpr(context, &context->scope->code, e);
+    buffPrintS(&context->scope->code, ");\n");
+
+    prevScope2 = popScope(context);
+    printVarDecls(context, prevScope1);
+    printVarDecls(context, prevScope2);
+    buffPrintS(&context->scope->code, buffEnd(&prevScope2->code, NULL));
+    popIndent(context);
+
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "}\n");
 }
 
 static void stmtForBegin(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "{\n");
+
+    pushFor(context);
+    pushScope(context, NULL);
+    pushIndent(context);
 }
 
 static void stmtForInit(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    For* f;
+
     UNUSED(loc);
-    UNUSED(e);
+
+    f = currentFor(context);
+    f->init = e;
 }
 
 static void stmtForCondition(void* ud, CompilerExpr* e)
 {
-    UNUSED(ud);
-    UNUSED(e);
+    Context* context = (Context*)ud;
+    currentFor(context)->condition = e;
 }
 
 static void stmtForUpdate(void* ud, CompilerExpr* e)
 {
-    UNUSED(ud);
-    UNUSED(e);
+    Context* context = (Context*)ud;
+    currentFor(context)->update = e;
 }
 
 static void stmtForDo(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    For* f = popFor(context);
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "for (");
+    if (f->init)
+        printExpr(context, &context->scope->code, f->init);
+    buffPrintF(&context->scope->code, "; ");
+    if (f->condition)
+        printExpr(context, &context->scope->code, f->condition);
+    buffPrintF(&context->scope->code, "; ");
+    if (f->update)
+        printExpr(context, &context->scope->code, f->update);
+    buffPrintF(&context->scope->code, ") {\n");
+
+    pushScope(context, NULL);
+    pushIndent(context);
 }
 
 static void stmtForEnd(void* ud)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    Scope* prevScope;
+
+    prevScope = popScope(context);
+    printVarDecls(context, prevScope);
+    buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+
+    popIndent(context);
+
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "}\n");
+
+    prevScope = popScope(context);
+    printVarDecls(context, prevScope);
+    buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+
+    popIndent(context);
+
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "}\n");
 }
 
 static void stmtSwitchBegin(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    maybeSwitchStmt(context);
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "{\n");
+
+    pushScope(context, NULL);
+    pushIndent(context);
 }
 
 static void stmtSwitchOperand(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(e);
+    Context* context = (Context*)ud;
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "switch (");
+    printExpr(context, &context->scope->code, e);
+    buffPrintF(&context->scope->code, ") {\n");
+
+    pushSwitch(context);
+    pushScope(context, NULL);
+    pushIndent(context);
 }
 
 static void stmtSwitchCase(void* ud, const CompilerLocation* loc, CompilerExpr* e)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(e);
+    Context* context = (Context*)ud;
+    Switch* sw = currentSwitch(context);
+
+    if (sw->inCase) {
+        sw->inCase = false;
+        switchEndCase(context, loc);
+    }
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "case ");
+    printExpr(context, &context->scope->code, e);
+    buffPrintF(&context->scope->code, ":\n");
 }
 
 static void stmtSwitchCaseRange(void* ud, const CompilerLocation* loc, CompilerExpr* start, CompilerExpr* end)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+
     UNUSED(loc);
     UNUSED(start);
     UNUSED(end);
+
+    luaL_error(context->compiler->L, "case with range is not supported by bootstrap backend.");
 }
 
 static void stmtSwitchDefault(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
+    Context* context = (Context*)ud;
+    Switch* sw = currentSwitch(context);
+
+    if (sw->inCase) {
+        sw->inCase = false;
+        switchEndCase(context, loc);
+    }
+
+    printLine(context, &context->scope->code, loc);
+    printIndent(context, &context->scope->code);
+    buffPrintF(&context->scope->code, "default:\n");
 }
 
 static void stmtSwitchEnd(void* ud)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    Switch* sw = popSwitch(context);
+    Scope* prevScope;
+
+    if (sw->inCase) {
+        sw->inCase = false;
+        switchEndCase(context, NULL);
+    }
+
+    prevScope = popScope(context);
+    printVarDecls(context, prevScope);
+    buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+    popIndent(context);
+
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "}\n");
+
+    prevScope = popScope(context);
+    printVarDecls(context, prevScope);
+    buffPrintS(&context->scope->code, buffEnd(&prevScope->code, NULL));
+    popIndent(context);
+
+    printIndent(context, &context->scope->code);
+    buffPrintS(&context->scope->code, "}\n");
 }
 
 static void stmtTryBegin(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+
     UNUSED(loc);
+
+    luaL_error(context->compiler->L, "try/catch is not supported by bootstrap backend.");
 }
 
 static void stmtTry_CatchBegin(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+
     UNUSED(loc);
+
+    luaL_error(context->compiler->L, "try/catch is not supported by bootstrap backend.");
 }
 
 static void stmtTry_CatchDo(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+
     UNUSED(loc);
+
+    luaL_error(context->compiler->L, "try/catch is not supported by bootstrap backend.");
 }
 
 static void stmtTry_CatchEnd(void* ud)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    luaL_error(context->compiler->L, "try/catch is not supported by bootstrap backend.");
 }
 
 static void stmtTry_FinallyBegin(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+
     UNUSED(loc);
+
+    luaL_error(context->compiler->L, "try/catch is not supported by bootstrap backend.");
 }
 
 static void stmtTry_FinallyEnd(void* ud)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    luaL_error(context->compiler->L, "try/catch is not supported by bootstrap backend.");
 }
 
 static void stmtTryEnd(void* ud)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
+    luaL_error(context->compiler->L, "try/catch is not supported by bootstrap backend.");
 }
 
 static void error(void* ud, const CompilerLocation* loc, const CompilerToken* token)
