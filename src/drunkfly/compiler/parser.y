@@ -133,6 +133,7 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %token <token> T_COMMA
 %token <token> T_ATSIGN
 %token <token> T_KWdo_WITH_LCURLY
+%token <token> T_KWbit_WITH_LBRACKET
 
 %type <expr> primary_expression
 %type <expr> postfix_expression
@@ -153,7 +154,6 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %type <expr> optional_expression
 %type <expr> statement_switch_expr
 %type <type> type_name
-%type <type> array_element_type_name
 %type <flag> var_or_const
 %type <expr> variable_declaration_or_expression
 %type <flag> optional_final
@@ -197,7 +197,7 @@ primary_expression
     | T_LPAREN expression T_RPAREN { $$ = CB.exprParentheses(UD, merge(@1, @3), $2); }
     ;
 
-operator_new : KW_new array_element_type_name { CB.exprNewBegin(UD, &@1, $2); };
+operator_new : KW_new type_name { CB.exprNewBegin(UD, &@1, $2); };
 
 method_call_begin : T_LBRACKET expression { CB.exprMethodCallBegin(UD, $2); };
 method_call_args : method_call_single_arg | method_call_arg_list;
@@ -425,14 +425,10 @@ struct_initializer_member
 /* Types */
 
 type_name
-    : array_element_type_name
-    | KW_void { $$ = CB.typeVoid(UD, &@1); }
+    : KW_void { $$ = CB.typeVoid(UD, &@1); }
     | KW_bit { $$ = CB.typeBit(UD, &@1, NULL); }
-    | KW_bit T_LBRACKET expression T_RBRACKET { $$ = CB.typeBit(UD, &@1, $3); }
-    ;
-
-array_element_type_name
-    : KW_bool { $$ = CB.typeBool(UD, &@1); }
+    | T_KWbit_WITH_LBRACKET expression T_RBRACKET { $$ = CB.typeBit(UD, &@1, $2); }
+    | KW_bool { $$ = CB.typeBool(UD, &@1); }
     | KW_sbyte { $$ = CB.typeInt8(UD, &@1); }
     | KW_byte { $$ = CB.typeUInt8(UD, &@1); }
     | KW_int8 { $$ = CB.typeInt8(UD, &@1); }
@@ -494,7 +490,7 @@ variable_declarator_start
     ;
 
 variable_array_declarator_start
-    : T_LPAREN array_element_type_name T_LBRACKET optional_expression T_RBRACKET T_RPAREN T_IDENTIFIER
+    : T_LPAREN type_name T_LBRACKET optional_expression T_RBRACKET T_RPAREN T_IDENTIFIER
       { CB.varBegin(UD, &@7, $7->text); CB.varType_Array(UD, merge(@3, @5), $2, $4); }
     ;
 
@@ -765,6 +761,13 @@ int yylex(yycontext* ctx)
         ChainedToken* next = nextToken(&ptr);
         if (next->token.id == T_LCURLY) {
             id = T_KWdo_WITH_LCURLY;
+            firstToken = next->next;
+        }
+    } else if (id == KW_bit) {
+        ChainedToken* ptr = firstToken;
+        ChainedToken* next = nextToken(&ptr);
+        if (next->token.id == T_LBRACKET) {
+            id = T_KWbit_WITH_LBRACKET;
             firstToken = next->next;
         }
     }
