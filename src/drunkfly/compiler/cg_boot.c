@@ -611,6 +611,12 @@ static void classMethodEnd_Abstract(void* ud, const CompilerLocation* loc)
     UNUSED(loc);
 }
 
+static void classMethodEnd_Extern(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+}
+
 static void classMethodBodyBegin(void* ud)
 {
     UNUSED(ud);
@@ -1773,6 +1779,7 @@ void compilerInitBootstrapCodegen(Compiler* compiler, const char* outputFile)
     compiler->parser.cb.classMethodNameArg = classMethodNameArg;
     compiler->parser.cb.classMethodNameEnd = classMethodNameEnd;
     compiler->parser.cb.classMethodEnd_Abstract = classMethodEnd_Abstract;
+    compiler->parser.cb.classMethodEnd_Extern = classMethodEnd_Extern;
     compiler->parser.cb.classMethodBodyBegin = classMethodBodyBegin;
     compiler->parser.cb.classMethodEnd = classMethodEnd;
     compiler->parser.cb.classMembersEnd = classMembersEnd;

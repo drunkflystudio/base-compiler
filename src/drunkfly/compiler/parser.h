@@ -55,6 +55,7 @@ STRUCT(CompilerParserCallbacks)
     void (*classMethodNameArg)(void* ud, LOC(loc), const char* name, TYPE(type), LOC(argLoc), const char* arg);
     void (*classMethodNameEnd)(void* ud, LOC(optionalFinal), LOC(optionalOverride));
     void (*classMethodEnd_Abstract)(void* ud, LOC(loc));
+    void (*classMethodEnd_Extern)(void* ud, LOC(loc));
     void (*classMethodBodyBegin)(void* ud);
     void (*classMethodEnd)(void* ud);
     void (*classMembersEnd)(void* ud, LOC(loc));

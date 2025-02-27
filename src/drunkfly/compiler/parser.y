@@ -40,6 +40,7 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %token <token> KW_do
 %token <token> KW_else
 %token <token> KW_enum
+%token <token> KW_extern
 %token <token> KW_false
 %token <token> KW_final
 %token <token> KW_finally
@@ -564,7 +565,7 @@ class_destructor_start : class_member_visibility T_TILDE T_IDENTIFIER
                             { CB.classDestructorBegin(UD, merge(@2, @3), $2->text, &@1, $1); };
 class_destructor_end : /* empty */ { CB.classDestructorEnd(UD); };
 
-class_method : class_method_start method_name method_body;
+class_method : class_method_start method_name method_name_end method_body;
 class_method_start : class_member_visibility optional_static T_LPAREN type_name T_RPAREN
                             { CB.classMethodBegin(UD, merge(@3, @5), &@1, $1, ($2 ? &@2 : NULL), &@4, $4); };
 method_name : method_name_simple | method_name_with_args;
@@ -573,13 +574,14 @@ method_name_with_args : method_arg | method_name_with_args method_arg;
 method_arg : T_IDENTIFIER T_COLON T_LPAREN type_name T_RPAREN T_IDENTIFIER
                             { CB.classMethodNameArg(UD, merge(@1, @2), $1->text, $4, &@6, $6->text); };
 
-method_body : method_name_end optional_compound_statement;
+method_body : optional_compound_statement;
 method_name_end : optional_final optional_override { CB.classMethodNameEnd(UD, ($1 ? &@1 : NULL), ($2 ? &@2 : NULL)); };
 optional_override : /* empty */ { $$ = false; } | KW_override { $$ = true; };
 method_body_start : /* empty */ { CB.classMethodBodyBegin(UD); };
 method_body_end : /* empty */ { CB.classMethodEnd(UD); };
 optional_compound_statement
     : method_body_start compound_statement method_body_end
+    | KW_extern T_SEMICOLON { CB.classMethodEnd_Extern(UD, &@1); };
     | KW_abstract T_SEMICOLON { CB.classMethodEnd_Abstract(UD, &@1); };
     ;
 

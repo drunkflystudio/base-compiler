@@ -687,6 +687,13 @@ static void classMethodEnd_Abstract(void* ud, const CompilerLocation* loc)
     END
 }
 
+static void classMethodEnd_Extern(void* ud, const CompilerLocation* loc)
+{
+    FRAG_UNINDENT(classMethodEnd_Extern)
+        LOC(loc)
+    END
+}
+
 static void classMethodBodyBegin(void* ud)
 {
     if (g_parseMode != PARSE_STMT) {
@@ -2300,6 +2307,7 @@ static void initParserCallbacks(CompilerParser* parser)
     parser->cb.classMethodNameArg = classMethodNameArg;
     parser->cb.classMethodNameEnd = classMethodNameEnd;
     parser->cb.classMethodEnd_Abstract = classMethodEnd_Abstract;
+    parser->cb.classMethodEnd_Extern = classMethodEnd_Extern;
     parser->cb.classMethodBodyBegin = classMethodBodyBegin;
     parser->cb.classMethodEnd = classMethodEnd;
     parser->cb.classMembersEnd = classMembersEnd;

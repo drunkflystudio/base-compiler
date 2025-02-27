@@ -94,6 +94,9 @@ int main(void)
     p_luaY_parser = luaY_parser;
     success = vmRun(initTests, runTests, printMessage, NULL);
 
+    if (success && g_testFailCount != 0)
+        success = false;
+
     if (success) {
         FILE* f = fopen(RUN_FILE_NAME, "w");
         if (f)

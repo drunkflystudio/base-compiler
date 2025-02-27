@@ -247,6 +247,12 @@ static void classMethodEnd_Abstract(void* ud, const CompilerLocation* loc)
     UNUSED(loc);
 }
 
+static void classMethodEnd_Extern(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+}
+
 static void classMethodBodyBegin(void* ud)
 {
     UNUSED(ud);

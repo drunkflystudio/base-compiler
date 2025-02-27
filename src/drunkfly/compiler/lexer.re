@@ -216,6 +216,7 @@ bool compilerGetToken(Compiler* compiler)
             "do"                        { return EMIT_KEYWORD(do); }
             "else"                      { return EMIT_KEYWORD(else); }
             "enum"                      { return EMIT_KEYWORD(enum); }
+            "extern"                    { return EMIT_KEYWORD(extern); }
             "false"                     { return EMIT_KEYWORD(false); }
             "final"                     { return EMIT_KEYWORD(final); }
             "finally"                   { return EMIT_KEYWORD(finally); }
