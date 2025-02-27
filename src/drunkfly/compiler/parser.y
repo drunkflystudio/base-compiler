@@ -38,6 +38,7 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %token <token> KW_default
 %token <token> KW_delete
 %token <token> KW_do
+%token <token> KW_dword
 %token <token> KW_else
 %token <token> KW_enum
 %token <token> KW_extern
@@ -50,9 +51,10 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %token <token> KW_goto
 %token <token> KW_if
 %token <token> KW_int
-%token <token> KW_int8
-%token <token> KW_int16
-%token <token> KW_int32
+%token <token> KW_intptr
+%token <token> KW_i8
+%token <token> KW_i16
+%token <token> KW_i32
 %token <token> KW_interface
 %token <token> KW_new
 %token <token> KW_null
@@ -70,9 +72,11 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %token <token> KW_throw
 %token <token> KW_true
 %token <token> KW_try
-%token <token> KW_uint8
-%token <token> KW_uint16
-%token <token> KW_uint32
+%token <token> KW_uint
+%token <token> KW_uintptr
+%token <token> KW_u8
+%token <token> KW_u16
+%token <token> KW_u32
 %token <token> KW_union
 %token <token> KW_var
 %token <token> KW_void
@@ -430,16 +434,20 @@ type_name
     | KW_bit { $$ = CB.typeBit(UD, &@1, NULL); }
     | T_KWbit_WITH_LBRACKET expression T_RBRACKET { $$ = CB.typeBit(UD, &@1, $2); }
     | KW_bool { $$ = CB.typeBool(UD, &@1); }
-    | KW_sbyte { $$ = CB.typeInt8(UD, &@1); }
+    | KW_int { $$ = CB.typeInt(UD, &@1); }
+    | KW_uint { $$ = CB.typeUInt(UD, &@1); }
+    | KW_intptr { $$ = CB.typeIntPtr(UD, &@1); }
+    | KW_uintptr { $$ = CB.typeUIntPtr(UD, &@1); }
     | KW_byte { $$ = CB.typeUInt8(UD, &@1); }
-    | KW_int8 { $$ = CB.typeInt8(UD, &@1); }
-    | KW_uint8 { $$ = CB.typeUInt8(UD, &@1); }
-    | KW_int { $$ = CB.typeInt16(UD, &@1); }
+    | KW_sbyte { $$ = CB.typeInt8(UD, &@1); }
     | KW_word { $$ = CB.typeUInt16(UD, &@1); }
-    | KW_int16 { $$ = CB.typeInt16(UD, &@1); }
-    | KW_uint16 { $$ = CB.typeUInt16(UD, &@1); }
-    | KW_int32 { $$ = CB.typeInt32(UD, &@1); }
-    | KW_uint32 { $$ = CB.typeUInt32(UD, &@1); }
+    | KW_dword { $$ = CB.typeUInt32(UD, &@1); }
+    | KW_i8 { $$ = CB.typeInt8(UD, &@1); }
+    | KW_u8 { $$ = CB.typeUInt8(UD, &@1); }
+    | KW_i16 { $$ = CB.typeInt16(UD, &@1); }
+    | KW_u16 { $$ = CB.typeUInt16(UD, &@1); }
+    | KW_i32 { $$ = CB.typeInt32(UD, &@1); }
+    | KW_u32 { $$ = CB.typeUInt32(UD, &@1); }
     | KW_object { $$ = CB.typeObject(UD, &@1); }
     | T_IDENTIFIER { $$ = CB.typeIdentifier(UD, &@1, $1->text); }
     | type_name T_ASTERISK { $$ = CB.typePointer(UD, merge(@1, @2), $1); }

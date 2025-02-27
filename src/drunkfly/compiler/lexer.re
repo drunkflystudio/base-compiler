@@ -214,6 +214,7 @@ bool compilerGetToken(Compiler* compiler)
             "default"                   { return EMIT_KEYWORD(default); }
             "delete"                    { return EMIT_KEYWORD(delete); }
             "do"                        { return EMIT_KEYWORD(do); }
+            "dword"                     { return EMIT_KEYWORD(dword); }
             "else"                      { return EMIT_KEYWORD(else); }
             "enum"                      { return EMIT_KEYWORD(enum); }
             "extern"                    { return EMIT_KEYWORD(extern); }
@@ -226,9 +227,10 @@ bool compilerGetToken(Compiler* compiler)
             "goto"                      { return EMIT_KEYWORD(goto); }
             "if"                        { return EMIT_KEYWORD(if); }
             "int"                       { return EMIT_KEYWORD(int); }
-            "int8"                      { return EMIT_KEYWORD(int8); }
-            "int16"                     { return EMIT_KEYWORD(int16); }
-            "int32"                     { return EMIT_KEYWORD(int32); }
+            "intptr"                    { return EMIT_KEYWORD(intptr); }
+            "i8"                        { return EMIT_KEYWORD(i8); }
+            "i16"                       { return EMIT_KEYWORD(i16); }
+            "i32"                       { return EMIT_KEYWORD(i32); }
             "interface"                 { return EMIT_KEYWORD(interface); }
             "new"                       { return EMIT_KEYWORD(new); }
             "null"                      { return EMIT_KEYWORD(null); }
@@ -246,9 +248,11 @@ bool compilerGetToken(Compiler* compiler)
             "throw"                     { return EMIT_KEYWORD(throw); }
             "true"                      { return EMIT_KEYWORD(true); }
             "try"                       { return EMIT_KEYWORD(try); }
-            "uint8"                     { return EMIT_KEYWORD(uint8); }
-            "uint16"                    { return EMIT_KEYWORD(uint16); }
-            "uint32"                    { return EMIT_KEYWORD(uint32); }
+            "uint"                      { return EMIT_KEYWORD(uint); }
+            "uintptr"                   { return EMIT_KEYWORD(uintptr); }
+            "u8"                        { return EMIT_KEYWORD(u8); }
+            "u16"                       { return EMIT_KEYWORD(u16); }
+            "u32"                       { return EMIT_KEYWORD(u32); }
             "union"                     { return EMIT_KEYWORD(union); }
             "var"                       { return EMIT_KEYWORD(var); }
             "void"                      { return EMIT_KEYWORD(void); }

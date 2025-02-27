@@ -84,6 +84,10 @@ STRUCT(CompilerParserCallbacks)
     CompilerType* (*typeVoid)(void* ud, LOC(loc));
     CompilerType* (*typeBit)(void* ud, LOC(loc), EXPR(optionalExpr));
     CompilerType* (*typeBool)(void* ud, LOC(loc));
+    CompilerType* (*typeInt)(void* ud, LOC(loc));
+    CompilerType* (*typeUInt)(void* ud, LOC(loc));
+    CompilerType* (*typeIntPtr)(void* ud, LOC(loc));
+    CompilerType* (*typeUIntPtr)(void* ud, LOC(loc));
     CompilerType* (*typeInt8)(void* ud, LOC(loc));
     CompilerType* (*typeUInt8)(void* ud, LOC(loc));
     CompilerType* (*typeInt16)(void* ud, LOC(loc));

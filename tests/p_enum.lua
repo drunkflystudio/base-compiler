@@ -24,13 +24,13 @@ translationUnitBegin
 ]])
 
 test_parser_global([[
-enum A : int {
+enum A : uint {
 }
 ]], [[
 translationUnitBegin
  enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
-  enumType loc:(1,10-1,12) type:i16
-  enumMembersBegin loc:(1,14-1,14)
+  enumType loc:(1,10-1,13) type:uint
+  enumMembersBegin loc:(1,15-1,15)
   enumMembersEnd loc:(2,1-2,1)
  enumEnd loc:(2,1-2,1)
 translationUnitEnd

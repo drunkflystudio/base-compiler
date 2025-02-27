@@ -9,6 +9,10 @@ struct CompilerType
 static CompilerType g_void = { "void", NULL, NULL };
 static CompilerType g_bit = { "bit", NULL, NULL };
 static CompilerType g_bool = { "bool", NULL, NULL };
+static CompilerType g_int = { "int", NULL, NULL };
+static CompilerType g_uint = { "uint", NULL, NULL };
+static CompilerType g_intptr = { "intptr", NULL, NULL };
+static CompilerType g_uintptr = { "uintptr", NULL, NULL };
 static CompilerType g_int8 = { "i8", NULL, NULL };
 static CompilerType g_uint8 = { "u8", NULL, NULL };
 static CompilerType g_int16 = { "i16", NULL, NULL };
@@ -884,6 +888,50 @@ static CompilerType* typeBool(void* ud, const CompilerLocation* loc)
     }
 
     return &g_bool;
+}
+
+static CompilerType* typeInt(void* ud, const CompilerLocation* loc)
+{
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeInt)
+            LOC(loc)
+        END
+    }
+
+    return &g_int;
+}
+
+static CompilerType* typeUInt(void* ud, const CompilerLocation* loc)
+{
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeUInt)
+            LOC(loc)
+        END
+    }
+
+    return &g_uint;
+}
+
+static CompilerType* typeIntPtr(void* ud, const CompilerLocation* loc)
+{
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeIntPtr)
+            LOC(loc)
+        END
+    }
+
+    return &g_intptr;
+}
+
+static CompilerType* typeUIntPtr(void* ud, const CompilerLocation* loc)
+{
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeUIntPtr)
+            LOC(loc)
+        END
+    }
+
+    return &g_uintptr;
 }
 
 static CompilerType* typeInt8(void* ud, const CompilerLocation* loc)
@@ -2328,6 +2376,10 @@ static void initParserCallbacks(CompilerParser* parser)
     parser->cb.typeVoid = typeVoid;
     parser->cb.typeBit = typeBit;
     parser->cb.typeBool = typeBool;
+    parser->cb.typeInt = typeInt;
+    parser->cb.typeUInt = typeUInt;
+    parser->cb.typeIntPtr = typeIntPtr;
+    parser->cb.typeUIntPtr = typeUIntPtr;
     parser->cb.typeInt8 = typeInt8;
     parser->cb.typeUInt8 = typeUInt8;
     parser->cb.typeInt16 = typeInt16;

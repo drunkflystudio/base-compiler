@@ -380,6 +380,34 @@ static CompilerType* typeBool(void* ud, const CompilerLocation* loc)
     return NULL;
 }
 
+static CompilerType* typeInt(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    return NULL;
+}
+
+static CompilerType* typeUInt(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    return NULL;
+}
+
+static CompilerType* typeIntPtr(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    return NULL;
+}
+
+static CompilerType* typeUIntPtr(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    return NULL;
+}
+
 static CompilerType* typeInt8(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
@@ -1234,6 +1262,10 @@ void compilerInitSemantic(Compiler* compiler)
     compiler->parser.cb.typeVoid = typeVoid;
     compiler->parser.cb.typeBit = typeBit;
     compiler->parser.cb.typeBool = typeBool;
+    compiler->parser.cb.typeInt = typeInt;
+    compiler->parser.cb.typeUInt = typeUInt;
+    compiler->parser.cb.typeIntPtr = typeIntPtr;
+    compiler->parser.cb.typeUIntPtr = typeUIntPtr;
     compiler->parser.cb.typeInt8 = typeInt8;
     compiler->parser.cb.typeUInt8 = typeUInt8;
     compiler->parser.cb.typeInt16 = typeInt16;

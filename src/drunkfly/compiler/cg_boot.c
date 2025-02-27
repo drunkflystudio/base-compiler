@@ -93,6 +93,10 @@ struct CompilerType
 
 static CompilerType g_void = { "void", NULL, NULL };
 static CompilerType g_bool = { "bool", NULL, NULL };
+static CompilerType g_int = { "int", NULL, NULL };
+static CompilerType g_uint = { "unsigned int", NULL, NULL };
+static CompilerType g_intptr = { "intptr_t", NULL, NULL };
+static CompilerType g_uintptr = { "uintptr_t", NULL, NULL };
 static CompilerType g_int8 = { "int8_t", NULL, NULL };
 static CompilerType g_uint8 = { "uint8_t", NULL, NULL };
 static CompilerType g_int16 = { "int16_t", NULL, NULL };
@@ -770,6 +774,34 @@ static CompilerType* typeBool(void* ud, const CompilerLocation* loc)
     UNUSED(ud);
     UNUSED(loc);
     return &g_bool;
+}
+
+static CompilerType* typeInt(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    return &g_int;
+}
+
+static CompilerType* typeUInt(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    return &g_uint;
+}
+
+static CompilerType* typeIntPtr(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    return &g_intptr;
+}
+
+static CompilerType* typeUIntPtr(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    return &g_uintptr;
 }
 
 static CompilerType* typeInt8(void* ud, const CompilerLocation* loc)
@@ -1800,6 +1832,10 @@ void compilerInitBootstrapCodegen(Compiler* compiler, const char* outputFile)
     compiler->parser.cb.typeVoid = typeVoid;
     compiler->parser.cb.typeBit = typeBit;
     compiler->parser.cb.typeBool = typeBool;
+    compiler->parser.cb.typeInt = typeInt;
+    compiler->parser.cb.typeUInt = typeUInt;
+    compiler->parser.cb.typeIntPtr = typeIntPtr;
+    compiler->parser.cb.typeUIntPtr = typeUIntPtr;
     compiler->parser.cb.typeInt8 = typeInt8;
     compiler->parser.cb.typeUInt8 = typeUInt8;
     compiler->parser.cb.typeInt16 = typeInt16;
