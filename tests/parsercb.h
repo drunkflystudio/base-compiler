@@ -546,8 +546,7 @@ static void structEnd(void* ud, const CompilerLocation* loc)
 static void classBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFinal)
 {
-    if (g_parseMode != PARSE_ATTR && g_parseMode != PARSE_TYPES
-            && g_parseMode != PARSE_EXPR && g_parseMode != PARSE_STMT) {
+    if (g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR && g_parseMode != PARSE_STMT) {
         FRAG(classBegin)
             LOC(loc)
             LOC(nameLoc)
@@ -557,16 +556,14 @@ static void classBegin(void* ud,
     }
 }
 
-static void classBeginInterface(void* ud,
+static void classInterfaceBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
-    if (g_parseMode != PARSE_ATTR) {
-        FRAG(classBeginInterface)
-            LOC(loc)
-            LOC(nameLoc)
-            STR(name)
-        END_INDENT
-    }
+    FRAG(classInterfaceBegin)
+        LOC(loc)
+        LOC(nameLoc)
+        STR(name)
+    END_INDENT
 }
 
 static void classParent(void* ud, const CompilerLocation* loc, const char* name)
@@ -636,13 +633,13 @@ static void classDestructorEnd(void* ud)
     END
 }
 
-static void classMethodBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* visLoc,
+static void classMethodBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* optionalVisLoc,
     CompilerVisibility vis, const CompilerLocation* optionalStatic, const CompilerLocation* retLoc, CompilerType* ret)
 {
     if (g_parseMode != PARSE_STMT) {
         FRAG(classMethodBegin)
             LOC(loc)
-            LOC(visLoc)
+            OPTLOC(optionalVisLoc)
             VIS(vis)
             OPTLOC(optionalStatic)
             LOC(retLoc)
@@ -2342,7 +2339,7 @@ static void initParserCallbacks(CompilerParser* parser)
     parser->cb.structMembersEnd = structMembersEnd;
     parser->cb.structEnd = structEnd;
     parser->cb.classBegin = classBegin;
-    parser->cb.classBeginInterface = classBeginInterface;
+    parser->cb.classInterfaceBegin = classInterfaceBegin;
     parser->cb.classParent = classParent;
     parser->cb.classMembersBegin = classMembersBegin;
     parser->cb.classFriend = classFriend;

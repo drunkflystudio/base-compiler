@@ -16,8 +16,10 @@ set(tests
     l_num10.lua
     l_num16.lua
     p_attr.lua
+    p_class.lua
     p_enum.lua
     p_expr.lua
+    p_iface.lua
     p_main.lua
     p_stmt.lua
     p_types.lua

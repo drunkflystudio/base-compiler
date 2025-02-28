@@ -42,7 +42,7 @@ STRUCT(CompilerParserCallbacks)
 
     /* class/interface declaration */
     void (*classBegin)(void* ud, LOC(loc), LOC(nameLoc), const char* name, bool isFinal);
-    void (*classBeginInterface)(void* ud, LOC(loc), LOC(nameLoc), const char* name);
+    void (*classInterfaceBegin)(void* ud, LOC(loc), LOC(nameLoc), const char* name);
     void (*classParent)(void* ud, LOC(loc), const char* name);
     void (*classMembersBegin)(void* ud, LOC(loc));
     void (*classFriend)(void* ud, LOC(loc), LOC(nameLoc), const char* name);
@@ -50,7 +50,8 @@ STRUCT(CompilerParserCallbacks)
     void (*classVariablesEnd)(void* ud, LOC(loc));
     void (*classDestructorBegin)(void* ud, LOC(loc), const char* name, LOC(visLoc), VIS(vis));
     void (*classDestructorEnd)(void* ud);
-    void (*classMethodBegin)(void* ud, LOC(loc), LOC(visLoc), VIS(vis), LOC(optionalStatic), LOC(retLoc), TYPE(ret));
+    void (*classMethodBegin)(void* ud, LOC(loc),
+        LOC(optionalVisLoc), VIS(vis), LOC(optionalStatic), LOC(retLoc), TYPE(ret));
     void (*classMethodNameSimple)(void* ud, LOC(loc), const char* name);
     void (*classMethodNameArg)(void* ud, LOC(loc), const char* name, TYPE(type), LOC(argLoc), const char* arg);
     void (*classMethodNameEnd)(void* ud, LOC(optionalFinal), LOC(optionalOverride));

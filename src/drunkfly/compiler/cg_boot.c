@@ -491,7 +491,7 @@ static void classBegin(void* ud,
     buffPrintF(&context->structs, "struct %s\n", name);
 }
 
-static void classBeginInterface(void* ud,
+static void classInterfaceBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
     Context* context = (Context*)ud;
@@ -566,13 +566,13 @@ static void classDestructorEnd(void* ud)
     UNUSED(ud);
 }
 
-static void classMethodBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* visLoc,
+static void classMethodBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* optionalVisLoc,
     CompilerVisibility vis, const CompilerLocation* optionalStatic, const CompilerLocation* retLoc, CompilerType* ret)
 {
     Context* context = (Context*)ud;
     UNUSED(ret);
     UNUSED(loc);
-    UNUSED(visLoc);
+    UNUSED(optionalVisLoc);
     UNUSED(vis);
     UNUSED(optionalStatic);
 
@@ -1798,7 +1798,7 @@ void compilerInitBootstrapCodegen(Compiler* compiler, const char* outputFile)
     compiler->parser.cb.structMembersEnd = structMembersEnd;
     compiler->parser.cb.structEnd = structEnd;
     compiler->parser.cb.classBegin = classBegin;
-    compiler->parser.cb.classBeginInterface = classBeginInterface;
+    compiler->parser.cb.classInterfaceBegin = classInterfaceBegin;
     compiler->parser.cb.classParent = classParent;
     compiler->parser.cb.classMembersBegin = classMembersBegin;
     compiler->parser.cb.classFriend = classFriend;

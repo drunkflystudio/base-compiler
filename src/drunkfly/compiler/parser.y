@@ -529,7 +529,7 @@ variable_declaration_or_expression
 
 class_declaration
     : optional_attribute_list class_declaration_start optional_parent_class_list class_body
-    | optional_attribute_list interface_declaration_start optional_parent_class_list class_body
+    | optional_attribute_list interface_declaration_start optional_parent_class_list interface_body
     ;
 
 class_declaration_start : KW_class T_IDENTIFIER optional_final {
@@ -538,7 +538,7 @@ class_declaration_start : KW_class T_IDENTIFIER optional_final {
         CB.classBegin(UD, &@1, &@2, $2->text, $3);
     };
 
-interface_declaration_start : KW_interface T_IDENTIFIER { CB.classBeginInterface(UD, &@1, &@2, $2->text); };
+interface_declaration_start : KW_interface T_IDENTIFIER { CB.classInterfaceBegin(UD, &@1, &@2, $2->text); };
 optional_final : /* empty */ { $$ = false; } | KW_final { $$ = true; };
 optional_parent_class_list : /* empty */ | T_COLON parent_class_list;
 parent_class_list : parent_class_name | parent_class_list T_COMMA parent_class_name;
@@ -547,12 +547,18 @@ class_body_start : T_LCURLY { CB.classMembersBegin(UD, &@1); };
 class_body_end : T_RCURLY { CB.classMembersEnd(UD, &@1); CB.classEnd(UD, &@1); };
 class_body : class_body_start class_member_list class_body_end;
 class_member_list : /* empty */ | class_member_list class_member;
+interface_body : class_body_start interface_member_list class_body_end;
+interface_member_list : /* empty */ | interface_member_list interface_member;
 
 class_member
     : optional_attribute_list class_variables
     | optional_attribute_list class_destructor
     | optional_attribute_list class_method
     | KW_friend KW_class T_IDENTIFIER T_SEMICOLON { CB.classFriend(UD, &@1, &@3, $3->text); }
+    ;
+
+interface_member
+    : optional_attribute_list interface_method
     ;
 
 class_member_visibility
@@ -574,13 +580,16 @@ class_destructor_start : class_member_visibility T_TILDE T_IDENTIFIER
 class_destructor_end : /* empty */ { CB.classDestructorEnd(UD); };
 
 class_method : class_method_start method_name method_name_end method_body;
+interface_method : interface_method_start method_name method_name_end T_SEMICOLON;
 class_method_start : class_member_visibility optional_static T_LPAREN type_name T_RPAREN
-                            { CB.classMethodBegin(UD, merge(@3, @5), &@1, $1, ($2 ? &@2 : NULL), &@4, $4); };
+                        { CB.classMethodBegin(UD, merge(@3, @5), &@1, $1, ($2 ? &@2 : NULL), &@4, $4); };
+interface_method_start : optional_static T_LPAREN type_name T_RPAREN
+                        { CB.classMethodBegin(UD, merge(@2, @4), NULL, COMPILER_PUBLIC, ($1 ? &@1 : NULL), &@3, $3); };
 method_name : method_name_simple | method_name_with_args;
 method_name_simple : T_IDENTIFIER { CB.classMethodNameSimple(UD, &@1, $1->text); };
 method_name_with_args : method_arg | method_name_with_args method_arg;
 method_arg : T_IDENTIFIER T_COLON T_LPAREN type_name T_RPAREN T_IDENTIFIER
-                            { CB.classMethodNameArg(UD, merge(@1, @2), $1->text, $4, &@6, $6->text); };
+                        { CB.classMethodNameArg(UD, merge(@1, @2), $1->text, $4, &@6, $6->text); };
 
 method_body : optional_compound_statement;
 method_name_end : optional_final optional_override { CB.classMethodNameEnd(UD, ($1 ? &@1 : NULL), ($2 ? &@2 : NULL)); };

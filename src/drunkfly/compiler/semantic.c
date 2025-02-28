@@ -141,7 +141,7 @@ static void classBegin(void* ud,
     UNUSED(isFinal);
 }
 
-static void classBeginInterface(void* ud,
+static void classInterfaceBegin(void* ud,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
     UNUSED(ud);
@@ -203,12 +203,12 @@ static void classDestructorEnd(void* ud)
     UNUSED(ud);
 }
 
-static void classMethodBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* visLoc,
+static void classMethodBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* optionalVisLoc,
     CompilerVisibility vis, const CompilerLocation* optionalStatic, const CompilerLocation* retLoc, CompilerType* ret)
 {
     UNUSED(ud);
     UNUSED(loc);
-    UNUSED(visLoc);
+    UNUSED(optionalVisLoc);
     UNUSED(vis);
     UNUSED(optionalStatic);
     UNUSED(retLoc);
@@ -1229,7 +1229,7 @@ void compilerInitSemantic(Compiler* compiler)
     compiler->parser.cb.structMembersEnd = structMembersEnd;
     compiler->parser.cb.structEnd = structEnd;
     compiler->parser.cb.classBegin = classBegin;
-    compiler->parser.cb.classBeginInterface = classBeginInterface;
+    compiler->parser.cb.classInterfaceBegin = classInterfaceBegin;
     compiler->parser.cb.classParent = classParent;
     compiler->parser.cb.classMembersBegin = classMembersBegin;
     compiler->parser.cb.classFriend = classFriend;
