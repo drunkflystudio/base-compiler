@@ -108,14 +108,14 @@ struct Application
 #line 2 "file"
 {
 #line 2 "file"
-    int (*dispatch)(lua_State* L, const char* selector, int nargs, ...);
+    void (*dispatch)(lua_State* L, const char* selector, int nargs, ...);
 #line 100 "file"
 };
 
 #line 1 "file"
-static int Application_dispatch(lua_State* L, const char* selector, int nargs, ...);
+static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...);
 #line 1 "file"
-static int Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...);
+static void Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...);
 #line 1 "file"
 static struct Application Application_static_instance = { Application_static_dispatch };
 #line 1 "file"
@@ -401,6 +401,16 @@ Application_main(lua_State* L) { UNUSED(L);
 #line 99 "file"
 }
 }
+
+#line 1 "file"
+static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...) {
+#line 100 "file"
+}
+
+#line 1 "file"
+static void Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...) {
+#line 100 "file"
+}
 ]])
 
 test_bootstrap([[
@@ -419,14 +429,14 @@ struct Application
 #line 2 "file"
 {
 #line 2 "file"
-    int (*dispatch)(lua_State* L, const char* selector, int nargs, ...);
+    void (*dispatch)(lua_State* L, const char* selector, int nargs, ...);
 #line 7 "file"
 };
 
 #line 1 "file"
-static int Application_dispatch(lua_State* L, const char* selector, int nargs, ...);
+static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...);
 #line 1 "file"
-static int Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...);
+static void Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...);
 #line 1 "file"
 static struct Application Application_static_instance = { Application_static_dispatch };
 #line 1 "file"
@@ -442,5 +452,15 @@ Application_main(lua_State* L) { UNUSED(L);
     char* str;
 #line 6 "file"
 }
+}
+
+#line 1 "file"
+static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...) {
+#line 7 "file"
+}
+
+#line 1 "file"
+static void Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...) {
+#line 7 "file"
 }
 ]])

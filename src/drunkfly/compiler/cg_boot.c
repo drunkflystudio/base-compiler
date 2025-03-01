@@ -36,6 +36,20 @@ STRUCT(Switch) {
     bool inCase;
 };
 
+STRUCT(MethodArg) {
+    MethodArg* next;
+    CompilerLocation loc;
+    const char* name;
+    CompilerExpr* value;
+};
+
+STRUCT(MethodCall) {
+    MethodCall* prev;
+    CompilerExpr* callee;
+    MethodArg* firstArg;
+    MethodArg* lastArg;
+};
+
 STRUCT(Context) {
     Compiler* compiler;
     CompilerOutputFile* file;
@@ -43,10 +57,13 @@ STRUCT(Context) {
     Buff fwds;
     Buff structs;
     Buff methods;
+    Buff dispatches;
+    Buff staticDispatches;
     const char* currentClass;
     For* currentFor;
     Switch* currentSwitch;
     Var* currentVar;
+    MethodCall* currentMethodCall;
     bool isConstVariables;
     bool isStaticVariables;
     int indent;
@@ -344,6 +361,38 @@ static void switchEndCase(Context* context, const CompilerLocation* loc)
 
 /*==================================================================================================================*/
 
+static MethodCall* pushMethodCall(Context* context)
+{
+    MethodCall* m = (MethodCall*)compilerTempAlloc(context->compiler, sizeof(MethodCall));
+    memset(m, 0, sizeof(MethodCall));
+    m->prev = context->currentMethodCall;
+    m->callee = NULL;
+    m->firstArg = NULL;
+    m->lastArg = NULL;
+    context->currentMethodCall = m;
+    return m;
+}
+
+static MethodCall* popMethodCall(Context* context)
+{
+    MethodCall* m = context->currentMethodCall;
+    if (m)
+        context->currentMethodCall = m->prev;
+    else
+        luaL_error(context->compiler->L, "internal error: method call stack underflow.");
+    return m;
+}
+
+static MethodCall* currentMethodCall(Context* context)
+{
+    MethodCall* m = context->currentMethodCall;
+    if (!m)
+        luaL_error(context->compiler->L, "internal error: method call stack is empty.");
+    return m;
+}
+
+/*==================================================================================================================*/
+
 static void translationUnitBegin(void* ud)
 {
     UNUSED(ud);
@@ -356,6 +405,8 @@ static void translationUnitEnd(void* ud)
     compilerPrintS(context->file, buffEnd(&context->fwds, NULL));
     compilerPrintS(context->file, buffEnd(&context->structs, NULL));
     compilerPrintS(context->file, buffEnd(&context->methods, NULL));
+    compilerPrintS(context->file, buffEnd(&context->dispatches, NULL));
+    compilerPrintS(context->file, buffEnd(&context->staticDispatches, NULL));
 }
 
 static void attrBegin(void* ud, const CompilerLocation* loc, const char* name)
@@ -491,10 +542,10 @@ static void classBegin(void* ud, const CompilerLocation* optionalVisLoc, Compile
     } else {
         printLine(context, &context->structs, nameLoc);
         buffPrintF(&context->structs,
-            "static int %s_dispatch(lua_State* L, const char* selector, int nargs, ...);\n", name);
+            "static void %s_dispatch(lua_State* L, const char* selector, int nargs, ...);\n", name);
         printLine(context, &context->structs, nameLoc);
         buffPrintF(&context->structs,
-            "static int %s_static_dispatch(lua_State* L, const char* selector, int nargs, ...);\n", name);
+            "static void %s_static_dispatch(lua_State* L, const char* selector, int nargs, ...);\n", name);
         printLine(context, &context->structs, nameLoc);
         buffPrintF(&context->structs,
             "static struct %s %s_static_instance = { %s_static_dispatch };\n", name, name, name);
@@ -502,6 +553,16 @@ static void classBegin(void* ud, const CompilerLocation* optionalVisLoc, Compile
         buffPrintF(&context->structs,
             "%sstruct %s* const %s = &%s_static_instance;\n",
             (vis == COMPILER_PUBLIC ? "" : "static "), name, name, name);
+
+        buffPrintS(&context->dispatches, "\n");
+        printLine(context, &context->dispatches, nameLoc);
+        buffPrintF(&context->dispatches,
+            "static void %s_dispatch(lua_State* L, const char* selector, int nargs, ...) {\n", name);
+
+        buffPrintS(&context->staticDispatches, "\n");
+        printLine(context, &context->staticDispatches, nameLoc);
+        buffPrintF(&context->staticDispatches,
+            "static void %s_static_dispatch(lua_State* L, const char* selector, int nargs, ...) {\n", name);
     }
 
     buffPrintC(&context->fwds, '\n');
@@ -540,7 +601,7 @@ static void classMembersBegin(void* ud, const CompilerLocation* loc)
 
     printLine(context, &context->fwds, loc);
     printIndentEx(context, &context->fwds, 1);
-    buffPrintS(&context->fwds, "int (*dispatch)(lua_State* L, const char* selector, int nargs, ...);\n");
+    buffPrintS(&context->fwds, "void (*dispatch)(lua_State* L, const char* selector, int nargs, ...);\n");
 }
 
 static void classFriend(void* ud, const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
@@ -673,6 +734,12 @@ static void classEnd(void* ud, const CompilerLocation* loc)
     printLine(context, &context->fwds, loc);
     buffPrintS(&context->fwds, "};\n");
     context->currentClass = NULL;
+
+    printLine(context, &context->dispatches, loc);
+    buffPrintF(&context->dispatches, "}\n");
+
+    printLine(context, &context->staticDispatches, loc);
+    buffPrintF(&context->staticDispatches, "}\n");
 }
 
 static void varDeclBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* optionalStatic, bool isConst)
@@ -980,31 +1047,96 @@ static CompilerExpr* exprNewEnd_Array(void* ud, const CompilerLocation* loc, Com
 
 static void exprMethodCallBegin(void* ud, CompilerExpr* callee)
 {
-    UNUSED(ud);
-    UNUSED(callee);
-    /* FIXME */
+    Context* context = (Context*)ud;
+    MethodCall* m = pushMethodCall(context);
+    m->callee = callee;
 }
 
 static void exprMethodSimple(void* ud, const CompilerLocation* loc, const char* name)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(name);
+    Context* context = (Context*)ud;
+    MethodCall* m = currentMethodCall(context);
+
+    MethodArg* arg = (MethodArg*)compilerTempAlloc(context->compiler, sizeof(MethodArg));
+    arg->next = NULL;
+    arg->name = compilerTempDupStr(context->compiler, name);
+    arg->value = NULL;
+    memcpy(&arg->loc, loc, sizeof(CompilerLocation));
+
+    assert(m->firstArg == NULL);
+    assert(m->lastArg == NULL);
+    m->firstArg = arg;
+    m->lastArg = arg;
 }
 
 static void exprMethodArg(void* ud, const CompilerLocation* loc, const char* name, CompilerExpr* value)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    UNUSED(name);
-    UNUSED(value);
+    Context* context = (Context*)ud;
+    MethodCall* m = currentMethodCall(context);
+
+    MethodArg* arg = (MethodArg*)compilerTempAlloc(context->compiler, sizeof(MethodArg));
+    arg->next = NULL;
+    arg->name = compilerTempDupStr(context->compiler, name);
+    arg->value = value;
+    memcpy(&arg->loc, loc, sizeof(CompilerLocation));
+
+    if (!m->firstArg)
+        m->firstArg = arg;
+    else
+        m->lastArg->next = arg;
+    m->lastArg = arg;
+
+    assert(value != NULL);
 }
 
 static CompilerExpr* exprMethodCallEnd(void* ud, const CompilerLocation* loc)
 {
-    UNUSED(ud);
-    UNUSED(loc);
-    return NULL;
+    Context* context = (Context*)ud;
+    lua_State* L = context->compiler->L;
+    MethodCall* m = popMethodCall(context);
+
+    assert(m->firstArg != NULL);
+
+    if (!m->firstArg->value) {
+        const char* expr = lua_pushfstring(L, "((@)->dispatch(L, \"%s\", 0))", m->firstArg->name);
+        assert(m->firstArg->next == NULL);
+        return newExpr(context, loc, expr, 1, m->callee);
+    } else {
+        int n, nArgs = 0;
+        CompilerExpr* expr;
+        MethodArg* arg;
+
+        const char* selector;
+        for (arg = m->firstArg; arg; arg = arg->next) {
+            lua_pushstring(L, arg->name);
+            lua_pushliteral(L, ":");
+            ++nArgs;
+        }
+        lua_concat(L, nArgs * 2);
+        selector = lua_tostring(L, -1);
+
+        lua_pushfstring(L, "((@)->dispatch(L, \"%s\", %d", selector, nArgs);
+        lua_remove(L, -2);
+
+        expr = (CompilerExpr*)compilerTempAlloc(context->compiler, sizeof(CompilerExpr));
+        expr->numOperands = nArgs + 1;
+        expr->operands = (CompilerExpr**)compilerTempAlloc(context->compiler,
+            sizeof(CompilerExpr*) * (size_t)(nArgs + 1));
+        expr->operands[0] = m->callee;
+        n = 0;
+        for (arg = m->firstArg; arg; arg = arg->next) {
+            assert(arg->value != NULL);
+            expr->operands[++n] = arg->value;
+            lua_pushliteral(L, ", @");
+        }
+
+        lua_pushliteral(L, "))");
+        lua_concat(L, n + 2);
+        expr->fmt = lua_tostring(L, -1);
+        memcpy(&expr->loc, loc, sizeof(CompilerLocation));
+
+        return expr;
+    }
 }
 
 static CompilerExpr* exprSubscript(void* ud, const CompilerLocation* loc, CompilerExpr* arr, CompilerExpr* idx)
@@ -1818,6 +1950,8 @@ void compilerInitBootstrapCodegen(Compiler* compiler, const char* outputFile)
     buffInit(&context->fwds, compiler->L);
     buffInit(&context->structs, compiler->L);
     buffInit(&context->methods, compiler->L);
+    buffInit(&context->dispatches, compiler->L);
+    buffInit(&context->staticDispatches, compiler->L);
     compiler->parser.cb.ud = context;
     compiler->parser.cb.translationUnitBegin = translationUnitBegin;
     compiler->parser.cb.translationUnitEnd = translationUnitEnd;
