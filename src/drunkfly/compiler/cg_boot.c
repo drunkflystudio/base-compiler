@@ -2,6 +2,7 @@
 #include <drunkfly/compiler/parser.h>
 #include <drunkfly/compiler/private.h>
 #include <drunkfly/buff.h>
+#include <assert.h>
 #include <string.h>
 
 STRUCT(Scope);
@@ -540,7 +541,7 @@ static void classBegin(void* ud, const CompilerLocation* optionalVisLoc, Compile
     } else {
         printLine(context, &context->structs, nameLoc);
         buffPrintF(&context->structs,
-            "static void %s_dispatch(lua_State* L, const char* selector, int nargs, ...);\n", name);
+            "/*static void %s_dispatch(lua_State* L, const char* selector, int nargs, ...);*/\n", name);
         printLine(context, &context->structs, nameLoc);
         buffPrintF(&context->structs,
             "static void %s_static_dispatch(lua_State* L, const char* selector, int nargs, ...);\n", name);
@@ -555,7 +556,7 @@ static void classBegin(void* ud, const CompilerLocation* optionalVisLoc, Compile
         buffPrintS(&context->dispatches, "\n");
         printLine(context, &context->dispatches, nameLoc);
         buffPrintF(&context->dispatches,
-            "static void %s_dispatch(lua_State* L, const char* selector, int nargs, ...) {\n", name);
+            "/*static void %s_dispatch(lua_State* L, const char* selector, int nargs, ...) {\n", name);
         printLine(context, &context->dispatches, nameLoc);
         printIndentEx(context, &context->dispatches, 1);
         buffPrintF(&context->dispatches, "va_list args;\n");
@@ -870,7 +871,7 @@ static void classEnd(void* ud, const CompilerLocation* loc)
         printIndentEx(context, &context->dispatches, 1);
         buffPrintF(&context->dispatches, "va_end(args);\n");
         printLine(context, &context->dispatches, loc);
-        buffPrintS(&context->dispatches, "}\n");
+        buffPrintS(&context->dispatches, "}*/\n");
 
         printLine(context, &context->staticDispatches, loc);
         printIndentEx(context, &context->staticDispatches, 1);

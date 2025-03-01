@@ -3,6 +3,7 @@
 #include <drunkfly/compiler/private.h>
 #include <drunkfly/compiler/token.h>
 #include <drunkfly/compiler/bundle.h>
+#include <assert.h>
 #include <lauxlib.h>
 
 #ifdef BORLAND

@@ -115,7 +115,7 @@ struct Application
 };
 
 #line 1 "file"
-static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...);
+/*static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...);*/
 #line 1 "file"
 static void Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...);
 #line 1 "file"
@@ -405,7 +405,7 @@ Application_main(lua_State* L, va_list args) { UNUSED(L); UNUSED(args);
 }
 
 #line 1 "file"
-static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...) {
+/*static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...) {
 #line 1 "file"
     va_list args;
 #line 1 "file"
@@ -415,7 +415,7 @@ static void Application_dispatch(lua_State* L, const char* selector, int nargs, 
 #line 100 "file"
     va_end(args);
 #line 100 "file"
-}
+}*/
 
 #line 1 "file"
 static void Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...) {
@@ -456,7 +456,7 @@ struct Application
 };
 
 #line 1 "file"
-static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...);
+/*static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...);*/
 #line 1 "file"
 static void Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...);
 #line 1 "file"
@@ -477,7 +477,7 @@ Application_main(lua_State* L, va_list args) { UNUSED(L); UNUSED(args);
 }
 
 #line 1 "file"
-static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...) {
+/*static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...) {
 #line 1 "file"
     va_list args;
 #line 1 "file"
@@ -487,7 +487,7 @@ static void Application_dispatch(lua_State* L, const char* selector, int nargs, 
 #line 7 "file"
     va_end(args);
 #line 7 "file"
-}
+}*/
 
 #line 1 "file"
 static void Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...) {

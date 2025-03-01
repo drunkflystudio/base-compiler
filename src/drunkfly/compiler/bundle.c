@@ -4,6 +4,7 @@
 #include <drunkfly/compiler/private.h>
 #include <drunkfly/buff.h>
 #include <string.h>
+#include <assert.h>
 
 struct CompilerBundle {
     Compiler* compiler;
