@@ -199,6 +199,7 @@ primary_expression
     | KW_true { $$ = CB.exprTrue(UD, &@1); }
     | T_IDENTIFIER { $$ = CB.exprIdentifier(UD, &@1, $1->text); }
     | T_INTEGER_LITERAL { $$ = CB.exprInteger(UD, &@1, $1->integer); }
+    | T_STRING_LITERAL { $$ = CB.exprString(UD, &@1, $1->str, $1->strLength); }
     | operator_new struct_initializer { $$ = CB.exprNewEnd_Struct(UD, merge(@1, @2)); }
     | operator_new T_LBRACKET expression T_RBRACKET { $$ = CB.exprNewEnd_Array(UD, merge(@1, @4), $3); }
     | method_call_begin method_call_args T_RBRACKET { $$ = CB.exprMethodCallEnd(UD, merge(@1, @3)); }

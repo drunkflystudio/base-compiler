@@ -45,5 +45,6 @@ CompilerOutputFile* compilerGetNextOutput(CompilerOutputFile* file);
 const char* compilerGetOutputName(CompilerOutputFile* file);
 const char* compilerGetOutputData(CompilerOutputFile* file, size_t* size);
 const char* compilerPushHexString(lua_State* L, uint_value_t value);
+const char* compilerPushUtf8String(lua_State* L, const uint32_t* text, size_t textLength, bool escape);
 
 #endif

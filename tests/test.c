@@ -119,15 +119,8 @@ int test_lexer(lua_State* L)
                 lua_pop(L, 1);
             } else if (compiler->lexer.token.id == T_STRING_LITERAL
                     || compiler->lexer.token.id == T_UNTERMINATED_STRING_LITERAL) {
-                size_t i;
                 printS(" (\"");
-                for (i = 0; i < compiler->lexer.token.strLength; i++) {
-                    uint32_t ch = compiler->lexer.token.str[i];
-                    if (ch < 32 || ch >= 127)
-                        printF("#%d", (lua_Integer)ch);
-                    else
-                        printUtf8(ch);
-                }
+                printS(compilerPushUtf8String(L, compiler->lexer.token.str, compiler->lexer.token.strLength, true));
                 printS("\")");
                 lua_pop(L, 1);
             }

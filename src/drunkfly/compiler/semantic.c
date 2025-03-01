@@ -517,6 +517,15 @@ static CompilerExpr* exprInteger(void* ud, const CompilerLocation* loc, uint_val
     return NULL;
 }
 
+static CompilerExpr* exprString(void* ud, const CompilerLocation* loc, const uint32_t* text, size_t textLength)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    UNUSED(text);
+    UNUSED(textLength);
+    return NULL;
+}
+
 static CompilerExpr* exprParentheses(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
     UNUSED(ud);
@@ -1292,6 +1301,7 @@ void compilerInitSemantic(Compiler* compiler)
     compiler->parser.cb.exprTrue = exprTrue;
     compiler->parser.cb.exprIdentifier = exprIdentifier;
     compiler->parser.cb.exprInteger = exprInteger;
+    compiler->parser.cb.exprString = exprString;
     compiler->parser.cb.exprParentheses = exprParentheses;
     compiler->parser.cb.exprNewBegin = exprNewBegin;
     compiler->parser.cb.exprNewEnd_Struct = exprNewEnd_Struct;

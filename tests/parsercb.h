@@ -30,6 +30,7 @@ typedef enum EnumID {
     EXPR_TRUE,
     EXPR_IDENTIFIER,
     EXPR_INTEGER,
+    EXPR_STRING,
     EXPR_PARENTHESES,
     EXPR_SUBSCRIPT,
     EXPR_MEMBER,
@@ -84,6 +85,8 @@ struct CompilerExpr
     CompilerLocation loc;
     const char* identifier;
     uint_value_t integer;
+    const uint32_t* text;
+    size_t textLength;
     CompilerExpr* operand;
     CompilerExpr* array;
     CompilerExpr* index;
@@ -221,6 +224,13 @@ static void printExpr(lua_State* L, CompilerExpr* expr)
             _("]");
             return;
         }
+        case EXPR_STRING: {
+            lua_pushliteral(L, "\"");
+            compilerPushUtf8String(L, expr->text, expr->textLength, true);
+            lua_pushliteral(L, "\"");
+            lua_concat(L, 3);
+            return;
+        }
     }
 
     #undef E
@@ -282,6 +292,15 @@ static void frag(lua_State* L, int count)
         ++arg_n_; \
         lua_pushfstring(L, " %s:%s", #NAME, compilerPushHexString(L, NAME)); \
         lua_remove(L, -2); /* remove value pushed by compilerPushHexString() */
+
+#define TXT(TEXT, TEXTLENGTH) \
+        ++arg_n_; \
+        lua_pushliteral(L, " "); \
+        lua_pushliteral(L, #TEXT); \
+        lua_pushliteral(L, ":\""); \
+        compilerPushUtf8String(L, TEXT, TEXTLENGTH, true); \
+        lua_pushliteral(L, "\""); \
+        lua_concat(L, 5);
 
 #define OPTSTR(NAME) \
         ++arg_n_; \
@@ -1130,6 +1149,23 @@ static CompilerExpr* exprInteger(void* ud, const CompilerLocation* loc, uint_val
 
     e = expr(ud, loc, EXPR_INTEGER);
     e->integer = value;
+    return e;
+}
+
+static CompilerExpr* exprString(void* ud, const CompilerLocation* loc, const uint32_t* text, size_t textLength)
+{
+    CompilerExpr* e;
+
+    if (g_parseMode == PARSE_EXPR) {
+        FRAG(exprString)
+            LOC(loc)
+            TXT(text, textLength)
+        END
+    }
+
+    e = expr(ud, loc, EXPR_STRING);
+    e->text = text;
+    e->textLength = textLength;
     return e;
 }
 
@@ -2405,6 +2441,7 @@ static void initParserCallbacks(CompilerParser* parser)
     parser->cb.exprTrue = exprTrue;
     parser->cb.exprIdentifier = exprIdentifier;
     parser->cb.exprInteger = exprInteger;
+    parser->cb.exprString = exprString;
     parser->cb.exprParentheses = exprParentheses;
     parser->cb.exprNewBegin = exprNewBegin;
     parser->cb.exprNewEnd_Struct = exprNewEnd_Struct;

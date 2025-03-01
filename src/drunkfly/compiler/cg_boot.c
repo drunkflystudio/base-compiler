@@ -912,6 +912,19 @@ static CompilerExpr* exprInteger(void* ud, const CompilerLocation* loc, uint_val
     return newExpr(context, loc, text, 0);
 }
 
+static CompilerExpr* exprString(void* ud, const CompilerLocation* loc, const uint32_t* text, size_t textLength)
+{
+    Context* context = (Context*)ud;
+    lua_State* L = context->compiler->L;
+
+    lua_pushliteral(L, "\"");
+    compilerPushUtf8String(L, text, textLength, true);
+    lua_pushliteral(L, "\"");
+    lua_concat(L, 3);
+
+    return newExpr(context, loc, lua_tostring(L, -1), 0);
+}
+
 static CompilerExpr* exprParentheses(void* ud, const CompilerLocation* loc, CompilerExpr* operand)
 {
     Context* context = (Context*)ud;
@@ -1861,6 +1874,7 @@ void compilerInitBootstrapCodegen(Compiler* compiler, const char* outputFile)
     compiler->parser.cb.exprTrue = exprTrue;
     compiler->parser.cb.exprIdentifier = exprIdentifier;
     compiler->parser.cb.exprInteger = exprInteger;
+    compiler->parser.cb.exprString = exprString;
     compiler->parser.cb.exprParentheses = exprParentheses;
     compiler->parser.cb.exprNewBegin = exprNewBegin;
     compiler->parser.cb.exprNewEnd_Struct = exprNewEnd_Struct;

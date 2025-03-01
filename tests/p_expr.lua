@@ -24,6 +24,11 @@ exprInteger loc:(2,1-2,1) value:0x4
 result value:0x4
 ]])
 
+test_parser_expr('"Hello, world!"', [[
+exprString loc:(2,1-2,15) text:"Hello, world!"
+result value:"Hello, world!"
+]])
+
 test_parser_expr('(4)', [[
 exprInteger loc:(2,2-2,2) value:0x4
 exprParentheses loc:(2,1-2,3) operand:0x4

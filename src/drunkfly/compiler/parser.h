@@ -106,6 +106,7 @@ STRUCT(CompilerParserCallbacks)
     CompilerExpr* (*exprTrue)(void* ud, LOC(loc));
     CompilerExpr* (*exprIdentifier)(void* ud, LOC(loc), const char* name);
     CompilerExpr* (*exprInteger)(void* ud, LOC(loc), uint_value_t value);
+    CompilerExpr* (*exprString)(void* ud, LOC(loc), const uint32_t* text, size_t textLength);
     CompilerExpr* (*exprParentheses)(void* ud, LOC(loc), EXPR(operand));
     void          (*exprNewBegin)(void* ud, LOC(loc), TYPE(type));
     CompilerExpr* (*exprNewEnd_Struct)(void* ud, LOC(loc));
