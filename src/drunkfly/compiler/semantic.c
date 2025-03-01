@@ -1198,11 +1198,14 @@ static void stmtTryEnd(void* ud)
     UNUSED(ud);
 }
 
-static void error(void* ud, const CompilerLocation* loc, const CompilerToken* token)
+static void error(void* ud,
+    const CompilerLocation* loc, const CompilerToken* token, const char* message, const char* detail)
 {
     UNUSED(ud);
     UNUSED(loc);
     UNUSED(token);
+    UNUSED(message);
+    UNUSED(detail);
 }
 
 void compilerInitSemantic(Compiler* compiler)

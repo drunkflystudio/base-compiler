@@ -11,6 +11,7 @@ struct CompilerToken {
     const char* name;
     const uint32_t* str;
     size_t strLength;
+    uint32_t symbol;
     CompilerLocation location;
     uint_value_t integer;
     short id;

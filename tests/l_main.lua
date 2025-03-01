@@ -404,7 +404,7 @@ xx ;
 (6,1-6,2): identifier "__"
 (7,1-7,2): identifier "_4"
 (8,1-8,2): identifier "a4"
-(9,1-9,2): invalid decimal constant
+(9,1-9,2): invalid decimal constant "4a"
 (10,1-10,5): identifier "_bool"
 (11,1-11,5): identifier "bool_"
 (12,1-12,1): identifier "A"

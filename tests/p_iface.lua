@@ -17,7 +17,7 @@ interface A final {
 ]], [[
 translationUnitBegin
  classInterfaceBegin loc:(1,1-1,9) nameLoc:(1,11-1,11) name:"A"
-(1,13-1,17): unexpected token: 'final'
+(1,13-1,17): unexpected token: 'final'.
 ]])
 
 test_parser_global([[
@@ -28,7 +28,7 @@ public var x;
 translationUnitBegin
  classInterfaceBegin loc:(1,1-1,9) nameLoc:(1,11-1,11) name:"A"
   classMembersBegin loc:(1,13-1,13)
-(2,1-2,6): unexpected token: 'public'
+(2,1-2,6): unexpected token: 'public'.
 ]])
 
 test_parser_global([[
@@ -55,5 +55,5 @@ public (void) method1;
 translationUnitBegin
  classInterfaceBegin loc:(1,1-1,9) nameLoc:(1,11-1,11) name:"A"
   classMembersBegin loc:(1,13-1,13)
-(2,1-2,6): unexpected token: 'public'
+(2,1-2,6): unexpected token: 'public'.
 ]])

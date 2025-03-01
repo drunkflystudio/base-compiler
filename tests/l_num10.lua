@@ -72,12 +72,12 @@ test_lexer([[
 6x
 7c+
 ]], [[
-(1,1-1,2): invalid decimal constant
-(2,1-2,2): invalid decimal constant
-(3,1-3,2): invalid decimal constant
-(4,1-4,2): invalid decimal constant
-(5,1-5,2): invalid decimal constant
-(6,1-6,2): invalid decimal constant
+(1,1-1,2): invalid decimal constant "1a"
+(2,1-2,2): invalid decimal constant "3z"
+(3,1-3,2): invalid decimal constant "4b"
+(4,1-4,2): invalid decimal constant "5o"
+(5,1-5,2): invalid decimal constant "6x"
+(6,1-6,2): invalid decimal constant "7c"
 (6,3-6,3): '+'
 (7,1): <end of file>
 ]])

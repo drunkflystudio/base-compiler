@@ -1,6 +1,7 @@
 #include <drunkfly/compiler/private.h>
 #include <drunkfly/compiler/arena.h>
 #include <assert.h>
+#include <string.h>
 #include <lauxlib.h>
 
 static unsigned int digitToNumber(char ch, bool* error)
@@ -210,6 +211,7 @@ bool compilerGetToken(Compiler* compiler)
             compiler->lexer.token.text = NULL;
             compiler->lexer.token.str = NULL;
             compiler->lexer.token.strLength = 0;
+            compiler->lexer.token.symbol = 0;
             compiler->lexer.token.location.startColumn = compiler->lexer.column;
           multiline_comment:
             for (;;) {
@@ -244,6 +246,7 @@ bool compilerGetToken(Compiler* compiler)
             compiler->lexer.token.text = NULL;
             compiler->lexer.token.str = NULL;
             compiler->lexer.token.strLength = 0;
+            compiler->lexer.token.symbol = 0;
             compiler->lexer.token.location.startColumn = compiler->lexer.column;
             compiler->lexer.token.overflow = false;
             tokenStart = compiler->lexer.prevCursor;
@@ -277,13 +280,14 @@ bool compilerGetToken(Compiler* compiler)
             '"'                         { uint32_t* text = NULL;
                                           size_t textLength = 0;
                                           bool success = compilerStringLiteral(compiler, '"', &text, &textLength);
-                                          if (success)
-                                              EMIT_SPECIAL(STRING_LITERAL, "string literal");
-                                          else
-                                              EMIT_SPECIAL(UNTERMINATED_STRING_LITERAL, "unterminated string literal");
                                           compiler->lexer.token.str = text;
                                           compiler->lexer.token.strLength = textLength;
-                                          return true;
+                                          if (success)
+                                              return EMIT_SPECIAL(STRING_LITERAL, "string literal");
+                                          else {
+                                              return EMIT_SPECIAL(
+                                                  UNTERMINATED_STRING_LITERAL, "unterminated string literal");
+                                          }
                                         }
 
             "abstract"                  { return EMIT_KEYWORD(abstract); }
@@ -413,8 +417,11 @@ bool compilerGetToken(Compiler* compiler)
                                           } while (p != CURSOR);
                                           if (overflow)
                                               compiler->lexer.token.overflow = true;
-                                          if (error)
+                                          if (error) {
+                                              compiler->lexer.token.text = lua_pushlstring(compiler->L,
+                                                  tokenStart, (size_t)(CURSOR - tokenStart));
                                               return EMIT_SPECIAL(INVALID_BINARY_LITERAL, "invalid binary constant");
+                                          }
                                           compiler->lexer.token.integer = value;
                                           return EMIT_SPECIAL(INTEGER_LITERAL, "binary constant");
                                         }
@@ -435,8 +442,11 @@ bool compilerGetToken(Compiler* compiler)
                                           } while (p != CURSOR);
                                           if (overflow)
                                               compiler->lexer.token.overflow = true;
-                                          if (error)
+                                          if (error) {
+                                              compiler->lexer.token.text = lua_pushlstring(compiler->L,
+                                                  tokenStart, (size_t)(CURSOR - tokenStart));
                                               return EMIT_SPECIAL(INVALID_OCTAL_LITERAL, "invalid octal constant");
+                                          }
                                           compiler->lexer.token.integer = value;
                                           return EMIT_SPECIAL(INTEGER_LITERAL, "octal constant");
                                         }
@@ -457,6 +467,8 @@ bool compilerGetToken(Compiler* compiler)
                                           if (overflow)
                                               compiler->lexer.token.overflow = true;
                                           if (error) {
+                                              compiler->lexer.token.text = lua_pushlstring(compiler->L,
+                                                  tokenStart, (size_t)(CURSOR - tokenStart));
                                               return EMIT_SPECIAL(
                                                   INVALID_HEXADECIMAL_LITERAL, "invalid hexadecimal constant");
                                           }
@@ -480,6 +492,8 @@ bool compilerGetToken(Compiler* compiler)
                                           if (overflow)
                                               compiler->lexer.token.overflow = true;
                                           if (error) {
+                                              compiler->lexer.token.text = lua_pushlstring(compiler->L,
+                                                  tokenStart, (size_t)(CURSOR - tokenStart));
                                               return EMIT_SPECIAL(
                                                   INVALID_DECIMAL_LITERAL, "invalid decimal constant");
                                           }
@@ -487,7 +501,9 @@ bool compilerGetToken(Compiler* compiler)
                                           return EMIT_SPECIAL(INTEGER_LITERAL, "decimal constant");
                                         }
 
-            *                           { return EMIT_SPECIAL(INVALID_SYMBOL, "invalid symbol"); }
+            *                           { compiler->lexer.token.symbol = (unsigned char)*tokenStart;
+                                          return EMIT_SPECIAL(INVALID_SYMBOL, "invalid symbol");
+                                        }
 
             */
     }

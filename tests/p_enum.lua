@@ -20,7 +20,7 @@ translationUnitBegin
   enumMembersBegin loc:(1,8-1,8)
   enumMembersEnd loc:(2,1-2,1)
  enumEnd loc:(2,1-2,1)
-(2,2-2,2): unexpected token: ';'
+(2,2-2,2): unexpected token: ';'.
 ]])
 
 test_parser_global([[
@@ -73,7 +73,7 @@ enum A {
 translationUnitBegin
  enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
   enumMembersBegin loc:(1,8-1,8)
-(3,5-3,5): unexpected token: identifier
+(3,5-3,5): unexpected token: identifier.
 ]])
 
 test_parser_global([[
@@ -144,7 +144,7 @@ enum A {
 translationUnitBegin
  enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
   enumMembersBegin loc:(1,8-1,8)
-(3,1-3,1): unexpected token: '}'
+(3,1-3,1): unexpected token: '}'.
 ]])
 
 test_parser_global([[
@@ -157,7 +157,7 @@ translationUnitBegin
  enumBegin loc:(1,1-1,4) nameLoc:(1,6-1,6) name:"A" isFlags:false
   enumMembersBegin loc:(1,8-1,8)
    enumMember loc:(2,5-2,5) name:"F" optionalValue:0x4
-(3,5-3,5): unexpected token: identifier
+(3,5-3,5): unexpected token: identifier.
 ]])
 
 test_parser_global([[

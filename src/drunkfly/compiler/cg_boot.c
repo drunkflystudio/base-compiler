@@ -1748,22 +1748,24 @@ static void stmtTryEnd(void* ud)
     luaL_error(context->compiler->L, "try/catch is not supported by bootstrap backend.");
 }
 
-static void error(void* ud, const CompilerLocation* loc, const CompilerToken* token)
+static void error(void* ud,
+    const CompilerLocation* loc, const CompilerToken* token, const char* message, const char* detail)
 {
     Context* context = (Context*)ud;
+    UNUSED(token);
 
     if (!context->compiler->getLineNumber || !loc)
-        luaL_error(context->compiler->L, "unexpected token: %s\n", token->name);
+        luaL_error(context->compiler->L, "%s: %s.\n", message, detail);
     else {
         if (!context->compiler->getFileName) {
-            luaL_error(context->compiler->L, "(%d,%d): unexpected token: %s\n",
+            luaL_error(context->compiler->L, "(%d,%d): %s: %s.\n",
                 context->compiler->getLineNumber(loc->startLine),
-                loc->startColumn, token->name);
+                loc->startColumn, message, detail);
         } else {
-            luaL_error(context->compiler->L, "%s(%d,%d): unexpected token: %s\n",
+            luaL_error(context->compiler->L, "%s(%d,%d): %s: %s.\n",
                 context->compiler->getFileName(loc->file),
                 context->compiler->getLineNumber(loc->startLine),
-                loc->startColumn, token->name);
+                loc->startColumn, message, detail);
         }
     }
 }

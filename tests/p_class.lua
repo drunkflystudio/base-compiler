@@ -63,7 +63,7 @@ translationUnitBegin
  classEnd loc:(2,1-2,1)
  classBegin loc:(3,1-3,5) nameLoc:(3,7-3,7) name:"B" isFinal:false
   classParent loc:(3,11-3,11) name:"A"
-(3,14-3,14): unexpected token: '{'
+(3,14-3,14): unexpected token: '{'.
 ]])
 
 test_parser_global([[

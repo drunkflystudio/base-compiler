@@ -79,16 +79,16 @@ test_lexer([[
 0o319
 0o3f3
 ]], [[
-(1,1-1,3): invalid octal constant
-(2,1-2,3): invalid octal constant
-(3,1-3,3): invalid octal constant
-(4,1-4,3): invalid octal constant
-(5,1-5,3): invalid octal constant
-(6,1-6,3): invalid octal constant
+(1,1-1,3): invalid octal constant "0o8"
+(2,1-2,3): invalid octal constant "0o9"
+(3,1-3,3): invalid octal constant "0oa"
+(4,1-4,3): invalid octal constant "0ob"
+(5,1-5,3): invalid octal constant "0oc"
+(6,1-6,3): invalid octal constant "0od"
 (6,4-6,4): '*'
-(7,1-7,3): invalid octal constant
-(8,1-8,3): invalid octal constant
-(9,1-9,5): invalid octal constant
-(10,1-10,5): invalid octal constant
+(7,1-7,3): invalid octal constant "0oe"
+(8,1-8,3): invalid octal constant "0of"
+(9,1-9,5): invalid octal constant "0o319"
+(10,1-10,5): invalid octal constant "0o3f3"
 (11,1): <end of file>
 ]])

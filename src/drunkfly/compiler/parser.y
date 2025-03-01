@@ -753,21 +753,60 @@ void yyerror(yycontext* ctx, int yychar, const YYSTYPE* yylval, const YYPOSN* yy
 {
     CompilerParser* parser = (CompilerParser*)ctx->userdata;
     UNUSED(yychar);
-    parser->cb.error(parser->cb.ud, yyposn, yylval->token);
+    parser->cb.error(parser->cb.ud, yyposn, yylval->token, "unexpected token", yylval->token->name);
 }
 
-static ChainedToken* nextToken(ChainedToken** curToken)
+static ChainedToken* nextToken(yycontext* ctx, ChainedToken** curToken)
 {
+    CompilerParser* parser = (CompilerParser*)ctx->userdata;
     ChainedToken* token;
+    char buf[128];
     int id;
 
-    do {
+    for (;;) {
         token = *curToken;
         id = token->token.id;
         if (id == T_EOF)
             break;
         *curToken = token->next;
-    } while (id == T_SINGLE_LINE_COMMENT || id == T_MULTI_LINE_COMMENT);
+        switch (id) {
+            case T_INVALID_SYMBOL:
+                if (token->token.symbol < 32 || token->token.symbol >= 127) {
+                    sprintf(buf, "0x%lx", (unsigned long)token->token.symbol);
+                    parser->cb.error(parser->cb.ud,
+                        &token->token.location, &token->token, "invalid symbol", buf);
+                } else {
+                    sprintf(buf, "'%c'", (char)token->token.symbol);
+                    parser->cb.error(parser->cb.ud,
+                        &token->token.location, &token->token, "invalid symbol", buf);
+                }
+                continue;
+            case T_INVALID_BINARY_LITERAL:
+                parser->cb.error(parser->cb.ud,
+                    &token->token.location, &token->token, "invalid binary constant", token->token.text);
+                continue;
+            case T_INVALID_OCTAL_LITERAL:
+                parser->cb.error(parser->cb.ud,
+                    &token->token.location, &token->token, "invalid octal constant", token->token.text);
+                continue;
+            case T_INVALID_HEXADECIMAL_LITERAL:
+                parser->cb.error(parser->cb.ud,
+                    &token->token.location, &token->token, "invalid hexadecimal constant", token->token.text);
+                continue;
+            case T_INVALID_DECIMAL_LITERAL:
+                parser->cb.error(parser->cb.ud,
+                    &token->token.location, &token->token, "invalid decimal constant", token->token.text);
+                continue;
+            case T_UNTERMINATED_STRING_LITERAL:
+                parser->cb.error(parser->cb.ud,
+                    &token->token.location, &token->token, "parse error", "unterminated string constant");
+                continue;
+            case T_SINGLE_LINE_COMMENT:
+            case T_MULTI_LINE_COMMENT:
+                continue;
+        }
+        break;
+    }
 
     return token;
 }
@@ -776,19 +815,19 @@ int yylex(yycontext* ctx)
 {
     int id;
 
-    const ChainedToken* token = nextToken(&firstToken);
+    const ChainedToken* token = nextToken(ctx, &firstToken);
 
     id = token->token.id;
     if (id == KW_do) {
         ChainedToken* ptr = firstToken;
-        ChainedToken* next = nextToken(&ptr);
+        ChainedToken* next = nextToken(ctx, &ptr);
         if (next->token.id == T_LCURLY) {
             id = T_KWdo_WITH_LCURLY;
             firstToken = next->next;
         }
     } else if (id == KW_bit) {
         ChainedToken* ptr = firstToken;
-        ChainedToken* next = nextToken(&ptr);
+        ChainedToken* next = nextToken(ctx, &ptr);
         if (next->token.id == T_LBRACKET) {
             id = T_KWbit_WITH_LBRACKET;
             firstToken = next->next;

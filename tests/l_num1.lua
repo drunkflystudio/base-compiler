@@ -85,21 +85,21 @@ test_lexer([[
 0bw
 0b1f
 ]], [[
-(1,1-1,3): invalid binary constant
-(2,1-2,3): invalid binary constant
-(3,1-3,3): invalid binary constant
-(4,1-4,3): invalid binary constant
-(5,1-5,3): invalid binary constant
-(6,1-6,3): invalid binary constant
-(7,1-7,3): invalid binary constant
-(8,1-8,3): invalid binary constant
-(9,1-9,3): invalid binary constant
-(10,1-10,3): invalid binary constant
-(11,1-11,3): invalid binary constant
-(12,1-12,3): invalid binary constant
-(13,1-13,3): invalid binary constant
-(14,1-14,3): invalid binary constant
-(15,1-15,3): invalid binary constant
-(16,1-16,4): invalid binary constant
+(1,1-1,3): invalid binary constant "0b2"
+(2,1-2,3): invalid binary constant "0b3"
+(3,1-3,3): invalid binary constant "0b4"
+(4,1-4,3): invalid binary constant "0b5"
+(5,1-5,3): invalid binary constant "0b6"
+(6,1-6,3): invalid binary constant "0b7"
+(7,1-7,3): invalid binary constant "0b8"
+(8,1-8,3): invalid binary constant "0b9"
+(9,1-9,3): invalid binary constant "0ba"
+(10,1-10,3): invalid binary constant "0bb"
+(11,1-11,3): invalid binary constant "0bc"
+(12,1-12,3): invalid binary constant "0bd"
+(13,1-13,3): invalid binary constant "0be"
+(14,1-14,3): invalid binary constant "0bf"
+(15,1-15,3): invalid binary constant "0bw"
+(16,1-16,4): invalid binary constant "0b1f"
 (17,1): <end of file>
 ]])

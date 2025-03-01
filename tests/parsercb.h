@@ -2292,7 +2292,8 @@ static void stmtTryEnd(void* ud)
     END
 }
 
-static void error(void* ud, const CompilerLocation* loc, const CompilerToken* token)
+static void error(void* ud,
+    const CompilerLocation* loc, const CompilerToken* token, const char* message, const char* detail)
 {
     static const char frag_name_[] = "yyerror";
 
@@ -2315,12 +2316,12 @@ static void error(void* ud, const CompilerLocation* loc, const CompilerToken* to
         ++g_testFailCount;
     }
 
-    printF("(%d,%d-%d,%d): unexpected token: %s\n",
+    printF("(%d,%d-%d,%d): %s: %s.\n",
         (loc->startLine ? loc->startLine->number : 0),
         loc->startColumn,
         (loc->endLine ? loc->endLine->number : 0),
         loc->endColumn,
-        token->name);
+        message, detail);
 }
 
 static void initParserCallbacks(CompilerParser* parser)

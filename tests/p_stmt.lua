@@ -8,7 +8,7 @@ stmtExpr loc:(2,1-2,2) e:0x4
 ]])
 
 test_parser_stmt('4', [[
-(3,1-3,1): unexpected token: '}'
+(3,1-3,1): unexpected token: '}'.
 ]])
 
 test_parser_stmt('label:', [[
@@ -29,7 +29,7 @@ stmtBreak loc:(2,1-2,6)
 ]])
 
 test_parser_stmt('break 4;', [[
-(2,7-2,7): unexpected token: decimal constant
+(2,7-2,7): unexpected token: decimal constant.
 ]])
 
 test_parser_stmt('continue;', [[
@@ -37,11 +37,11 @@ stmtContinue loc:(2,1-2,9)
 ]])
 
 test_parser_stmt('continue 4;', [[
-(2,10-2,10): unexpected token: decimal constant
+(2,10-2,10): unexpected token: decimal constant.
 ]])
 
 test_parser_stmt('delete;', [[
-(2,7-2,7): unexpected token: ';'
+(2,7-2,7): unexpected token: ';'.
 ]])
 
 test_parser_stmt('delete null;', [[

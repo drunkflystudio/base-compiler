@@ -118,23 +118,23 @@ test_lexer([[
 0x1fg
 0x8hh>
 ]], [[
-(1,1-1,3): invalid hexadecimal constant
-(2,1-2,3): invalid hexadecimal constant
-(3,1-3,3): invalid hexadecimal constant
-(4,1-4,3): invalid hexadecimal constant
-(5,1-5,3): invalid hexadecimal constant
-(6,1-6,3): invalid hexadecimal constant
-(7,1-7,3): invalid hexadecimal constant
-(8,1-8,3): invalid hexadecimal constant
-(9,1-9,3): invalid hexadecimal constant
-(10,1-10,3): invalid hexadecimal constant
-(11,1-11,3): invalid hexadecimal constant
-(12,1-12,3): invalid hexadecimal constant
-(13,1-13,3): invalid hexadecimal constant
-(14,1-14,3): invalid hexadecimal constant
-(15,1-15,5): invalid hexadecimal constant
-(16,1-16,5): invalid hexadecimal constant
-(17,1-17,5): invalid hexadecimal constant
+(1,1-1,3): invalid hexadecimal constant "0xg"
+(2,1-2,3): invalid hexadecimal constant "0xh"
+(3,1-3,3): invalid hexadecimal constant "0xi"
+(4,1-4,3): invalid hexadecimal constant "0xj"
+(5,1-5,3): invalid hexadecimal constant "0xk"
+(6,1-6,3): invalid hexadecimal constant "0xl"
+(7,1-7,3): invalid hexadecimal constant "0xm"
+(8,1-8,3): invalid hexadecimal constant "0xn"
+(9,1-9,3): invalid hexadecimal constant "0xo"
+(10,1-10,3): invalid hexadecimal constant "0xp"
+(11,1-11,3): invalid hexadecimal constant "0xq"
+(12,1-12,3): invalid hexadecimal constant "0xr"
+(13,1-13,3): invalid hexadecimal constant "0xs"
+(14,1-14,3): invalid hexadecimal constant "0xt"
+(15,1-15,5): invalid hexadecimal constant "0x4u4"
+(16,1-16,5): invalid hexadecimal constant "0x1fg"
+(17,1-17,5): invalid hexadecimal constant "0x8hh"
 (17,6-17,6): '>'
 (18,1): <end of file>
 ]])
