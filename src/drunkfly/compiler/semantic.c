@@ -450,6 +450,13 @@ static CompilerType* typeUInt32(void* ud, const CompilerLocation* loc)
     return NULL;
 }
 
+static CompilerType* typeString(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    return NULL;
+}
+
 static CompilerType* typeObject(void* ud, const CompilerLocation* loc)
 {
     UNUSED(ud);
@@ -1273,6 +1280,7 @@ void compilerInitSemantic(Compiler* compiler)
     compiler->parser.cb.typeUInt16 = typeUInt16;
     compiler->parser.cb.typeInt32 = typeInt32;
     compiler->parser.cb.typeUInt32 = typeUInt32;
+    compiler->parser.cb.typeString = typeString;
     compiler->parser.cb.typeObject = typeObject;
     compiler->parser.cb.typeIdentifier = typeIdentifier;
     compiler->parser.cb.typePointer = typePointer;

@@ -103,6 +103,7 @@ static CompilerType g_int16 = { "int16_t", NULL, NULL };
 static CompilerType g_uint16 = { "uint16_t", NULL, NULL };
 static CompilerType g_int32 = { "int32_t", NULL, NULL };
 static CompilerType g_uint32 = { "uint32_t", NULL, NULL };
+static CompilerType g_string = { "char*", NULL, NULL };
 static CompilerType g_object = { "void*", NULL, NULL };
 
 static void printType(Context* context, Buff* buff, CompilerType* type)
@@ -844,6 +845,13 @@ static CompilerType* typeUInt32(void* ud, const CompilerLocation* loc)
     UNUSED(ud);
     UNUSED(loc);
     return &g_uint32;
+}
+
+static CompilerType* typeString(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
+    return &g_string;
 }
 
 static CompilerType* typeObject(void* ud, const CompilerLocation* loc)
@@ -1842,6 +1850,7 @@ void compilerInitBootstrapCodegen(Compiler* compiler, const char* outputFile)
     compiler->parser.cb.typeUInt16 = typeUInt16;
     compiler->parser.cb.typeInt32 = typeInt32;
     compiler->parser.cb.typeUInt32 = typeUInt32;
+    compiler->parser.cb.typeString = typeString;
     compiler->parser.cb.typeObject = typeObject;
     compiler->parser.cb.typeIdentifier = typeIdentifier;
     compiler->parser.cb.typePointer = typePointer;

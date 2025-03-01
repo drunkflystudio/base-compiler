@@ -126,6 +126,13 @@ result loc:(2,1-2,3) type:u32
 ]])
 
 test_parser_types([[
+string
+]], [[
+typeString loc:(2,1-2,6)
+result loc:(2,1-2,6) type:string
+]])
+
+test_parser_types([[
 object
 ]], [[
 typeObject loc:(2,1-2,6)

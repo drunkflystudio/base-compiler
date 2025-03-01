@@ -396,3 +396,39 @@ Application_main(lua_State* L) { UNUSED(L);
 }
 }
 ]])
+
+test_bootstrap([[
+class Application
+{
+    public static (void) main
+    {
+        var (string) str;
+    }
+}
+]], [[
+#include <drunkfly/common.h>
+
+#line 1 "file"
+STRUCT(Application);
+
+#line 1 "file"
+struct Application
+#line 2 "file"
+{
+#line 2 "file"
+    int (*dispatch)(lua_State* L);
+#line 7 "file"
+};
+
+#line 3 "file"
+void
+#line 3 "file"
+Application_main(lua_State* L) { UNUSED(L);
+#line 4 "file"
+{
+#   line 5 "file"
+    char* str;
+#line 6 "file"
+}
+}
+]])

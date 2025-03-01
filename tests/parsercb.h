@@ -19,6 +19,7 @@ static CompilerType g_int16 = { "i16", NULL, NULL };
 static CompilerType g_uint16 = { "u16", NULL, NULL };
 static CompilerType g_int32 = { "i32", NULL, NULL };
 static CompilerType g_uint32 = { "u32", NULL, NULL };
+static CompilerType g_string = { "string", NULL, NULL };
 static CompilerType g_object = { "object", NULL, NULL };
 
 /*==================================================================================================================*/
@@ -995,6 +996,17 @@ static CompilerType* typeUInt32(void* ud, const CompilerLocation* loc)
     }
 
     return &g_uint32;
+}
+
+static CompilerType* typeString(void* ud, const CompilerLocation* loc)
+{
+    if (g_parseMode == PARSE_TYPES) {
+        FRAG(typeString)
+            LOC(loc)
+        END
+    }
+
+    return &g_string;
 }
 
 static CompilerType* typeObject(void* ud, const CompilerLocation* loc)
@@ -2383,6 +2395,7 @@ static void initParserCallbacks(CompilerParser* parser)
     parser->cb.typeUInt16 = typeUInt16;
     parser->cb.typeInt32 = typeInt32;
     parser->cb.typeUInt32 = typeUInt32;
+    parser->cb.typeString = typeString;
     parser->cb.typeObject = typeObject;
     parser->cb.typeIdentifier = typeIdentifier;
     parser->cb.typePointer = typePointer;

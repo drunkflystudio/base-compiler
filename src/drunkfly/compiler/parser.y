@@ -68,6 +68,7 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %token <token> KW_sizeof
 %token <token> KW_static
 %token <token> KW_struct
+%token <token> KW_string
 %token <token> KW_switch
 %token <token> KW_throw
 %token <token> KW_true
@@ -448,6 +449,7 @@ type_name
     | KW_u16 { $$ = CB.typeUInt16(UD, &@1); }
     | KW_i32 { $$ = CB.typeInt32(UD, &@1); }
     | KW_u32 { $$ = CB.typeUInt32(UD, &@1); }
+    | KW_string { $$ = CB.typeString(UD, &@1); }
     | KW_object { $$ = CB.typeObject(UD, &@1); }
     | T_IDENTIFIER { $$ = CB.typeIdentifier(UD, &@1, $1->text); }
     | type_name T_ASTERISK { $$ = CB.typePointer(UD, merge(@1, @2), $1); }

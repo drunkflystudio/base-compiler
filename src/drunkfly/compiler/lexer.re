@@ -243,6 +243,7 @@ bool compilerGetToken(Compiler* compiler)
             "sbyte"                     { return EMIT_KEYWORD(sbyte); }
             "sizeof"                    { return EMIT_KEYWORD(sizeof); }
             "static"                    { return EMIT_KEYWORD(static); }
+            "string"                    { return EMIT_KEYWORD(string); }
             "struct"                    { return EMIT_KEYWORD(struct); }
             "switch"                    { return EMIT_KEYWORD(switch); }
             "throw"                     { return EMIT_KEYWORD(throw); }

@@ -95,6 +95,7 @@ STRUCT(CompilerParserCallbacks)
     CompilerType* (*typeUInt16)(void* ud, LOC(loc));
     CompilerType* (*typeInt32)(void* ud, LOC(loc));
     CompilerType* (*typeUInt32)(void* ud, LOC(loc));
+    CompilerType* (*typeString)(void* ud, LOC(loc));
     CompilerType* (*typeObject)(void* ud, LOC(loc));
     CompilerType* (*typeIdentifier)(void* ud, LOC(loc), const char* text);
     CompilerType* (*typePointer)(void* ud, LOC(loc), TYPE(pointee));
