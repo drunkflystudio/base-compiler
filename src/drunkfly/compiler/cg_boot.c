@@ -68,6 +68,7 @@ STRUCT(Context) {
     bool isConstVariables;
     bool isStaticVariables;
     bool isStaticMethod;
+    bool currentClassExtern;
     int indent;
 };
 
@@ -402,15 +403,7 @@ static void translationUnitBegin(void* ud)
 
 static void translationUnitEnd(void* ud)
 {
-    Context* context = (Context*)ud;
-    compilerPrintS(context->file, "#include <drunkfly/common.h>\n");
-    compilerPrintS(context->file, "#include <stdarg.h>\n");
-    compilerPrintS(context->file, "#include <string.h>\n");
-    compilerPrintS(context->file, buffEnd(&context->fwds, NULL));
-    compilerPrintS(context->file, buffEnd(&context->structs, NULL));
-    compilerPrintS(context->file, buffEnd(&context->methods, NULL));
-    compilerPrintS(context->file, buffEnd(&context->dispatches, NULL));
-    compilerPrintS(context->file, buffEnd(&context->staticDispatches, NULL));
+    UNUSED(ud);
 }
 
 static void attrBegin(void* ud, const CompilerLocation* loc, const char* name)
@@ -538,6 +531,7 @@ static void classBegin(void* ud, const CompilerLocation* optionalVisLoc, Compile
     UNUSED(loc);
 
     context->currentClass = name;
+    context->currentClassExtern = isExtern;
 
     buffPrintC(&context->structs, '\n');
     if (isExtern) {
@@ -568,6 +562,9 @@ static void classBegin(void* ud, const CompilerLocation* optionalVisLoc, Compile
         printLine(context, &context->dispatches, nameLoc);
         printIndentEx(context, &context->dispatches, 1);
         buffPrintF(&context->dispatches, "va_start(args, nargs);\n", name);
+        printLine(context, &context->dispatches, nameLoc);
+        printIndentEx(context, &context->dispatches, 1);
+        buffPrintF(&context->dispatches, "UNUSED(L); UNUSED(selector); UNUSED(args); UNUSED(nargs);\n");
 
         buffPrintS(&context->staticDispatches, "\n");
         printLine(context, &context->staticDispatches, nameLoc);
@@ -579,6 +576,9 @@ static void classBegin(void* ud, const CompilerLocation* optionalVisLoc, Compile
         printLine(context, &context->staticDispatches, nameLoc);
         printIndentEx(context, &context->staticDispatches, 1);
         buffPrintF(&context->staticDispatches, "va_start(args, nargs);\n", name);
+        printLine(context, &context->staticDispatches, nameLoc);
+        printIndentEx(context, &context->staticDispatches, 1);
+        buffPrintF(&context->staticDispatches, "UNUSED(L); UNUSED(selector); UNUSED(args); UNUSED(nargs);\n");
     }
 
     buffPrintC(&context->fwds, '\n');
@@ -671,6 +671,9 @@ static void classMethodBegin(void* ud, const CompilerLocation* loc, const Compil
     UNUSED(vis);
     UNUSED(optionalStatic);
 
+    if (context->currentClassExtern)
+        return;
+
     context->currentMethodName = NULL;
     context->isStaticMethod = (optionalStatic != NULL);
 
@@ -695,6 +698,9 @@ static void classMethodNameSimple(void* ud, const CompilerLocation* loc, const c
 {
     Context* context = (Context*)ud;
 
+    if (context->currentClassExtern)
+        return;
+
     context->currentMethodName = compilerTempDupStr(context->compiler, name);
 
     printLine(context, &context->methods, loc);
@@ -709,6 +715,10 @@ static void classMethodNameSimple(void* ud, const CompilerLocation* loc, const c
 static void classMethodNameBegin(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
+
+    if (context->currentClassExtern)
+        return;
+
     printLine(context, &context->methods, loc);
     buffPrintS(&context->methods, context->currentClass);
 }
@@ -719,6 +729,9 @@ static void classMethodNameArg(void* ud, const CompilerLocation* loc,
     size_t nameLen, currentNameLen = 0, newNameLen;
     Context* context = (Context*)ud;
     char* methodName;
+
+    if (context->currentClassExtern)
+        return;
 
     UNUSED(loc);
     UNUSED(type);
@@ -757,6 +770,9 @@ static void classMethodNameEnd(void* ud,
 {
     Context* context = (Context*)ud;
 
+    if (context->currentClassExtern)
+        return;
+
     UNUSED(optionalFinal);
     UNUSED(optionalOverride);
 
@@ -777,9 +793,13 @@ static void classMethodEnd_Abstract(void* ud, const CompilerLocation* loc)
 static void classMethodEnd_Extern(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
-    popScope(context);
 
     UNUSED(loc);
+
+    if (context->currentClassExtern)
+        return;
+
+    popScope(context);
 
     buffPrintS(&context->methods, ";\n");
 
@@ -795,13 +815,22 @@ static void classMethodEnd_Extern(void* ud, const CompilerLocation* loc)
 static void classMethodBodyBegin(void* ud)
 {
     Context* context = (Context*)ud;
+
+    if (context->currentClassExtern)
+        return;
+
     buffPrintS(&context->methods, " { UNUSED(L); UNUSED(args);\n");
 }
 
 static void classMethodEnd(void* ud)
 {
     Context* context = (Context*)ud;
-    Scope* scope = popScope(context);
+    Scope* scope;
+
+    if (context->currentClassExtern)
+        return;
+
+    scope = popScope(context);
 
     printVarDecls(context, scope);
 
@@ -820,28 +849,37 @@ static void classMethodEnd(void* ud)
 static void classMembersEnd(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
-    popScope(context);
+
     UNUSED(loc);
+
+    if (context->currentClassExtern)
+        return;
+
+    popScope(context);
 }
 
 static void classEnd(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
+
     printLine(context, &context->fwds, loc);
     buffPrintS(&context->fwds, "};\n");
+
+    if (!context->currentClassExtern) {
+        printLine(context, &context->dispatches, loc);
+        printIndentEx(context, &context->dispatches, 1);
+        buffPrintF(&context->dispatches, "va_end(args);\n");
+        printLine(context, &context->dispatches, loc);
+        buffPrintS(&context->dispatches, "}\n");
+
+        printLine(context, &context->staticDispatches, loc);
+        printIndentEx(context, &context->staticDispatches, 1);
+        buffPrintF(&context->staticDispatches, "va_end(args);\n");
+        printLine(context, &context->staticDispatches, loc);
+        buffPrintS(&context->staticDispatches, "}\n");
+    }
+
     context->currentClass = NULL;
-
-    printLine(context, &context->dispatches, loc);
-    printIndentEx(context, &context->dispatches, 1);
-    buffPrintF(&context->dispatches, "va_end(args);\n");
-    printLine(context, &context->dispatches, loc);
-    buffPrintS(&context->dispatches, "}\n");
-
-    printLine(context, &context->staticDispatches, loc);
-    printIndentEx(context, &context->staticDispatches, 1);
-    buffPrintF(&context->staticDispatches, "va_end(args);\n");
-    printLine(context, &context->staticDispatches, loc);
-    buffPrintS(&context->staticDispatches, "}\n");
 }
 
 static void varDeclBegin(void* ud, const CompilerLocation* loc, const CompilerLocation* optionalStatic, bool isConst)
@@ -2227,4 +2265,17 @@ void compilerInitBootstrapCodegen(Compiler* compiler, const char* outputFile)
     compiler->parser.cb.stmtTry_FinallyEnd = stmtTry_FinallyEnd;
     compiler->parser.cb.stmtTryEnd = stmtTryEnd;
     compiler->parser.cb.error = error;
+}
+
+void compilerFinishBootstrapCodegen(Compiler* compiler)
+{
+    Context* context = (Context*)compiler->parser.cb.ud;
+    compilerPrintS(context->file, "#include <drunkfly/common.h>\n");
+    compilerPrintS(context->file, "#include <stdarg.h>\n");
+    compilerPrintS(context->file, "#include <string.h>\n");
+    compilerPrintS(context->file, buffEnd(&context->fwds, NULL));
+    compilerPrintS(context->file, buffEnd(&context->structs, NULL));
+    compilerPrintS(context->file, buffEnd(&context->methods, NULL));
+    compilerPrintS(context->file, buffEnd(&context->dispatches, NULL));
+    compilerPrintS(context->file, buffEnd(&context->staticDispatches, NULL));
 }

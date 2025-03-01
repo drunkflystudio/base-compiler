@@ -344,6 +344,7 @@ int test_bootstrap(lua_State* L)
     }
 
     compilerEndParse(compiler);
+    compilerFinishBootstrapCodegen(compiler);
 
     output = compilerGetFirstOutput(compiler);
     if (!output) {

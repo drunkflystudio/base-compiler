@@ -410,6 +410,8 @@ static void Application_dispatch(lua_State* L, const char* selector, int nargs, 
     va_list args;
 #line 1 "file"
     va_start(args, nargs);
+#line 1 "file"
+    UNUSED(L); UNUSED(selector); UNUSED(args); UNUSED(nargs);
 #line 100 "file"
     va_end(args);
 #line 100 "file"
@@ -421,6 +423,8 @@ static void Application_static_dispatch(lua_State* L, const char* selector, int 
     va_list args;
 #line 1 "file"
     va_start(args, nargs);
+#line 1 "file"
+    UNUSED(L); UNUSED(selector); UNUSED(args); UNUSED(nargs);
 #line 4 "file"
     if (!strcmp(selector, "main")) { Application_main(L, args); return; }
 #line 100 "file"
@@ -478,6 +482,8 @@ static void Application_dispatch(lua_State* L, const char* selector, int nargs, 
     va_list args;
 #line 1 "file"
     va_start(args, nargs);
+#line 1 "file"
+    UNUSED(L); UNUSED(selector); UNUSED(args); UNUSED(nargs);
 #line 7 "file"
     va_end(args);
 #line 7 "file"
@@ -489,6 +495,8 @@ static void Application_static_dispatch(lua_State* L, const char* selector, int 
     va_list args;
 #line 1 "file"
     va_start(args, nargs);
+#line 1 "file"
+    UNUSED(L); UNUSED(selector); UNUSED(args); UNUSED(nargs);
 #line 3 "file"
     if (!strcmp(selector, "main")) { Application_main(L, args); return; }
 #line 7 "file"

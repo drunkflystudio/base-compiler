@@ -244,6 +244,15 @@ static int runCompiler(lua_State* L)
 
     compilerEndBundle(g_compiler);
 
+    switch (codegen) {
+        case CODEGEN_NONE:
+            /* FIXME */
+            break;
+        case CODEGEN_BOOTSTRAP:
+            compilerFinishBootstrapCodegen(g_compiler);
+            break;
+    }
+
     output = compilerGetFirstOutput(g_compiler);
     while (output) {
         const char* name = compilerGetOutputName(output);
