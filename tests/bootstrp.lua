@@ -104,16 +104,22 @@ class Application
 #include <drunkfly/common.h>
 
 #line 1 "file"
-STRUCT(Application);
-
-#line 1 "file"
 struct Application
 #line 2 "file"
 {
 #line 2 "file"
-    int (*dispatch)(lua_State* L);
+    int (*dispatch)(lua_State* L, const char* selector, int nargs, ...);
 #line 100 "file"
 };
+
+#line 1 "file"
+static int Application_dispatch(lua_State* L, const char* selector, int nargs, ...);
+#line 1 "file"
+static int Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...);
+#line 1 "file"
+static struct Application Application_static_instance = { Application_static_dispatch };
+#line 1 "file"
+static struct Application* const Application = &Application_static_instance;
 
 #line 4 "file"
 void
@@ -409,16 +415,22 @@ class Application
 #include <drunkfly/common.h>
 
 #line 1 "file"
-STRUCT(Application);
-
-#line 1 "file"
 struct Application
 #line 2 "file"
 {
 #line 2 "file"
-    int (*dispatch)(lua_State* L);
+    int (*dispatch)(lua_State* L, const char* selector, int nargs, ...);
 #line 7 "file"
 };
+
+#line 1 "file"
+static int Application_dispatch(lua_State* L, const char* selector, int nargs, ...);
+#line 1 "file"
+static int Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...);
+#line 1 "file"
+static struct Application Application_static_instance = { Application_static_dispatch };
+#line 1 "file"
+static struct Application* const Application = &Application_static_instance;
 
 #line 3 "file"
 void

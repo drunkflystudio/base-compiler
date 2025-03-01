@@ -563,23 +563,28 @@ static void structEnd(void* ud, const CompilerLocation* loc)
     }
 }
 
-static void classBegin(void* ud,
-    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFinal)
+static void classBegin(void* ud, const CompilerLocation* optionalVisLoc, CompilerVisibility vis,
+    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isExtern, bool isFinal)
 {
     if (g_parseMode != PARSE_TYPES && g_parseMode != PARSE_EXPR && g_parseMode != PARSE_STMT) {
         FRAG(classBegin)
+            OPTLOC(optionalVisLoc)
+            VIS(vis)
             LOC(loc)
             LOC(nameLoc)
             STR(name)
+            BOOL(isExtern)
             BOOL(isFinal)
         END_INDENT
     }
 }
 
-static void classInterfaceBegin(void* ud,
+static void classInterfaceBegin(void* ud, const CompilerLocation* optionalVisLoc, CompilerVisibility vis,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
     FRAG(classInterfaceBegin)
+        OPTLOC(optionalVisLoc)
+        VIS(vis)
         LOC(loc)
         LOC(nameLoc)
         STR(name)
@@ -674,6 +679,15 @@ static void classMethodNameSimple(void* ud, const CompilerLocation* loc, const c
         FRAG(classMethodNameSimple)
             LOC(loc)
             STR(name)
+        END
+    }
+}
+
+static void classMethodNameBegin(void* ud, const CompilerLocation* loc)
+{
+    if (g_parseMode != PARSE_STMT) {
+        FRAG(classMethodNameBegin)
+            LOC(loc)
         END
     }
 }
@@ -2398,6 +2412,7 @@ static void initParserCallbacks(CompilerParser* parser)
     parser->cb.classDestructorEnd = classDestructorEnd;
     parser->cb.classMethodBegin = classMethodBegin;
     parser->cb.classMethodNameSimple = classMethodNameSimple;
+    parser->cb.classMethodNameBegin = classMethodNameBegin;
     parser->cb.classMethodNameArg = classMethodNameArg;
     parser->cb.classMethodNameEnd = classMethodNameEnd;
     parser->cb.classMethodEnd_Abstract = classMethodEnd_Abstract;

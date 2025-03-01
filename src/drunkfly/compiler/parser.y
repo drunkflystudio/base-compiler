@@ -165,8 +165,11 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %type <flag> var_or_const
 %type <expr> variable_declaration_or_expression
 %type <flag> optional_final
+%type <visi> optional_class_visibility
 %type <visi> class_member_visibility
 %type <flag> optional_static
+%type <meth> class_method_prefix
+%type <token> method_arg_name
 %type <flag> optional_override
 %type <flag> enum_or_flags
 %type <flag> struct_or_union
@@ -176,6 +179,11 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
     CompilerToken* token;
     CompilerExpr* expr;
     CompilerVisibility visi;
+    struct {
+            CompilerVisibility visibility;
+            CompilerLocation* visibilityLocation;
+            CompilerLocation* staticLocation;
+        } meth;
     bool flag;
 }
 
@@ -434,28 +442,41 @@ struct_initializer_member
 /* Types */
 
 type_name
-    : KW_void { $$ = CB.typeVoid(UD, &@1); }
-    | KW_bit { $$ = CB.typeBit(UD, &@1, NULL); }
-    | T_KWbit_WITH_LBRACKET expression T_RBRACKET { $$ = CB.typeBit(UD, &@1, $2); }
-    | KW_bool { $$ = CB.typeBool(UD, &@1); }
-    | KW_int { $$ = CB.typeInt(UD, &@1); }
-    | KW_uint { $$ = CB.typeUInt(UD, &@1); }
-    | KW_intptr { $$ = CB.typeIntPtr(UD, &@1); }
-    | KW_uintptr { $$ = CB.typeUIntPtr(UD, &@1); }
-    | KW_byte { $$ = CB.typeUInt8(UD, &@1); }
-    | KW_sbyte { $$ = CB.typeInt8(UD, &@1); }
-    | KW_word { $$ = CB.typeUInt16(UD, &@1); }
-    | KW_dword { $$ = CB.typeUInt32(UD, &@1); }
-    | KW_i8 { $$ = CB.typeInt8(UD, &@1); }
-    | KW_u8 { $$ = CB.typeUInt8(UD, &@1); }
-    | KW_i16 { $$ = CB.typeInt16(UD, &@1); }
-    | KW_u16 { $$ = CB.typeUInt16(UD, &@1); }
-    | KW_i32 { $$ = CB.typeInt32(UD, &@1); }
-    | KW_u32 { $$ = CB.typeUInt32(UD, &@1); }
-    | KW_string { $$ = CB.typeString(UD, &@1); }
-    | KW_object { $$ = CB.typeObject(UD, &@1); }
-    | T_IDENTIFIER { $$ = CB.typeIdentifier(UD, &@1, $1->text); }
-    | type_name T_ASTERISK { $$ = CB.typePointer(UD, merge(@1, @2), $1); }
+    : KW_void { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "void"); $$ = CB.typeVoid(UD, &@1); }
+    | KW_bit { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "bit"); $$ = CB.typeBit(UD, &@1, NULL); }
+    | KW_bool { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "bool"); $$ = CB.typeBool(UD, &@1); }
+    | KW_int { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "int"); $$ = CB.typeInt(UD, &@1); }
+    | KW_uint { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "uint"); $$ = CB.typeUInt(UD, &@1); }
+    | KW_intptr { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "intptr"); $$ = CB.typeIntPtr(UD, &@1); }
+    | KW_uintptr { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "uintptr"); $$ = CB.typeUIntPtr(UD, &@1); }
+    | KW_byte { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "byte"); $$ = CB.typeUInt8(UD, &@1); }
+    | KW_sbyte { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "sbyte"); $$ = CB.typeInt8(UD, &@1); }
+    | KW_word { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "word"); $$ = CB.typeUInt16(UD, &@1); }
+    | KW_dword { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "dword"); $$ = CB.typeUInt32(UD, &@1); }
+    | KW_i8 { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "i8"); $$ = CB.typeInt8(UD, &@1); }
+    | KW_u8 { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "u8"); $$ = CB.typeUInt8(UD, &@1); }
+    | KW_i16 { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "i16"); $$ = CB.typeInt16(UD, &@1); }
+    | KW_u16 { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "u16"); $$ = CB.typeUInt16(UD, &@1); }
+    | KW_i32 { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "i32"); $$ = CB.typeInt32(UD, &@1); }
+    | KW_u32 { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "u32"); $$ = CB.typeUInt32(UD, &@1); }
+    | KW_string { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "string"); $$ = CB.typeString(UD, &@1); }
+    | KW_object { if (CTX->inPublicMethod) compilerBundleType(BUNDLE, "object"); $$ = CB.typeObject(UD, &@1); }
+    | T_KWbit_WITH_LBRACKET expression T_RBRACKET {
+            if (CTX->inPublicMethod) {
+                assert(false); /* FIXME: implement me */
+            }
+            $$ = CB.typeBit(UD, &@1, $2);
+        }
+    | T_IDENTIFIER {
+            if (CTX->inPublicMethod)
+                compilerBundleType(BUNDLE, $1->text);
+            $$ = CB.typeIdentifier(UD, &@1, $1->text);
+        }
+    | type_name T_ASTERISK {
+            if (CTX->inPublicMethod)
+                compilerBundleTypePointer(BUNDLE);
+            $$ = CB.typePointer(UD, merge(@1, @2), $1);
+        }
     ;
 
 /*********************************************************************************************************************/
@@ -533,22 +554,66 @@ variable_declaration_or_expression
 /* Class declarations */
 
 class_declaration
-    : optional_attribute_list class_declaration_start optional_parent_class_list class_body
-    | optional_attribute_list interface_declaration_start optional_parent_class_list interface_body
+    : optional_attribute_list class_decl_start optional_parent_class_list class_body class_decl_end
+    | optional_attribute_list interface_decl_start optional_parent_class_list interface_body interface_decl_end
     ;
 
-class_declaration_start : KW_class T_IDENTIFIER optional_final {
-        if (BUNDLE)
-            compilerBundleAddClass(BUNDLE, $2->text);
-        CB.classBegin(UD, &@1, &@2, $2->text, $3);
+class_decl_start
+    : optional_class_visibility KW_class T_IDENTIFIER optional_final {
+            CTX->inPublicClassOrInterface = ($1 == COMPILER_PUBLIC && BUNDLE);
+            if (CTX->inPublicClassOrInterface)
+                compilerBundleBeginClass(BUNDLE, $3->text);
+            CB.classBegin(UD, ($1 == COMPILER_PUBLIC ? &@1 : NULL), $1, &@2, &@3, $3->text, false, $4);
+        }
+    | KW_extern KW_class T_IDENTIFIER optional_final {
+            CB.classBegin(UD, &@1, COMPILER_PRIVATE, &@2, &@3, $3->text, true, $4);
+        }
+    ;
+
+class_decl_end : /* empty */ {
+        if (CTX->inPublicClassOrInterface)
+            compilerBundleEndClassOrInterface(BUNDLE);
     };
 
-interface_declaration_start : KW_interface T_IDENTIFIER { CB.classInterfaceBegin(UD, &@1, &@2, $2->text); };
-optional_final : /* empty */ { $$ = false; } | KW_final { $$ = true; };
+interface_decl_start
+    : optional_class_visibility KW_interface T_IDENTIFIER {
+            CTX->inPublicClassOrInterface = ($1 == COMPILER_PUBLIC && BUNDLE);
+            if (CTX->inPublicClassOrInterface)
+                compilerBundleBeginInterface(BUNDLE, $3->text);
+            CB.classInterfaceBegin(UD, ($1 == COMPILER_PUBLIC ? &@1 : NULL), $1, &@2, &@3, $3->text);
+        }
+    | KW_extern KW_interface T_IDENTIFIER {
+            CB.classInterfaceBegin(UD, &@1, COMPILER_PRIVATE, &@2, &@3, $3->text);
+        }
+    ;
+
+interface_decl_end : /* empty */ {
+        if (CTX->inPublicClassOrInterface)
+            compilerBundleEndClassOrInterface(BUNDLE);
+    };
+
+optional_final : /* empty */ { $$ = false; } | KW_final {
+        if (CTX->inPublicMethod)
+            compilerBundleFinalMethod(BUNDLE);
+        else if (CTX->inPublicClassOrInterface)
+            compilerBundleFinalClass(BUNDLE);
+        $$ = true;
+    };
+
 optional_parent_class_list : /* empty */ | T_COLON parent_class_list;
 parent_class_list : parent_class_name | parent_class_list T_COMMA parent_class_name;
-parent_class_name : T_IDENTIFIER { CB.classParent(UD, &@1, $1->text); };
-class_body_start : T_LCURLY { CB.classMembersBegin(UD, &@1); };
+parent_class_name : T_IDENTIFIER {
+        if (CTX->inPublicClassOrInterface)
+            compilerBundleParentClass(BUNDLE, $1->text);
+        CB.classParent(UD, &@1, $1->text);
+    };
+
+class_body_start : T_LCURLY {
+        if (CTX->inPublicClassOrInterface)
+            compilerBundleBeginClassMembers(BUNDLE);
+        CB.classMembersBegin(UD, &@1);
+    };
+
 class_body_end : T_RCURLY { CB.classMembersEnd(UD, &@1); CB.classEnd(UD, &@1); };
 class_body : class_body_start class_member_list class_body_end;
 class_member_list : /* empty */ | class_member_list class_member;
@@ -566,13 +631,24 @@ interface_member
     : optional_attribute_list interface_method
     ;
 
+optional_class_visibility
+    : /* empty */ { $$ = COMPILER_PRIVATE; }
+    | KW_public { $$ = COMPILER_PUBLIC; }
+    ;
+
 class_member_visibility
     : KW_public { $$ = COMPILER_PUBLIC; }
     | KW_protected { $$ = COMPILER_PROTECTED; }
     | KW_private { $$ = COMPILER_PRIVATE; }
     ;
 
-optional_static : /* empty */ { $$ = false; } | KW_static { $$ = true; };
+optional_static
+    : /* empty */ { $$ = false; }
+    | KW_static {
+            if (CTX->inPublicMethod)
+                compilerBundleStaticMethod(BUNDLE);
+            $$ = true;
+      };
 
 class_variables : class_variables_start variable_declarator_list class_variables_end;
 class_variables_start : class_member_visibility optional_static var_or_const
@@ -586,25 +662,113 @@ class_destructor_end : /* empty */ { CB.classDestructorEnd(UD); };
 
 class_method : class_method_start method_name method_name_end method_body;
 interface_method : interface_method_start method_name method_name_end T_SEMICOLON;
-class_method_start : class_member_visibility optional_static T_LPAREN type_name T_RPAREN
-                        { CB.classMethodBegin(UD, merge(@3, @5), &@1, $1, ($2 ? &@2 : NULL), &@4, $4); };
-interface_method_start : optional_static T_LPAREN type_name T_RPAREN
-                        { CB.classMethodBegin(UD, merge(@2, @4), NULL, COMPILER_PUBLIC, ($1 ? &@1 : NULL), &@3, $3); };
+
+class_method_start : class_method_prefix method_lparen type_name method_rparen {
+        CB.classMethodBegin(UD, merge(@2, @4),
+            $1.visibilityLocation, $1.visibility, $1.staticLocation, &@3, $3);
+    };
+
+interface_method_start : interface_method_prefix optional_static method_lparen type_name method_rparen {
+        CB.classMethodBegin(UD, merge(@3, @5), NULL, COMPILER_PUBLIC, ($2 ? &@2 : NULL), &@4, $4);
+    };
+
+method_lparen: T_LPAREN {
+        if (CTX->inPublicMethod)
+            compilerBundleBeginMethodReturnType(BUNDLE);
+    };
+
+method_rparen: T_RPAREN {
+        if (CTX->inPublicMethod)
+            compilerBundleEndMethodReturnType(BUNDLE);
+    };
+
+class_method_prefix : class_member_visibility optional_static {
+        CTX->inPublicMethod = (CTX->inPublicClassOrInterface && ($1 == COMPILER_PUBLIC || $1 == COMPILER_PROTECTED));
+        if (CTX->inPublicMethod)
+            compilerBundleBeginClassMethod(BUNDLE, $1);
+
+        $$.visibility = $1;
+        $$.visibilityLocation = (CompilerLocation*)compilerTempAlloc(COMPILER, sizeof(CompilerLocation));
+        memcpy($$.visibilityLocation, &@1, sizeof(CompilerLocation));
+
+        if (!$2)
+            $$.staticLocation = NULL;
+        else {
+            $$.staticLocation = (CompilerLocation*)compilerTempAlloc(COMPILER, sizeof(CompilerLocation));
+            memcpy($$.staticLocation, &@2, sizeof(CompilerLocation));
+        }
+};
+
+interface_method_prefix : /* empty */ {
+        CTX->inPublicMethod = CTX->inPublicClassOrInterface;
+        if (CTX->inPublicMethod)
+            compilerBundleBeginInterfaceMethod(BUNDLE);
+    };
+
 method_name : method_name_simple | method_name_with_args;
-method_name_simple : T_IDENTIFIER { CB.classMethodNameSimple(UD, &@1, $1->text); };
 method_name_with_args : method_arg | method_name_with_args method_arg;
-method_arg : T_IDENTIFIER T_COLON T_LPAREN type_name T_RPAREN T_IDENTIFIER
-                        { CB.classMethodNameArg(UD, merge(@1, @2), $1->text, $4, &@6, $6->text); };
+
+method_name_simple : T_IDENTIFIER {
+        if (CTX->inPublicMethod)
+            compilerBundleSimpleMethod(BUNDLE, $1->text);
+        CB.classMethodNameSimple(UD, &@1, $1->text);
+    };
+
+method_arg : method_arg_name T_LPAREN type_name T_RPAREN T_IDENTIFIER {
+        if (CTX->inPublicMethod)
+            compilerBundleMethodArgName(BUNDLE, $5->text);
+        CB.classMethodNameArg(UD, &@1, $1->text, $3, &@5, $5->text);
+    };
+
+method_arg_name : T_IDENTIFIER T_COLON {
+        if (CTX->inPublicMethod)
+            compilerBundleMethodArg(BUNDLE, $1->text);
+        CB.classMethodNameBegin(UD, &@1);
+        $$ = $1;
+    };
 
 method_body : optional_compound_statement;
 method_name_end : optional_final optional_override { CB.classMethodNameEnd(UD, ($1 ? &@1 : NULL), ($2 ? &@2 : NULL)); };
-optional_override : /* empty */ { $$ = false; } | KW_override { $$ = true; };
-method_body_start : /* empty */ { CB.classMethodBodyBegin(UD); };
-method_body_end : /* empty */ { CB.classMethodEnd(UD); };
+
+optional_override
+    : /* empty */ { $$ = false; }
+    | KW_override {
+            if (CTX->inPublicMethod) {
+                CTX->inPublicMethod = false;
+                compilerBundleOverrideMethod(BUNDLE);
+            }
+            $$ = true;
+        };
+
+method_body_start : /* empty */ { 
+        if (CTX->inPublicMethod) {
+            CTX->inPublicMethod = false;
+            compilerBundleEndMethod(BUNDLE);
+        }
+        CB.classMethodBodyBegin(UD);
+    };
+
+method_body_end
+    : /* empty */ {
+            CB.classMethodEnd(UD);
+        };
+
 optional_compound_statement
     : method_body_start compound_statement method_body_end
-    | KW_extern T_SEMICOLON { CB.classMethodEnd_Extern(UD, &@1); };
-    | KW_abstract T_SEMICOLON { CB.classMethodEnd_Abstract(UD, &@1); };
+    | KW_extern T_SEMICOLON {
+            if (CTX->inPublicMethod) {
+                CTX->inPublicMethod = false;
+                compilerBundleEndMethod_Extern(BUNDLE);
+            }
+            CB.classMethodEnd_Extern(UD, &@1);
+        }
+    | KW_abstract T_SEMICOLON {
+            if (CTX->inPublicMethod) {
+                CTX->inPublicMethod = false;
+                compilerBundleEndMethod_Abstract(BUNDLE);
+            }
+            CTX->inPublicMethod = false; CB.classMethodEnd_Abstract(UD, &@1);
+        }
     ;
 
 /*********************************************************************************************************************/

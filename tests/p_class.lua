@@ -4,7 +4,7 @@ class A {
 }
 ]], [[
 translationUnitBegin
- classBegin loc:(1,1-1,5) nameLoc:(1,7-1,7) name:"A" isFinal:false
+ classBegin optionalVisLoc:<none> vis:private loc:(1,1-1,5) nameLoc:(1,7-1,7) name:"A" isExtern:false isFinal:false
   classMembersBegin loc:(1,9-1,9)
   classMembersEnd loc:(2,1-2,1)
  classEnd loc:(2,1-2,1)
@@ -16,7 +16,7 @@ class A final {
 }
 ]], [[
 translationUnitBegin
- classBegin loc:(1,1-1,5) nameLoc:(1,7-1,7) name:"A" isFinal:true
+ classBegin optionalVisLoc:<none> vis:private loc:(1,1-1,5) nameLoc:(1,7-1,7) name:"A" isExtern:false isFinal:true
   classMembersBegin loc:(1,15-1,15)
   classMembersEnd loc:(2,1-2,1)
  classEnd loc:(2,1-2,1)
@@ -32,16 +32,16 @@ class C final : A, B {
 }
 ]], [[
 translationUnitBegin
- classBegin loc:(1,1-1,5) nameLoc:(1,7-1,7) name:"A" isFinal:false
+ classBegin optionalVisLoc:<none> vis:private loc:(1,1-1,5) nameLoc:(1,7-1,7) name:"A" isExtern:false isFinal:false
   classMembersBegin loc:(1,9-1,9)
   classMembersEnd loc:(2,1-2,1)
  classEnd loc:(2,1-2,1)
- classBegin loc:(3,1-3,5) nameLoc:(3,7-3,7) name:"B" isFinal:false
+ classBegin optionalVisLoc:<none> vis:private loc:(3,1-3,5) nameLoc:(3,7-3,7) name:"B" isExtern:false isFinal:false
   classParent loc:(3,11-3,11) name:"A"
   classMembersBegin loc:(3,13-3,13)
   classMembersEnd loc:(4,1-4,1)
  classEnd loc:(4,1-4,1)
- classBegin loc:(5,1-5,5) nameLoc:(5,7-5,7) name:"C" isFinal:true
+ classBegin optionalVisLoc:<none> vis:private loc:(5,1-5,5) nameLoc:(5,7-5,7) name:"C" isExtern:false isFinal:true
   classParent loc:(5,17-5,17) name:"A"
   classParent loc:(5,20-5,20) name:"B"
   classMembersBegin loc:(5,22-5,22)
@@ -57,11 +57,11 @@ class B : A, {
 }
 ]], [[
 translationUnitBegin
- classBegin loc:(1,1-1,5) nameLoc:(1,7-1,7) name:"A" isFinal:false
+ classBegin optionalVisLoc:<none> vis:private loc:(1,1-1,5) nameLoc:(1,7-1,7) name:"A" isExtern:false isFinal:false
   classMembersBegin loc:(1,9-1,9)
   classMembersEnd loc:(2,1-2,1)
  classEnd loc:(2,1-2,1)
- classBegin loc:(3,1-3,5) nameLoc:(3,7-3,7) name:"B" isFinal:false
+ classBegin optionalVisLoc:<none> vis:private loc:(3,1-3,5) nameLoc:(3,7-3,7) name:"B" isExtern:false isFinal:false
   classParent loc:(3,11-3,11) name:"A"
 (3,14-3,14): unexpected token: '{'.
 ]])
@@ -93,7 +93,7 @@ private const (u16) field31, (u8) field32;
 }
 ]], [[
 translationUnitBegin
- classBegin loc:(1,1-1,5) nameLoc:(1,7-1,7) name:"A" isFinal:false
+ classBegin optionalVisLoc:<none> vis:private loc:(1,1-1,5) nameLoc:(1,7-1,7) name:"A" isExtern:false isFinal:false
   classMembersBegin loc:(1,9-1,9)
    classVariablesBegin loc:(2,8-2,10) visLoc:(2,1-2,6) vis:public optionalStatic:<none> isConst:false
     varBegin loc:(2,12-2,17) name:"field1"

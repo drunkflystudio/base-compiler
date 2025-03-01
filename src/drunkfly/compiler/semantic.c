@@ -131,20 +131,25 @@ static void structEnd(void* ud, const CompilerLocation* loc)
     UNUSED(loc);
 }
 
-static void classBegin(void* ud,
-    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFinal)
+static void classBegin(void* ud, const CompilerLocation* optionalVisLoc, CompilerVisibility vis,
+    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isExtern, bool isFinal)
 {
     UNUSED(ud);
+    UNUSED(optionalVisLoc);
+    UNUSED(vis);
     UNUSED(loc);
     UNUSED(nameLoc);
     UNUSED(name);
+    UNUSED(isExtern);
     UNUSED(isFinal);
 }
 
-static void classInterfaceBegin(void* ud,
+static void classInterfaceBegin(void* ud, const CompilerLocation* optionalVisLoc, CompilerVisibility vis,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
     UNUSED(ud);
+    UNUSED(optionalVisLoc);
+    UNUSED(vis);
     UNUSED(loc);
     UNUSED(nameLoc);
     UNUSED(name);
@@ -220,6 +225,12 @@ static void classMethodNameSimple(void* ud, const CompilerLocation* loc, const c
     UNUSED(ud);
     UNUSED(loc);
     UNUSED(name);
+}
+
+static void classMethodNameBegin(void* ud, const CompilerLocation* loc)
+{
+    UNUSED(ud);
+    UNUSED(loc);
 }
 
 static void classMethodNameArg(void* ud, const CompilerLocation* loc,
@@ -1258,6 +1269,7 @@ void compilerInitSemantic(Compiler* compiler)
     compiler->parser.cb.classDestructorEnd = classDestructorEnd;
     compiler->parser.cb.classMethodBegin = classMethodBegin;
     compiler->parser.cb.classMethodNameSimple = classMethodNameSimple;
+    compiler->parser.cb.classMethodNameBegin = classMethodNameBegin;
     compiler->parser.cb.classMethodNameArg = classMethodNameArg;
     compiler->parser.cb.classMethodNameEnd = classMethodNameEnd;
     compiler->parser.cb.classMethodEnd_Abstract = classMethodEnd_Abstract;

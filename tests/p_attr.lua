@@ -18,7 +18,7 @@ attrListBegin
  attrBegin loc:(1,1-1,5) name:"attr"
  attrEnd
 attrListEnd
-classBegin loc:(2,1-2,5) nameLoc:(2,7-2,7) name:"A" isFinal:false
+classBegin optionalVisLoc:<none> vis:private loc:(2,1-2,5) nameLoc:(2,7-2,7) name:"A" isExtern:false isFinal:false
 ]])
 
 test_parser_attr([[
@@ -29,7 +29,7 @@ attrListBegin
  attrBegin loc:(1,1-1,5) name:"attr"
  attrEnd
 attrListEnd
-classInterfaceBegin loc:(2,1-2,9) nameLoc:(2,11-2,11) name:"A"
+classInterfaceBegin optionalVisLoc:<none> vis:private loc:(2,1-2,9) nameLoc:(2,11-2,11) name:"A"
 ]])
 
 test_parser_global([[
@@ -53,7 +53,7 @@ interface A {
 }
 ]], [[
 translationUnitBegin
- classInterfaceBegin loc:(1,1-1,9) nameLoc:(1,11-1,11) name:"A"
+ classInterfaceBegin optionalVisLoc:<none> vis:private loc:(1,1-1,9) nameLoc:(1,11-1,11) name:"A"
   classMembersBegin loc:(1,13-1,13)
    attrListBegin
     attrBegin loc:(2,1-2,5) name:"attr"

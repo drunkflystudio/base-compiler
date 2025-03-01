@@ -353,7 +353,6 @@ static void translationUnitEnd(void* ud)
 {
     Context* context = (Context*)ud;
     compilerPrintS(context->file, "#include <drunkfly/common.h>\n");
-    compilerPrintC(context->file, '\n');
     compilerPrintS(context->file, buffEnd(&context->fwds, NULL));
     compilerPrintS(context->file, buffEnd(&context->structs, NULL));
     compilerPrintS(context->file, buffEnd(&context->methods, NULL));
@@ -475,37 +474,54 @@ static void structEnd(void* ud, const CompilerLocation* loc)
     UNUSED(loc);
 }
 
-static void classBegin(void* ud,
-    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isFinal)
+static void classBegin(void* ud, const CompilerLocation* optionalVisLoc, CompilerVisibility vis,
+    const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name, bool isExtern, bool isFinal)
 {
     Context* context = (Context*)ud;
+    UNUSED(optionalVisLoc);
     UNUSED(isFinal);
     UNUSED(loc);
 
     context->currentClass = name;
 
-    printLine(context, &context->fwds, nameLoc);
-    buffPrintF(&context->fwds, "STRUCT(%s);\n", name);
-
     buffPrintC(&context->structs, '\n');
-    printLine(context, &context->structs, nameLoc);
-    buffPrintF(&context->structs, "struct %s\n", name);
+    if (isExtern) {
+        printLine(context, &context->structs, nameLoc);
+        buffPrintF(&context->structs, "extern struct %s* const %s;\n", name, name);
+    } else {
+        printLine(context, &context->structs, nameLoc);
+        buffPrintF(&context->structs,
+            "static int %s_dispatch(lua_State* L, const char* selector, int nargs, ...);\n", name);
+        printLine(context, &context->structs, nameLoc);
+        buffPrintF(&context->structs,
+            "static int %s_static_dispatch(lua_State* L, const char* selector, int nargs, ...);\n", name);
+        printLine(context, &context->structs, nameLoc);
+        buffPrintF(&context->structs,
+            "static struct %s %s_static_instance = { %s_static_dispatch };\n", name, name, name);
+        printLine(context, &context->structs, nameLoc);
+        buffPrintF(&context->structs,
+            "%sstruct %s* const %s = &%s_static_instance;\n",
+            (vis == COMPILER_PUBLIC ? "" : "static "), name, name, name);
+    }
+
+    buffPrintC(&context->fwds, '\n');
+    printLine(context, &context->fwds, nameLoc);
+    buffPrintF(&context->fwds, "struct %s\n", name);
 }
 
-static void classInterfaceBegin(void* ud,
+static void classInterfaceBegin(void* ud, const CompilerLocation* optionalVisLoc, CompilerVisibility vis,
     const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
 {
     Context* context = (Context*)ud;
+    UNUSED(optionalVisLoc);
+    UNUSED(vis);
     UNUSED(loc);
 
     context->currentClass = name;
 
+    buffPrintC(&context->fwds, '\n');
     printLine(context, &context->fwds, nameLoc);
-    buffPrintF(&context->fwds, "struct %s; typedef struct %s %s;\n", name, name, name);
-
-    buffPrintC(&context->structs, '\n');
-    printLine(context, &context->structs, nameLoc);
-    buffPrintF(&context->structs, "struct %s\n", name);
+    buffPrintF(&context->fwds, "struct %s\n", name);
 }
 
 static void classParent(void* ud, const CompilerLocation* loc, const char* name)
@@ -519,12 +535,12 @@ static void classMembersBegin(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
     pushScope(context, context->currentClass);
-    printLine(context, &context->structs, loc);
-    buffPrintS(&context->structs, "{\n");
+    printLine(context, &context->fwds, loc);
+    buffPrintS(&context->fwds, "{\n");
 
-    printLine(context, &context->structs, loc);
-    printIndentEx(context, &context->structs, 1);
-    buffPrintS(&context->structs, "int (*dispatch)(lua_State* L);\n");
+    printLine(context, &context->fwds, loc);
+    printIndentEx(context, &context->fwds, 1);
+    buffPrintS(&context->fwds, "int (*dispatch)(lua_State* L, const char* selector, int nargs, ...);\n");
 }
 
 static void classFriend(void* ud, const CompilerLocation* loc, const CompilerLocation* nameLoc, const char* name)
@@ -588,26 +604,34 @@ static void classMethodNameSimple(void* ud, const CompilerLocation* loc, const c
 {
     Context* context = (Context*)ud;
     printLine(context, &context->methods, loc);
-    buffPrintF(&context->methods, "%s_%s(lua_State* L) { UNUSED(L);\n", context->currentClass, name);
+    buffPrintF(&context->methods, "%s_%s", context->currentClass, name);
+}
+
+static void classMethodNameBegin(void* ud, const CompilerLocation* loc)
+{
+    Context* context = (Context*)ud;
+    printLine(context, &context->methods, loc);
+    buffPrintS(&context->methods, context->currentClass);
 }
 
 static void classMethodNameArg(void* ud, const CompilerLocation* loc,
     const char* name, CompilerType* type, const CompilerLocation* argLoc, const char* arg)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
     UNUSED(loc);
-    UNUSED(name);
     UNUSED(type);
     UNUSED(argLoc);
     UNUSED(arg);
+    buffPrintF(&context->methods, "_%s", name);
 }
 
 static void classMethodNameEnd(void* ud,
     const CompilerLocation* optionalFinal, const CompilerLocation* optionalOverride)
 {
-    UNUSED(ud);
+    Context* context = (Context*)ud;
     UNUSED(optionalFinal);
     UNUSED(optionalOverride);
+    buffPrintS(&context->methods, "(lua_State* L) { UNUSED(L);\n");
 }
 
 static void classMethodEnd_Abstract(void* ud, const CompilerLocation* loc)
@@ -646,8 +670,8 @@ static void classMembersEnd(void* ud, const CompilerLocation* loc)
 static void classEnd(void* ud, const CompilerLocation* loc)
 {
     Context* context = (Context*)ud;
-    printLine(context, &context->structs, loc);
-    buffPrintS(&context->structs, "};\n");
+    printLine(context, &context->fwds, loc);
+    buffPrintS(&context->fwds, "};\n");
     context->currentClass = NULL;
 }
 
@@ -1831,6 +1855,7 @@ void compilerInitBootstrapCodegen(Compiler* compiler, const char* outputFile)
     compiler->parser.cb.classDestructorEnd = classDestructorEnd;
     compiler->parser.cb.classMethodBegin = classMethodBegin;
     compiler->parser.cb.classMethodNameSimple = classMethodNameSimple;
+    compiler->parser.cb.classMethodNameBegin = classMethodNameBegin;
     compiler->parser.cb.classMethodNameArg = classMethodNameArg;
     compiler->parser.cb.classMethodNameEnd = classMethodNameEnd;
     compiler->parser.cb.classMethodEnd_Abstract = classMethodEnd_Abstract;

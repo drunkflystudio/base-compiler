@@ -41,8 +41,9 @@ STRUCT(CompilerParserCallbacks)
     void (*structEnd)(void* ud, LOC(loc));
 
     /* class/interface declaration */
-    void (*classBegin)(void* ud, LOC(loc), LOC(nameLoc), const char* name, bool isFinal);
-    void (*classInterfaceBegin)(void* ud, LOC(loc), LOC(nameLoc), const char* name);
+    void (*classBegin)(void* ud,
+        LOC(optionalVis), VIS(vis), LOC(loc), LOC(nameLoc), const char* name, bool isExtern, bool isFinal);
+    void (*classInterfaceBegin)(void* ud, LOC(optionalVis), VIS(vis), LOC(loc), LOC(nameLoc), const char* name);
     void (*classParent)(void* ud, LOC(loc), const char* name);
     void (*classMembersBegin)(void* ud, LOC(loc));
     void (*classFriend)(void* ud, LOC(loc), LOC(nameLoc), const char* name);
@@ -53,6 +54,7 @@ STRUCT(CompilerParserCallbacks)
     void (*classMethodBegin)(void* ud, LOC(loc),
         LOC(optionalVisLoc), VIS(vis), LOC(optionalStatic), LOC(retLoc), TYPE(ret));
     void (*classMethodNameSimple)(void* ud, LOC(loc), const char* name);
+    void (*classMethodNameBegin)(void* ud, LOC(loc));
     void (*classMethodNameArg)(void* ud, LOC(loc), const char* name, TYPE(type), LOC(argLoc), const char* arg);
     void (*classMethodNameEnd)(void* ud, LOC(optionalFinal), LOC(optionalOverride));
     void (*classMethodEnd_Abstract)(void* ud, LOC(loc));
@@ -213,6 +215,8 @@ STRUCT(CompilerParser)
 {
     Compiler* compiler;
     CompilerParserCallbacks cb;
+    bool inPublicMethod;
+    bool inPublicClassOrInterface;
 };
 
 void compilerBeginParse(Compiler* compiler);
