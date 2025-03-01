@@ -36,6 +36,7 @@ int test_bootstrap(lua_State* L);
 
 void beginPrint(lua_State* L);
 void printC(char ch);
+void printUtf8(uint32_t ch);
 void printS(const char* str);
 void printF(const char* fmt, ...);
 const char* endPrint(void);

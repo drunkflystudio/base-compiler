@@ -88,10 +88,12 @@ void yyreduceposn(Compiler* compiler, CompilerLocation* ret, const CompilerLocat
 %token <token> T_INVALID_OCTAL_LITERAL
 %token <token> T_INVALID_HEXADECIMAL_LITERAL
 %token <token> T_INVALID_DECIMAL_LITERAL
+%token <token> T_UNTERMINATED_STRING_LITERAL
 %token <token> T_MULTI_LINE_COMMENT
 %token <token> T_SINGLE_LINE_COMMENT
 %token <token> T_IDENTIFIER
 %token <token> T_INTEGER_LITERAL
+%token <token> T_STRING_LITERAL
 %token <token> T_DOT
 %token <token> T_DBLDOT
 %token <token> T_LBRACKET

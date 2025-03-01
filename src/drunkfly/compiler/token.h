@@ -9,6 +9,8 @@
 struct CompilerToken {
     const char* text;
     const char* name;
+    const uint32_t* str;
+    size_t strLength;
     CompilerLocation location;
     uint_value_t integer;
     short id;

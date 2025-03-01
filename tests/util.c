@@ -14,6 +14,11 @@ void printC(char ch)
     buffPrintC(&g_buffer, ch);
 }
 
+void printUtf8(uint32_t ch)
+{
+    buffPrintUtf8(&g_buffer, ch);
+}
+
 void printS(const char* str)
 {
     buffPrintS(&g_buffer, str);

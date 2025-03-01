@@ -99,6 +99,75 @@ int compilerGetColumn(Compiler* compiler)
     return compiler->lexer.column;
 }
 
+static bool compilerStringLiteral(Compiler* compiler, uint32_t quote, uint32_t** outStr, size_t* outLength)
+{
+    luaL_Buffer buffer;
+    size_t len = 0;
+    uint32_t u32;
+    bool success;
+
+    luaL_buffinit(compiler->L, &buffer);
+
+    #define APPEND(CH32) \
+        u32 = (CH32); \
+        luaL_addlstring(&buffer, (const char*)&u32, sizeof(uint32_t)); \
+        ++len;
+
+    for (;;) {
+        uint32_t ch = compiler->lexer.curChar;
+
+        if (ch == END_MARKER) {
+            success = false;
+            break;
+        }
+
+        if (ch == quote) {
+            compilerReadChar(compiler);
+            success = true;
+            break;
+        }
+
+        if (ch != '\\') {
+            APPEND(ch);
+        } else {
+            compilerReadChar(compiler);
+            ch = compiler->lexer.curChar;
+            if (ch == END_MARKER) {
+                success = false;
+                break;
+            }
+            switch (ch) {
+                case '\\': APPEND('\\'); break;
+                case '\'': APPEND('\''); break;
+                case '\"': APPEND('\"'); break;
+                case 'a':  APPEND('\a'); break;
+                case 'b':  APPEND('\b'); break;
+                case 'e':  APPEND( 27 ); break;
+                case 'f':  APPEND('\f'); break;
+                case 'n':  APPEND('\n'); break;
+                case 'r':  APPEND('\r'); break;
+                case 'v':  APPEND('\v'); break;
+                /* FIXME: handle \x and \u */
+                default:
+                    APPEND('\\');
+                    APPEND(ch);
+                    /* FIXME: warning, invalid escape sequence */
+                    break;
+            }
+        }
+
+        compilerReadChar(compiler);
+    }
+
+    *outLength = len;
+    *outStr = (uint32_t*)compilerTempAlloc(compiler, len * sizeof(uint32_t));
+    memcpy(*outStr, buffer.b, len * sizeof(uint32_t));
+
+    lua_pop(compiler->L, 1);
+
+    return success;
+}
+
 #if defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))
 # if defined(__clang__) || (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
 #  pragma GCC diagnostic ignored "-Wpedantic"
@@ -139,6 +208,8 @@ bool compilerGetToken(Compiler* compiler)
             emitComment = (compiler->lexer.curChar != END_MARKER);
             compiler->lexer.token.integer = 0;
             compiler->lexer.token.text = NULL;
+            compiler->lexer.token.str = NULL;
+            compiler->lexer.token.strLength = 0;
             compiler->lexer.token.location.startColumn = compiler->lexer.column;
           multiline_comment:
             for (;;) {
@@ -171,6 +242,8 @@ bool compilerGetToken(Compiler* compiler)
         normal:
             compiler->lexer.token.integer = 0;
             compiler->lexer.token.text = NULL;
+            compiler->lexer.token.str = NULL;
+            compiler->lexer.token.strLength = 0;
             compiler->lexer.token.location.startColumn = compiler->lexer.column;
             compiler->lexer.token.overflow = false;
             tokenStart = compiler->lexer.prevCursor;
@@ -199,6 +272,18 @@ bool compilerGetToken(Compiler* compiler)
             "/*"                        { *compiler->lexer.state = LEXER_MULTILINE_COMMENT;
                                           emitComment = true;
                                           goto multiline_comment;
+                                        }
+
+            '"'                         { uint32_t* text = NULL;
+                                          size_t textLength = 0;
+                                          bool success = compilerStringLiteral(compiler, '"', &text, &textLength);
+                                          if (success)
+                                              EMIT_SPECIAL(STRING_LITERAL, "string literal");
+                                          else
+                                              EMIT_SPECIAL(UNTERMINATED_STRING_LITERAL, "unterminated string literal");
+                                          compiler->lexer.token.str = text;
+                                          compiler->lexer.token.strLength = textLength;
+                                          return true;
                                         }
 
             "abstract"                  { return EMIT_KEYWORD(abstract); }
