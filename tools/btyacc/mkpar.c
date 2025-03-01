@@ -31,7 +31,7 @@ void make_parser()
     find_final_state();
     remove_conflicts();
     unused_rules();
-    if (SRtotal != 1 || RRtotal > 0) total_conflicts();
+    if (SRtotal != 2 || RRtotal > 0) total_conflicts();
     defreds();
 }
 
@@ -242,8 +242,8 @@ void total_conflicts()
 {
     fprintf(stderr, "%s: ", myname);
     if (SRtotal == 1)
-	/*fprintf(stderr, "1 shift/reduce conflict")*/;
-    else /*if (SRtotal > 1)*/
+	fprintf(stderr, "1 shift/reduce conflict");
+    else if (SRtotal > 1)
 	fprintf(stderr, "%d shift/reduce conflicts", SRtotal);
 
     if (SRtotal && RRtotal)
