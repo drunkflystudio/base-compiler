@@ -102,6 +102,8 @@ class Application
 }
 ]], [[
 #include <drunkfly/common.h>
+#include <stdarg.h>
+#include <string.h>
 
 #line 1 "file"
 struct Application
@@ -124,7 +126,7 @@ static struct Application* const Application = &Application_static_instance;
 #line 4 "file"
 void
 #line 5 "file"
-Application_main(lua_State* L) { UNUSED(L);
+Application_main(lua_State* L, va_list args) { UNUSED(L); UNUSED(args);
 #line 6 "file"
 {
 #   line 7 "file"
@@ -404,11 +406,25 @@ Application_main(lua_State* L) { UNUSED(L);
 
 #line 1 "file"
 static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...) {
+#line 1 "file"
+    va_list args;
+#line 1 "file"
+    va_start(args, nargs);
+#line 100 "file"
+    va_end(args);
 #line 100 "file"
 }
 
 #line 1 "file"
 static void Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...) {
+#line 1 "file"
+    va_list args;
+#line 1 "file"
+    va_start(args, nargs);
+#line 4 "file"
+    if (!strcmp(selector, "main")) { Application_main(L, args); return; }
+#line 100 "file"
+    va_end(args);
 #line 100 "file"
 }
 ]])
@@ -423,6 +439,8 @@ class Application
 }
 ]], [[
 #include <drunkfly/common.h>
+#include <stdarg.h>
+#include <string.h>
 
 #line 1 "file"
 struct Application
@@ -445,7 +463,7 @@ static struct Application* const Application = &Application_static_instance;
 #line 3 "file"
 void
 #line 3 "file"
-Application_main(lua_State* L) { UNUSED(L);
+Application_main(lua_State* L, va_list args) { UNUSED(L); UNUSED(args);
 #line 4 "file"
 {
 #   line 5 "file"
@@ -456,11 +474,25 @@ Application_main(lua_State* L) { UNUSED(L);
 
 #line 1 "file"
 static void Application_dispatch(lua_State* L, const char* selector, int nargs, ...) {
+#line 1 "file"
+    va_list args;
+#line 1 "file"
+    va_start(args, nargs);
+#line 7 "file"
+    va_end(args);
 #line 7 "file"
 }
 
 #line 1 "file"
 static void Application_static_dispatch(lua_State* L, const char* selector, int nargs, ...) {
+#line 1 "file"
+    va_list args;
+#line 1 "file"
+    va_start(args, nargs);
+#line 3 "file"
+    if (!strcmp(selector, "main")) { Application_main(L, args); return; }
+#line 7 "file"
+    va_end(args);
 #line 7 "file"
 }
 ]])
